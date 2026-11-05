@@ -8,6 +8,7 @@ version = "0.1.0"
 description = "Generate, solve, rate and check Sudoku, Nurikabe and Kakurasu puzzles, rated by the human techniques they need"
 requires-python = ">=3.10"
 license = "MIT"
+license-files = ["LICENSE"]
 readme = "python/README.md"
 keywords = ["puzzle", "sudoku", "nurikabe", "kakurasu", "generator", "solver", "difficulty"]
 classifiers = [
