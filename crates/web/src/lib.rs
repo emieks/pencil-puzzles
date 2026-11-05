@@ -62,8 +62,12 @@ fn loaded(input: &Input) -> Result<Value, RegistryError> {
         json!({"id":id,"params":params,"text":text,"view":input.genre.view(&text,None)?,"rating":input.rating}),
     )
 }
+/// Work allowed per request. Medium 9x9 sudoku needs about 3.6 million
+/// operations on average and expert about 24 million
+/// (docs/benchmarks/sudoku.csv); the page also stops a request after 15 s.
+const WORK_BUDGET: u64 = 50_000_000;
 fn execute(request: Request) -> Result<Value, RegistryError> {
-    let budget = Budget::new(2_000_000);
+    let budget = Budget::new(WORK_BUDGET);
     match request {
         Request::List => Ok(json!(
             genres()
@@ -187,6 +191,13 @@ mod tests {
             );
             assert_eq!(checked["value"]["solved"], true);
         }
+    }
+    #[test]
+    fn medium_sudoku_fits_the_budget() {
+        let generated = call(
+            json!({"operation":"generate","genre":"sudoku","params":"9x9","difficulty":"medium","seed":"1"}),
+        );
+        assert_eq!(generated["ok"], true, "{generated}");
     }
     #[test]
     fn invalid_and_nonunique_inputs_are_reported() {
