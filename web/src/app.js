@@ -1,4 +1,4 @@
-import {route,cycle,History,toggleNote,formatTime} from './model.js';
+import {route,History,toggleNote,formatTime} from './model.js';
 const $ = (selector,root=document) => root.querySelector(selector);
 const main = $('#main');
 const escape = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -45,7 +45,7 @@ function board(view,{interactive=false,notes,selected=-1}={}){
       if(view.row_separators?.includes(r))td.classList.add('box-top');if(view.col_separators?.includes(c))td.classList.add('box-left');
       if(r===0)td.classList.add('edge-top');if(r===view.rows-1)td.classList.add('edge-bottom');if(c===0)td.classList.add('edge-left');if(c===view.cols-1)td.classList.add('edge-right');
       const peer=from&&i!==selected&&(r===sr||c===sc||(cell.region!=null&&cell.region===from.region));
-      const button=element(interactive?'button':'span',choice?.symbol??cell.value,'cell'+(choice?.shaded?' shaded':'')+(!cell.editable?' given':'')+(i===selected?' selected':'')+(same!==null&&cell.value===same?' same':'')+(peer?' peer':''));button.dataset.index=String(i);
+      const button=element(interactive?'button':'span',choice?.symbol??cell.value,'cell'+(choice?.shaded?' shaded':'')+(choice?.symbol==='·'?' dot':'')+(!cell.editable?' given':'')+(i===selected?' selected':'')+(same!==null&&cell.value===same?' same':'')+(peer?' peer':''));button.dataset.index=String(i);
       if(noted){const set=new Set(notes[i].split(',')),grid=element('span',undefined,'notes');grid.style.setProperty('--note-cols',String(Math.ceil(Math.sqrt(view.marks.length-1))));for(const m of view.marks.slice(1))grid.append(element('span',set.has(m.value)?m.symbol:''));button.replaceChildren(grid);}
       button.setAttribute('aria-label',`Row ${r+1}, column ${c+1}: ${noted?'notes '+notes[i]:choice?.name??cell.value}`);
       if(interactive){button.type='button';button.tabIndex=i===focus?0:-1;}
@@ -104,7 +104,10 @@ function player(game){
 <details id="rules-box"><summary>Rules</summary><p id="rules"></p></details><details><summary>Load puzzle</summary><label for="load-input">ID, text, or JSON</label><textarea id="load-input" maxlength="1000000" spellcheck="false" placeholder="${escape(game.example)}"></textarea><button id="load" type="button">Load</button></details>`);
   const key='pencil-game:'+id;let current=null;let history=null;let busy=false;let entry=false;let selected=-1;let notesMode=false;let drag=null;let solvedTime=null;let checkTimer=0;let checkSeq=0;
   const clock={elapsed:0,since:null};const boardBox=$('#board');
-  const blank=()=>current.view.marks[0].value;const editable=i=>i>=0&&current.view.cells[i].editable;
+  const blank=()=>current.view.marks[0].value;
+  // Shading genres have one shaded mark and one dot mark; marking a cell with the mark it already has clears it.
+  const shadeMark=()=>current.view.marks.find(m=>m.shaded)?.value,dotMark=()=>current.view.marks.find((m,i)=>i>0&&!m.shaded)?.value;
+  const toggled=(i,value)=>history.values[i]===value?blank():value;const editable=i=>i>=0&&current.view.cells[i].editable;
   const elapsed=()=>clock.elapsed+(clock.since===null?0:performance.now()-clock.since);
   function startClock(){if(current&&clock.since===null&&solvedTime===null&&!document.hidden)clock.since=performance.now();}
   function pauseClock(){if(clock.since!==null){clock.elapsed+=performance.now()-clock.since;clock.since=null;}}
@@ -139,7 +142,8 @@ function player(game){
     const cell=e.target.closest('.cell');if(!cell||busy||!current||(e.button!==0&&e.button!==2))return;
     e.preventDefault();selected=Number(cell.dataset.index);
     if(entry||!editable(selected)){draw(undefined,true);return;}
-    drag={value:cycle(history.values[selected],current.view.marks,e.button===2),values:[...history.values]};drag.values[selected]=drag.value;draw(drag.values,true);
+    const target=e.button===2?dotMark():shadeMark();if(target===undefined){draw(undefined,true);return;}
+    drag={value:toggled(selected,target),values:[...history.values]};drag.values[selected]=drag.value;draw(drag.values,true);
   });
   addEventListener('pointermove',e=>{if(!drag)return;const cell=document.elementFromPoint(e.clientX,e.clientY)?.closest?.('#board .cell');if(!cell)return;const i=Number(cell.dataset.index);if(editable(i)&&drag.values[i]!==drag.value){drag.values[i]=drag.value;draw(drag.values);}});
   const endDrag=()=>{if(!drag)return;const values=drag.values;drag=null;commit(values);};addEventListener('pointerup',endDrag);addEventListener('pointercancel',endDrag);
@@ -151,11 +155,13 @@ function player(game){
     if(entry&&k==='n'){setNotes(!notesMode);return;}
     if(!inBoard&&!(selected>=0&&(e.target===document.body||e.target.closest?.('#legend'))))return;
     if(inBoard&&e.target.dataset.index)selected=Number(e.target.dataset.index);
-    const moves={ArrowLeft:[0,-1],ArrowRight:[0,1],ArrowUp:[-1,0],ArrowDown:[1,0]};
-    if(e.key in moves){e.preventDefault();const r=Math.floor(selected/view.cols)+moves[e.key][0],c=selected%view.cols+moves[e.key][1];if(r>=0&&r<view.rows&&c>=0&&c<view.cols)selected=r*view.cols+c;draw(undefined,true);return;}
+    const moves={ArrowLeft:[0,-1],ArrowRight:[0,1],ArrowUp:[-1,0],ArrowDown:[1,0],a:[0,-1],d:[0,1],w:[-1,0],s:[1,0]};
+    const move=moves[e.key.length===1?k:e.key];
+    if(move){e.preventDefault();const r=Math.floor(selected/view.cols)+move[0],c=selected%view.cols+move[1];if(r>=0&&r<view.rows&&c>=0&&c<view.cols)selected=r*view.cols+c;draw(undefined,true);return;}
     const digit=/^(?:Digit|Numpad)(\d)$/.exec(e.code)?.[1];
     if(digit!==undefined||e.key==='Backspace'||e.key==='Delete'){const mark=view.marks[digit===undefined?0:Number(digit)];if(!mark)return;e.preventDefault();entry?enter(mark.value,notesMode||e.shiftKey):apply(selected,mark.value);return;}
-    if(inBoard&&(e.key===' '||e.key==='Enter')){e.preventDefault();if(!entry)apply(selected,cycle(history.values[selected],view.marks,e.shiftKey));}
+    const keyMark=entry?undefined:{q:shadeMark(),e:dotMark(),r:blank()}[k];
+    if(keyMark!==undefined&&selected>=0){e.preventDefault();apply(selected,k==='r'?keyMark:toggled(selected,keyMark));}
   });
   async function action(message,task){if(busy)return;busy=true;$('#controls').disabled=true;sync();status(message);try{await task();}catch(e){status(errorMessage(e),'error');}finally{busy=false;$('#controls').disabled=false;sync();}}
   function accept(value,restore){
@@ -169,8 +175,8 @@ function player(game){
     $('#finish-note').textContent=value.view.finish_note||'';
     const marks=value.view.marks;
     $('#keys').replaceChildren(...keyList(entry
-      ?[[`${marks[1].symbol}–${marks.at(-1).symbol}`,'enter'],['Shift+digit','note'],['N','notes mode'],['Del','erase'],['Arrows','move'],['Ctrl+Z / Ctrl+Y','undo / redo']]
-      :[['Click','mark'],['Drag','mark several'],['Right-click','reverse'],['Space','mark selected'],['Arrows','move'],['Ctrl+Z / Ctrl+Y','undo / redo']]));
+      ?[[`${marks[1].symbol}–${marks.at(-1).symbol}`,'enter'],['Shift+digit','note'],['N','notes mode'],['Del','erase'],['Arrows / WASD','move'],['Ctrl+Z / Ctrl+Y','undo / redo']]
+      :[['Click / Q',marks.find(m=>m.shaded)?.name.toLowerCase()],['Right-click / E',marks.find((m,i)=>i>0&&!m.shaded)?.name.toLowerCase()],['R / Del','clear'],['Drag','mark several'],['Arrows / WASD','move'],['Ctrl+Z / Ctrl+Y','undo / redo']]));
     const legendButton=(text,label,click)=>{const button=element('button',text);button.type='button';button.setAttribute('aria-label',label);button.onclick=click;button.onmousedown=e=>e.preventDefault();return button;};
     $('#legend').className='legend'+(entry?' digits':'');
     if(entry){

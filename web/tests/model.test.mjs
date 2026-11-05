@@ -1,8 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {route,cycle,History,toggleNote,formatTime} from '../src/model.js';
+import {route,History,toggleNote,formatTime} from '../src/model.js';
 test('every registered genre has independent player and solver routes',()=>{const games=[{metadata:{id:'kakurasu'}},{metadata:{id:'future-game'}}];for(const game of games)for(const page of ['player','solver'])assert.equal(route(`/${game.metadata.id}/${page}/`,games).game,game);assert.equal(route('/',games).page,'home');assert.equal(route('/kakurasu/generator/',games).page,'missing');assert.equal(route('/missing/player/',games).page,'missing');});
-test('mark cycling supports forward and reverse moves',()=>{const marks=[{value:'.'},{value:'#'},{value:'-'}];assert.equal(cycle('.',marks),'#');assert.equal(cycle('.',marks,true),'-');assert.equal(cycle('-',marks),'.');});
 test('undo, redo and clear preserve recoverable progress',()=>{const h=new History(['.','.']);h.set(['#','.']);h.set(['#','-']);h.undo();assert.deepEqual(h.values,['#','.']);h.redo();assert.deepEqual(h.values,['#','-']);h.set(['.','.']);h.undo();assert.deepEqual(h.values,['#','-']);h.undo();h.set(['-','.']);assert.equal(h.future.length,0);});
 test('notes share undo history with marks and keep mark order',()=>{const marks=[{value:'.'},{value:'1'},{value:'2'},{value:'3'}];assert.equal(toggleNote('',"3",marks),'3');assert.equal(toggleNote('3','1',marks),'1,3');assert.equal(toggleNote('1,3','3',marks),'1');const h=new History(['.','.']);h.set(['.','.'],['1,3','']);h.set(['2','.']);assert.deepEqual(h.notes,['1,3','']);h.undo();h.undo();assert.deepEqual(h.notes,['','']);assert.equal(h.set(['.','.'],['','']),false);});
 test('elapsed time is formatted compactly',()=>{assert.equal(formatTime(0),'0:00');assert.equal(formatTime(65_400),'1:05');assert.equal(formatTime(3_725_000),'1:02:05');});
