@@ -1,10 +1,17 @@
 name: Web app on GitHub Pages
 
 # Builds the static web app and publishes it to this repository's GitHub
-# Pages site, https://<owner>.github.io/<repository>/.
+# Pages site, https://<owner>.github.io/<repository>/. It runs only when the
+# web app or the Rust code it is built from changes.
 on:
   push:
     branches: [main]
+    paths:
+      - "web/**"
+      - "crates/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - ".github/workflows/pages.yml"
   workflow_dispatch:
 
 permissions:
