@@ -4,10 +4,6 @@ export function route(pathname, catalogue) {
   const game = catalogue.find(g => g.metadata.id === parts[0]);
   return game && parts.length === 2 && ['player','solver'].includes(parts[1]) ? {page:parts[1],game} : {page:'missing'};
 }
-export function cycle(value, marks, backwards = false) {
-  const index = marks.findIndex(m => m.value === value);
-  return marks[(index + (backwards ? marks.length-1 : 1)) % marks.length].value;
-}
 const same = (a, b) => a.length === b.length && a.every((v, i) => v === b[i]);
 /** Undoable cell values plus per-cell notes; notes default to empty strings. */
 export class History {

@@ -183,6 +183,8 @@ details label { display: block; margin: 10px 0 4px; font-size: 14px; color: var(
 .cell { display: flex; align-items: center; justify-content: center; width: 100%; height: var(--size); padding: 0; border: 0; border-radius: 0; background: var(--cell); font-size: calc(var(--size) * .55); line-height: 1; color: var(--muted); }
 button.cell:hover:not(:disabled) { background: var(--subtle); border: 0; }
 .cell.given { font-weight: 600; color: var(--text); }
+.cell.dot { font-size: 0; }
+.cell.dot::after { content: ''; width: calc(var(--size) * .15); height: calc(var(--size) * .15); border-radius: 50%; background: currentColor; }
 .cell.shaded, button.cell.shaded:hover:not(:disabled) { background: var(--shaded); color: var(--bg); }
 .cell:focus-visible { outline-offset: -3px; position: relative; }
 .board.entry .cell.peer { background: var(--peer); }
