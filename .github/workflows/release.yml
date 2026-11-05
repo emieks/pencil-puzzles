@@ -81,6 +81,10 @@ jobs:
           path: dist
           merge-multiple: true
       - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          # Lets a failed release be rerun without re-uploading files
+          # that already reached PyPI.
+          skip-existing: true
 
   release:
     name: GitHub release
