@@ -1,0 +1,133 @@
+# Kakurasu
+
+Shade cells so that the weighted totals match every row and column clue.
+
+## Rules
+
+- **R1. Row totals.** In each row, add the column numbers of its shaded
+  cells, counting columns from 1. The sum must equal that row's clue.
+- **R2. Column totals.** In each column, add the row numbers of its shaded
+  cells, counting rows from 1. The sum must equal that column's clue.
+
+A zero clue means its line has no shaded cells.
+
+## Example
+
+Generator version 3, parameters `3x5`, easy, seed 0 produces
+`kakurasu:3x5:8.12.3/0.0.6.2.3`:
+
+```text
+genre: kakurasu
+rows: 8 12 3
+cols: 0 0 6 2 3
+```
+
+Solution:
+
+```text
+--#-#
+--###
+--#--
+```
+
+Row 1 is 3 + 5 = 8. Column 3 is 1 + 2 + 3 = 6. Columns 1 and 2
+have zero clues, so neither contains a shaded cell.
+
+## Variables
+
+Each cell is a variable, shaded (`#`) or unshaded (`-`), ordered row-major.
+
+## Rule instances
+
+| Instance | Rule | Broken when |
+| --- | --- | --- |
+| Each row | R1 | its shaded cells exceed the clue, or its open cells cannot reach it |
+| Each column | R2 | its shaded cells exceed the clue, or its open cells cannot reach it |
+
+Checker violations carry `total` (the shaded weight so far) and `clue`.
+
+## Techniques
+
+Rater version 3 uses the profile `kakurasu-human` version 1. Within a line,
+"need" is the clue minus the shaded cells' weights.
+
+| Technique | Level | What it does |
+| --- | --- | --- |
+| `line_complete` | bookkeeping | A line whose need is 0 has its open cells unshaded. |
+| `too_heavy` | Easy | An open cell worth more than the need is unshaded. In a line worth 1, 2, 3 with clue 2, the third cell is unshaded. |
+| `needed` | Easy | An open cell without which the others fall short is shaded. In a line worth 1, 2, 3 with clue 5, cells 2 and 3 are shaded. |
+| `combinations` | Medium | The open cells can reach the need in at most 4 ways; cells shaded in every way are shaded, cells in none are unshaded. With 1, 2, 3, 4 and need 6, the ways are {2,4} and {1,2,3}, so cell 2 is shaded. |
+| `many_combinations` | Hard | The same with more than 4 ways, found with a subset-sum table. |
+| `short_contradiction` | Hard | If a cell were shaded (or unshaded), easy and medium techniques would break a line within 6 steps, so it is the other way. |
+| `contradiction` | Expert | The same, also using `many_combinations`, within 20 steps. |
+
+Shorter contradiction chains are tried first. Two lines share at most one
+cell, so there are no techniques that combine pairs of lines.
+
+## Parameters
+
+| Parameter | Part of shape? | Limits | Default |
+| --- | --- | --- | --- |
+| rows | yes | 1-32 | 6 |
+| columns | yes | 1-32 | 6 |
+
+Both are written `rowsxcolumns`, for example `5x7`.
+
+## Formats
+
+The puzzle text is shown above: `rows:` and `cols:` hold space-separated
+clues. An ID is `kakurasu:<rows>x<columns>:<row clues>/<column clues>`, with
+clues separated by dots. JSON:
+
+```json
+{"genre":"kakurasu","puzzle":{"row_clues":[1,2],"col_clues":[1,2]}}
+```
+
+Answers use one row per line, or a JSON array of row strings such as
+`["#-",".#"]`: `#` shaded, `-` unshaded, `.` unmarked. Finishing an answer
+makes unmarked cells unshaded.
+
+## Performance
+
+Measured with `cargo run --release -p pencil-puzzles --example benchmark -- kakurasu 20`
+on an Intel Core i5-1135G7 (Windows 11), seeds 0-19 and default limits.
+Failures count as infinite time. Operation counts are in
+[`kakurasu.csv`](../benchmarks/kakurasu.csv).
+
+| Size | Level | Found | Median | 95th percentile | Mean attempts |
+| --- | --- | --- | --- | --- | --- |
+| 6x6 | any | 20/20 | 0.4 ms | 9.6 ms | 1 |
+| 6x6 | easy | 20/20 | 0.4 ms | 0.9 ms | 2 |
+| 6x6 | medium | 20/20 | 0.7 ms | 5.9 ms | 8 |
+| 6x6 | hard | 20/20 | 14 ms | 32 ms | 26 |
+| 6x6 | expert | 20/20 | 318 ms | 782 ms | 116 |
+| 8x8 | any | 20/20 | 68 ms | 1.1 s | 4 |
+| 8x8 | easy | 20/20 | 1.8 ms | 5.9 ms | 15 |
+| 8x8 | medium | 20/20 | 1.5 ms | 3.7 ms | 10 |
+| 8x8 | hard | 20/20 | 70 ms | 219 ms | 7 |
+| 8x8 | expert | 20/20 | 303 ms | 936 ms | 12 |
+| 10x10 | any | 20/20 | 1.8 s | 3.6 s | 38 |
+| 10x10 | easy | 20/20 | 12 ms | 22 ms | 66 |
+| 10x10 | medium | 20/20 | 12 ms | 25 ms | 56 |
+| 10x10 | hard | 20/20 | 580 ms | 1.7 s | 48 |
+| 10x10 | expert | 20/20 | 2.0 s | 3.5 s | 39 |
+| 12x12 | any | 20/20 | 6.7 s | 15.0 s | 127 |
+| 12x12 | easy | 20/20 | 53 ms | 78 ms | 198 |
+| 12x12 | medium | 20/20 | 37 ms | 72 ms | 144 |
+| 12x12 | hard | 20/20 | 2.6 s | 6.5 s | 146 |
+| 12x12 | expert | 20/20 | 7.0 s | 15.0 s | 128 |
+
+Largest practical size (B1): easy 12x12, medium 12x12, hard 10x10, expert
+8x8. Rating a corpus puzzle takes at most 196 ms. Solver memory is
+O((rows*columns)^2) in the worst case. The 32x32 size limit keeps input
+bounded; generating puzzles that large is slow.
+
+## Variants
+
+Other weights, missing clues or adjacency rules change the rules and would
+be separate genres (D4).
+
+## References
+
+Also known as Index Sums. The corpus is generated by this project and
+licensed MIT.

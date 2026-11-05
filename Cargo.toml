@@ -1,0 +1,33 @@
+[workspace]
+resolver = "3"
+members = [
+    "crates/core",
+    "crates/cli",
+    "crates/web",
+    "crates/python",
+    "crates/pencil-puzzles",
+    "crates/genres/*",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88"
+license = "MIT"
+repository = "https://github.com/emieks/pencil-puzzles"
+
+[workspace.dependencies]
+pencil-puzzles = { path = "crates/pencil-puzzles", version = "0.1.0", default-features = false }
+pencil-puzzles-core = { path = "crates/core", version = "0.1.0" }
+pencil-puzzles-kakurasu = { path = "crates/genres/kakurasu", version = "0.1.0" }
+pencil-puzzles-nurikabe = { path = "crates/genres/nurikabe", version = "0.1.0" }
+pencil-puzzles-sudoku = { path = "crates/genres/sudoku", version = "0.1.0" }
+
+# Some tests check every grid of a size against brute force, which is slow
+# without optimizations.
+[profile.test]
+opt-level = 2
+
+[profile.release]
+codegen-units = 1
+lto = "thin"

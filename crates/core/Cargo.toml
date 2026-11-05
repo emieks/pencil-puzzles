@@ -1,0 +1,17 @@
+[package]
+name = "pencil-puzzles-core"
+description = "Shared types for the pencil-puzzles collection: the difficulty scale and a reproducible random number generator"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+readme = "README.md"
+keywords = ["puzzle", "logic-puzzle", "difficulty", "generator"]
+categories = ["games"]
+
+[features]
+# Serialize and deserialize shared types with serde.
+serde = ["dep:serde"]
+
+[dependencies]
+serde = { version = "1", features = ["derive"], optional = true }

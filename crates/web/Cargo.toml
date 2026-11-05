@@ -1,0 +1,16 @@
+[package]
+name = "pencil-puzzles-web"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+pencil-puzzles = { workspace = true, features = ["all-genres", "serde"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+wasm-bindgen = "=0.2.105"

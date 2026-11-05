@@ -1,0 +1,24 @@
+[package]
+name = "pencil-puzzles-kakurasu"
+description = "Kakurasu puzzle solver, generator with guaranteed unique solutions, and difficulty rater"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+readme = "README.md"
+keywords = ["kakurasu", "puzzle", "solver", "generator", "logic-puzzle"]
+categories = ["games", "algorithms"]
+
+[features]
+# Serialize and deserialize puzzles, grids and ratings with serde.
+serde = ["dep:serde", "pencil-puzzles-core/serde"]
+
+[dependencies]
+pencil-puzzles-core.workspace = true
+serde = { version = "1", features = ["derive"], optional = true }
+
+[dev-dependencies]
+serde_json = "1"
+
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+wasm-bindgen-test = "=0.3.55"

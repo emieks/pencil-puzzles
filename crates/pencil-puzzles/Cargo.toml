@@ -1,0 +1,29 @@
+[package]
+name = "pencil-puzzles"
+description = "Generators, solvers and difficulty raters for pencil puzzles, with guaranteed unique solutions"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+readme = "README.md"
+keywords = ["puzzle", "logic-puzzle", "solver", "generator", "kakurasu"]
+categories = ["games", "algorithms"]
+
+[features]
+default = ["all-genres"]
+# Every genre. Turn off default features and pick genres to build less.
+all-genres = ["kakurasu", "nurikabe", "sudoku"]
+kakurasu = ["dep:pencil-puzzles-kakurasu"]
+nurikabe = ["dep:pencil-puzzles-nurikabe"]
+sudoku = ["dep:pencil-puzzles-sudoku"]
+# Serialize and deserialize puzzles, solutions and ratings with serde.
+serde = ["dep:serde", "dep:serde_json", "pencil-puzzles-core/serde", "pencil-puzzles-kakurasu?/serde", "pencil-puzzles-sudoku?/serde", "pencil-puzzles-nurikabe?/serde"]
+
+[dependencies]
+pencil-puzzles-core.workspace = true
+pencil-puzzles-kakurasu = { workspace = true, optional = true }
+pencil-puzzles-nurikabe = { workspace = true, optional = true }
+pencil-puzzles-sudoku = { workspace = true, optional = true }
+
+serde = { version = "1", features = ["derive"], optional = true }
+serde_json = { version = "1", optional = true }

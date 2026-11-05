@@ -1,0 +1,22 @@
+[package]
+name = "pencil-puzzles-cli"
+description = "Command-line generator, solver and difficulty rater for pencil puzzles"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+readme = "../../README.md"
+keywords = ["puzzle", "kakurasu", "solver", "generator", "cli"]
+categories = ["games", "command-line-utilities"]
+
+[[bin]]
+name = "pencil-puzzles"
+path = "src/main.rs"
+# The library crate of the same name owns the docs page.
+doc = false
+
+[dependencies]
+anyhow = "1"
+clap = { version = "4.5", features = ["derive"] }
+pencil-puzzles = { workspace = true, features = ["all-genres", "serde"] }
+serde_json = "1"

@@ -1,0 +1,4 @@
+# Store and check out text files with LF line endings on every platform, so
+# contributors on Windows, macOS and Linux see the same files and rustfmt's
+# checks agree everywhere.
+* text=auto eol=lf

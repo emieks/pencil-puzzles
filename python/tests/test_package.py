@@ -1,0 +1,126 @@
+"""Integration tests run against an installed wheel, not the source directory."""
+import _thread
+from dataclasses import FrozenInstanceError
+import threading
+import time
+import unittest
+
+import pencil_puzzles as pp
+
+
+class PackageTests(unittest.TestCase):
+    def test_all_genres_generate_solve_rate_check_and_round_trip(self):
+        for genre, shape in (("sudoku", (4, 4)), ("nurikabe", (3, 3)), ("kakurasu", (3, 4))):
+            with self.subTest(genre=genre):
+                g = pp.generate(genre, shape, difficulty="easy", seed=42)
+                self.assertEqual(g.rating.level, pp.Difficulty.EASY)
+                self.assertEqual(g.puzzle.shape, shape)
+                self.assertEqual(pp.solve(g.puzzle), g.solution)
+                self.assertEqual(pp.rate(g.puzzle), g.rating)
+                self.assertEqual(pp.check(g.puzzle, g.solution), [])
+                self.assertIsNone(pp.hint(g.puzzle, g.solution))
+                self.assertEqual(pp.Puzzle.from_id(g.puzzle.id), g.puzzle)
+                self.assertEqual(pp.Puzzle.from_text(g.puzzle.to_text()), g.puzzle)
+                self.assertEqual(g.solution.shape, shape)
+                self.assertIn(genre, pp.genres())
+
+    def test_generation_is_reproducible(self):
+        first = pp.generate("sudoku", (4, 4), difficulty=pp.Difficulty.EASY, seed=(1 << 64) - 1)
+        again = pp.generate("sudoku", (4, 4), difficulty="easy", seed=(1 << 64) - 1)
+        self.assertEqual(first, again)
+        self.assertEqual(first.seed, (1 << 64) - 1)
+        self.assertGreater(first.generator_version, 0)
+
+    def test_ratings_hints_and_violations(self):
+        g = pp.generate("sudoku", (9, 9), difficulty="medium", seed=3)
+        self.assertEqual(g.rating.level, pp.Difficulty.MEDIUM)
+        self.assertTrue(g.rating.techniques)
+        self.assertGreater(g.rating.steps, 0)
+        step = pp.hint(g.puzzle)
+        self.assertIsInstance(step, pp.Step)
+        # Hints skip routine bookkeeping and remove only wrong candidates.
+        self.assertNotEqual(step.technique, "peer_elimination")
+        for row, col, value in step.removed:
+            self.assertNotEqual(int(value), g.solution.cells[row][col])
+        wrong = [list(row) for row in g.solution.cells]
+        wrong[0][0], wrong[0][1] = wrong[0][1], wrong[0][0]
+        violations = pp.check(g.puzzle, pp.Solution("sudoku", tuple(map(tuple, wrong))))
+        self.assertTrue(violations)
+        self.assertTrue(all(isinstance(v, pp.Violation) for v in violations))
+
+    def test_typed_failures(self):
+        with self.assertRaises(pp.UnsupportedRequestError):
+            pp.generate("sudoku", (7, 7))
+        with self.assertRaises(pp.UnsupportedRequestError):
+            pp.generate("chess", (8, 8))
+        with self.assertRaises(ValueError):
+            pp.generate("sudoku", (4, 4), difficulty="extreme")
+        with self.assertRaises(pp.AttemptsExhaustedError) as attempts:
+            pp.generate("sudoku", (4, 4), limits=pp.Limits(attempts=0))
+        self.assertEqual(attempts.exception.attempts, 0)
+        with self.assertRaises(pp.BudgetExceededError):
+            pp.generate("sudoku", (4, 4), limits=pp.Limits(work=0))
+        with self.assertRaises(pp.MultipleSolutionsError) as multiple:
+            pp.solve(pp.Puzzle.from_id("sudoku:4x4:................"))
+        self.assertEqual(len(multiple.exception.witnesses), 2)
+        self.assertNotEqual(*multiple.exception.witnesses)
+        with self.assertRaises(pp.NoSolutionError):
+            pp.solve(pp.Puzzle.from_id("sudoku:4x4:11.............."))
+        with self.assertRaises(pp.ParseError):
+            pp.Puzzle.from_id("sudoku:4x4:not-a-grid")
+
+    def test_precancelled_and_live_cancellation(self):
+        token = pp.CancellationToken()
+        token.cancel()
+        with self.assertRaises(pp.CancelledError):
+            pp.generate("sudoku", (4, 4), cancel=token)
+        token = pp.CancellationToken()
+        started = threading.Event()
+        outcomes = []
+
+        def run():
+            started.set()
+            try:
+                pp.generate("kakurasu", (32, 32), difficulty="expert",
+                            limits=pp.Limits(work=(1 << 64) - 1, attempts=1_000_000), cancel=token)
+                outcomes.append("returned")
+            except pp.CancelledError:
+                outcomes.append("cancelled")
+        worker = threading.Thread(target=run)
+        worker.start()
+        self.assertTrue(started.wait(5))
+        time.sleep(0.05)
+        token.cancel()
+        worker.join(5)
+        self.assertFalse(worker.is_alive(), "work did not observe cancellation")
+        self.assertEqual(outcomes, ["cancelled"])
+
+    def test_keyboard_interrupt_while_native_work_runs(self):
+        timer = threading.Timer(0.05, _thread.interrupt_main)
+        timer.start()
+        try:
+            with self.assertRaises(KeyboardInterrupt):
+                pp.generate("kakurasu", (32, 32), difficulty="expert",
+                            limits=pp.Limits(work=(1 << 64) - 1, attempts=1_000_000))
+        finally:
+            timer.cancel()
+            timer.join()
+
+    def test_validation_and_immutable_objects(self):
+        with self.assertRaises(TypeError):
+            pp.generate("sudoku", (4, 4), seed=True)
+        with self.assertRaises(TypeError):
+            pp.generate("sudoku", [4, 4])
+        with self.assertRaises(ValueError):
+            pp.Limits(work=-1)
+        g = pp.generate("sudoku", (1, 1), difficulty="easy")
+        with self.assertRaises(FrozenInstanceError):
+            g.seed = 4
+
+    def test_public_names(self):
+        for name in pp.__all__:
+            self.assertTrue(hasattr(pp, name), name)
+
+
+if __name__ == "__main__":
+    unittest.main()

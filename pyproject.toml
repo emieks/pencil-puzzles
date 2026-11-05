@@ -1,0 +1,30 @@
+[build-system]
+requires = ["maturin==1.10.2"]
+build-backend = "maturin"
+
+[project]
+name = "pencil-puzzles"
+version = "0.1.0"
+description = "Generate, solve, rate and check Sudoku, Nurikabe and Kakurasu puzzles, rated by the human techniques they need"
+requires-python = ">=3.10"
+license = "MIT"
+readme = "python/README.md"
+keywords = ["puzzle", "sudoku", "nurikabe", "kakurasu", "generator", "solver", "difficulty"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Rust",
+    "Topic :: Games/Entertainment :: Puzzle Games",
+]
+
+[project.urls]
+Homepage = "https://github.com/emieks/pencil-puzzles"
+Documentation = "https://github.com/emieks/pencil-puzzles/tree/main/python"
+Issues = "https://github.com/emieks/pencil-puzzles/issues"
+
+[tool.maturin]
+manifest-path = "crates/python/Cargo.toml"
+python-source = "python"
+module-name = "pencil_puzzles._native"
+features = ["extension-module"]
