@@ -11,7 +11,7 @@ import pencil_puzzles as pp
 class PackageTests(unittest.TestCase):
     def test_all_genres_generate_solve_rate_check_and_round_trip(self):
         for genre, shape in (("sudoku", (4, 4)), ("nurikabe", (3, 3)), ("kakurasu", (3, 4)),
-                             ("fillomino", (3, 4)), ("hashi", (5, 5))):
+                             ("fillomino", (3, 4)), ("hashi", (5, 5)), ("hitori", (4, 5))):
             with self.subTest(genre=genre):
                 g = pp.generate(genre, shape, difficulty="easy", seed=42)
                 self.assertEqual(g.rating.level, pp.Difficulty.EASY)
@@ -56,6 +56,18 @@ class PackageTests(unittest.TestCase):
         self.assertIn(2, {v.rule for v in pp.check(crossing, crossed)})
         with self.assertRaises(pp.ParseError):
             pp.check(puzzle, pp.Solution("hashi", ((2, ".", 2), (".", ".", "."), (1, ".", 1))))
+
+    def test_hitori_numbers_and_marks(self):
+        puzzle = pp.Puzzle.from_text("genre: hitori\ngrid:\n11\n12")
+        self.assertIsInstance(puzzle, pp.HitoriPuzzle)
+        self.assertEqual(puzzle.numbers, ((1, 1), (1, 2)))
+        S, U = pp.Mark.SHADED, pp.Mark.UNSHADED
+        self.assertEqual(pp.solve(puzzle).cells, ((S, U), (U, U)))
+        self.assertEqual(pp.hint(puzzle).technique, "corner")
+        wrong = pp.Solution("hitori", ((U, S), (S, U)))
+        self.assertEqual({v.rule for v in pp.check(puzzle, wrong)}, {3})
+        wide = pp.Puzzle.from_id("hitori:1x11:123456789ab")
+        self.assertEqual(wide.numbers, (tuple(range(1, 12)),))
 
     def test_generation_is_reproducible(self):
         first = pp.generate("sudoku", (4, 4), difficulty=pp.Difficulty.EASY, seed=(1 << 64) - 1)

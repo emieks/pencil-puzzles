@@ -184,7 +184,11 @@ button.cell:hover:not(:disabled) { background: var(--subtle); border: 0; }
 .cell.given { font-weight: 600; color: var(--text); }
 .cell.dot { font-size: 0; }
 .cell.dot::after { content: ''; width: calc(var(--size) * .15); height: calc(var(--size) * .15); border-radius: 50%; background: currentColor; }
+.cell.labelled { font-weight: 600; color: var(--text); }
+.cell.circled { position: relative; }
+.cell.circled::after { content: ''; position: absolute; width: calc(var(--size) * .7); height: calc(var(--size) * .7); border: 2px solid currentColor; border-radius: 50%; box-sizing: border-box; }
 .cell.shaded, button.cell.shaded:hover:not(:disabled) { background: var(--shaded); color: var(--bg); }
+.board.paint .cell.same:not(.shaded) { background: var(--same); }
 .cell:focus-visible { outline-offset: -3px; position: relative; }
 .board.entry .cell.peer { background: var(--peer); }
 .board.entry .cell.same { background: var(--same); }

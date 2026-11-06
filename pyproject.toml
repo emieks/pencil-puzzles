@@ -10,7 +10,7 @@ requires-python = ">=3.10"
 license = "MIT"
 license-files = ["LICENSE"]
 readme = "python/README.md"
-keywords = ["puzzle", "sudoku", "nurikabe", "kakurasu", "fillomino", "hashi", "generator", "solver", "difficulty"]
+keywords = ["puzzle", "sudoku", "nurikabe", "kakurasu", "fillomino", "hashi", "hitori", "generator", "solver", "difficulty"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",

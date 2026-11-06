@@ -35,6 +35,9 @@ pub use pencil_puzzles_fillomino as fillomino;
 /// Hashi: islands joined by bridges matching their numbers.
 #[cfg(feature = "hashi")]
 pub use pencil_puzzles_hashi as hashi;
+/// Hitori: shade repeated numbers so that the unshaded cells stay connected.
+#[cfg(feature = "hitori")]
+pub use pencil_puzzles_hitori as hitori;
 
 /// Kakurasu: shade cells so that every row and column adds up to its clue.
 #[cfg(feature = "kakurasu")]

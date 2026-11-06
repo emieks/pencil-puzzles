@@ -55,6 +55,9 @@ pub struct ViewCell {
     pub editable: bool,
     /// Whether the value is drawn in a circle, such as a Hashi island.
     pub circled: bool,
+    /// Text printed in the cell whatever its mark, such as a Hitori number;
+    /// empty for none. Marks are drawn around it.
+    pub label: String,
 }
 impl ViewCell {
     /// An editable cell with the given mark.
@@ -64,6 +67,7 @@ impl ViewCell {
             editable: true,
             region: None,
             circled: false,
+            label: String::new(),
         }
     }
 }

@@ -14,7 +14,7 @@ example, see [python/README.md](../../python/README.md).
 | `check(puzzle, answer, *, finished=False, ...)` | A list of `Violation`s; empty when the answer breaks no rule. With `finished`, unmarked cells and undrawn bridges first take the genre's finished default. |
 | `hint(puzzle, answer=None, ...)` | The next `Step` after routine bookkeeping, or `None` when solved. |
 | `genres()` | The genre ids. |
-| `Puzzle` (`SudokuPuzzle`, `NurikabePuzzle`, `KakurasuPuzzle`, `FillominoPuzzle`, `HashiPuzzle`) | Immutable clues; `id`, `genre`, `shape`, `to_text()`, `Puzzle.from_id()`, `Puzzle.from_text()`. |
+| `Puzzle` (`SudokuPuzzle`, `NurikabePuzzle`, `KakurasuPuzzle`, `FillominoPuzzle`, `HashiPuzzle`, `HitoriPuzzle`) | Immutable clues; `id`, `genre`, `shape`, `to_text()`, `Puzzle.from_id()`, `Puzzle.from_text()`. |
 | `Solution` | `genre` and `cells`: numbers for sudoku and fillomino (0 unmarked), each cell's text for hashi (`"."`, an island number, `"-"`, `"="`, `"\|"`, `"H"`), `Mark` values otherwise. Also used for partial answers. |
 | `Generated` | `puzzle`, `solution`, `rating`, `seed`, `generator_version`, `attempts`. |
 | `Rating` | `level`, `techniques`, `steps`, `score` (unstable; see [difficulty.md](../difficulty.md)), `rater_version`. |
