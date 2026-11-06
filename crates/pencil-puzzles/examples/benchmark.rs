@@ -19,6 +19,7 @@ fn main() {
     let sizes: &[&str] = match id.as_str() {
         "sudoku" => &["9x9"],
         "nurikabe" => &["5x5", "6x6", "7x7", "8x8"],
+        "fillomino" => &["5x5", "6x6", "7x7", "8x8", "10x10"],
         _ => &["6x6", "8x8", "10x10", "12x12"],
     };
     println!(

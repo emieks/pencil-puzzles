@@ -2,7 +2,7 @@
 use crate::model::read_document;
 use crate::*;
 use pencil_puzzles_core::{
-    ClueInput, Generation, Genre, MarkOption, Metadata, PuzzleEditor, Rule, Status, View, ViewCell,
+    ClueInput, Generation, Genre, MarkOption, Metadata, PuzzleEditor, Rule, View, ViewCell,
     text::Document,
 };
 /// Numbered islands surrounded by a connected shaded sea.
@@ -13,7 +13,6 @@ static METADATA: Metadata = {
         "nurikabe",
         "Nurikabe",
         "Shade a connected sea around numbered islands, without shaded 2x2 blocks.",
-        Status::Stable,
         GENERATOR_VERSION,
         RATER_VERSION,
     );

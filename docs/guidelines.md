@@ -6,9 +6,9 @@ same way. How puzzles are rated is in [difficulty.md](difficulty.md), which is
 part of these guidelines.
 
 Numbered items (G5, T3, ...) are requirements; code and tests cite them by
-number. MUST, SHOULD and MAY are used as in
-[RFC 2119](https://www.rfc-editor.org/rfc/rfc2119), and an item without any of
-them is a MUST. To add a genre, see [Adding a genre](#adding-a-genre).
+number. SHOULD and MAY are used as in
+[RFC 2119](https://www.rfc-editor.org/rfc/rfc2119); everything else is
+required. To add a genre, see [Adding a genre](#adding-a-genre).
 
 ## Terms
 
@@ -26,8 +26,8 @@ them is a MUST. To add a genre, see [Adding a genre](#adding-a-genre).
 ## What a genre provides
 
 - **P1. Metadata.** Id, display name and aliases ([Naming](#naming)), a
-  one-sentence summary of the rules, [status](#status), generator and rater
-  versions, and the number and short name of each rule (R1 "row totals", ...).
+  one-sentence summary of the rules, generator and rater versions, and the
+  number and short name of each rule (R1 "row totals", ...).
 - **P2. Shape and parameters.** Types that validate against the size limits,
   have defaults and have stable text encodings, used in
   [puzzle IDs](#puzzle-ids), the `params` key (F6) and the command-line tool.
@@ -50,8 +50,8 @@ them is a MUST. To add a genre, see [Adding a genre](#adding-a-genre).
   rule number, location and any numbers involved. Violations contain data
   only, so tools can build and translate the messages. A finished answer is
   checked as complete after unmarked variables take their default (P4). For a
-  partial answer, the checker MUST NOT report an instance that some completion
-  would satisfy, and MUST report at least what the rater's "broken" check
+  partial answer, the checker does not report an instance that some completion
+  would satisfy, and reports at least what the rater's "broken" check
   recognizes ([L23](difficulty.md#checking-a-genres-rater)).
 - **P9. Steps and hints.** The rater lists its steps and, given a partial
   answer that agrees with the solution, returns the next skill step after
@@ -70,31 +70,29 @@ them is a MUST. To add a genre, see [Adding a genre](#adding-a-genre).
 - **G4. Rated levels only.** Every generated puzzle is rated easy to expert
   ([L21](difficulty.md#generating-by-difficulty)).
 - **G5. Reproducible generation.** Output depends only on the generator
-  version, parameters, difficulty and seed. Limits and budgets can only make
-  generation fail; they do not change which puzzle is returned. Random numbers
+  version, parameters, difficulty and seed. When generation succeeds, the
+  puzzle is the same under any limits and budgets. Random numbers
   come from `pencil_puzzles_core::SplitMix64` seeded with the given seed.
-  Output MUST NOT depend on `HashMap`/`HashSet` order, unstable sorts, memory
-  addresses, time, threads, the platform or floating point, and MUST use
+  Output does not depend on `HashMap`/`HashSet` order, unstable sorts, memory
+  addresses, time, threads, the platform or floating point, and uses
   fixed-width integers where the width could matter (`usize` is 32 bits in
   WebAssembly).
 - **G6. Reproducible ratings.** A rating depends only on the puzzle and the
   rater version ([L15-L16](difficulty.md#rating-procedure)).
 - **G7. No panics.** Parsing, validation, solving, rating, checking, hinting
-  and generation MUST NOT panic on any input; integer overflow counts as a
+  and generation do not panic on any input; integer overflow counts as a
   panic. Recursion depth is at most proportional to the number of variables,
   and operations at the size limit are tested on `wasm32-unknown-unknown`,
-  whose stack is small. Errors say what is wrong: for text, on which line;
-  for IDs, at which character.
+  whose stack is small.
 - **G8. Bounded work.** Parsers check sizes against the limits before
   allocating. Memory use is polynomial in the grid size, with the exponent on
   the genre page. Solve, rate, hint and generate accept a work budget and
   return a "budget exceeded" error when it runs out. Generators stop after
   their attempt limit.
-- **G9. Untrusted input.** Puzzle text, IDs and JSON can come from anywhere,
-  including links. Size limits are checked first, and no input causes
-  unbounded work without a budget.
-- **G10. Portable and self-contained.** Genre crates MUST NOT do I/O, read the
-  clock, spawn threads, use global mutable state or use `unsafe`, and MUST
+- **G9. Untrusted input.** Puzzle text, IDs and JSON may come from links, so
+  G8 applies to every parser.
+- **G10. Portable and self-contained.** Genre crates do not do I/O, read the
+  clock, spawn threads, use global mutable state or use `unsafe`, and they
   build for `wasm32-unknown-unknown`. Their only dependencies are
   `pencil-puzzles-core` and, behind the `serde` feature, `serde`.
 
@@ -140,12 +138,12 @@ A puzzle ID is a one-line form of a puzzle for links and sharing, such as
   `a`-`z`, `0`-`9`, `-`, `.`, `_`, `~`, `,` and `/`, so it fits in a URL query
   unescaped. At most 4096 characters, checked first.
 - **F10. Content.** The shape holds what is needed to read the description.
-  The ID MUST NOT contain the seed, difficulty or generator settings.
+  The ID does not contain the seed, difficulty or generator settings.
 - **F11. Round trips.** IDs round-trip like text (F8) and SHOULD be compact.
   Errors give the position of the first wrong character.
-- **F12. Compatibility.** An incompatible new description format MUST be
-  distinguishable from older ones, for example by a new shape prefix, so old
-  IDs keep working (V2). Tools put IDs in a URL's query or fragment, since
+- **F12. Compatibility.** An incompatible new description format has a marker,
+  such as a new shape prefix, that tells it apart from older ones, so old IDs
+  keep working (V2). Tools put IDs in a URL's query or fragment, since
   `kakurasu:` would read as a scheme.
 
 ### JSON
@@ -157,24 +155,22 @@ A puzzle ID is a one-line form of a puzzle for links and sharing, such as
 - **F14. Envelopes.** Multi-genre tools wrap genre data as
   `{"genre": "<id>", "puzzle": ..., "solution": ..., "rating": ..., "seed": "..."}`
   with only the fields that apply, and reject unknown fields.
-- **F15. Other formats.** A genre that exists in another widely used tool,
-  such as [puzz.link](https://puzz.link), SHOULD import and export its URLs.
 
 ## Rules and documentation
 
 - **D1. Genre page.** Each genre has `docs/genres/<id>.md`, following
-  [the template](genres/TEMPLATE.md) ([L25](difficulty.md#choices-made-by-the-genre)).
-  Rule numbers (R1, R2, ...) are used by the checker and MUST NOT change once
-  the genre is stable.
-- **D2. Own words.** Rules, examples and puzzles MUST NOT be copied from
-  books, websites or apps.
+  [the template](genres/TEMPLATE.md) ([L25](difficulty.md#what-a-genre-page-covers)).
+  Rule numbers (R1, R2, ...) are used by the checker and do not change once
+  the genre is released.
+- **D2. Original text.** Rules and examples are written for this project.
+  Puzzles from elsewhere follow C3.
 - **D3. Links.** The crate's documentation links to its page, the README
   lists the genre, and the page's Performance section matches the recorded
   benchmark results (B2).
 - **D4. Variants.** A variant that only changes a number in a rule is a shape
   parameter. One that adds, removes or changes a rule is a separate genre.
 - **D5. Coordinates.** Rows and columns count from 0 in code and from 1 for
-  people. Only rectangular grids are covered.
+  people. These guidelines assume rectangular grids.
 
 ## Tests
 
@@ -213,11 +209,12 @@ Each genre has T1-T9 and follows T10 and T11.
   `solution:` block, `rating:`, `rater_version`, `source:` and `license:` for
   each puzzle (F6).
 - **C2. Coverage.** At least one puzzle at each level the genre generates at
-  a practical size, plus edge cases such as the smallest size and non-square
-  grids.
-- **C3. Provenance.** Corpus puzzles are generated by this project (with
-  version, parameters, difficulty and seed), written by a contributor under
-  the project's license, or published under a license that allows inclusion.
+  a practical size (B1), plus edge cases such as the smallest size and
+  non-square grids.
+- **C3. Sources.** Each corpus puzzle comes from the generator (recorded with
+  its generator version, parameters, difficulty and seed), from a contributor
+  under the project's license, or from a publication whose license allows
+  including it.
 - **C4. Recorded ratings** change only with a rater version bump (V3).
 
 ## Benchmarks
@@ -228,7 +225,7 @@ Each genre has T1-T9 and follows T10 and T11.
 - **B2. Benchmark.** Every genre is measured with
   `cargo run --release -p pencil-puzzles --example benchmark -- <genre> [seeds]`.
   Results go in `docs/benchmarks/<genre>.csv`, and the largest practical size
-  per level on the genre page (D3).
+  for each level goes on the genre page (D3).
 - **B3. Operation counts.** Benchmarks record deterministic operation counts,
   which catch regressions independently of the machine.
 - **B4. WebAssembly.** Results SHOULD include how much slower the genre runs
@@ -241,8 +238,7 @@ Each genre has T1-T9 and follows T10 and T11.
   `Generated`, `Violation`, and the functions `solve`, `rate`, `generate`,
   `check`, `hint`.
 - **K2. Types.** Public enums and structs that may grow are
-  `#[non_exhaustive]`. Errors implement `std::error::Error` and say what is
-  wrong.
+  `#[non_exhaustive]`. Errors implement `std::error::Error`.
 - **K3. Lints.** `#![forbid(unsafe_code)]`, `#![warn(missing_docs)]`,
   `cargo fmt` and `cargo clippy -- -D warnings`.
 - **K4. Umbrella crate.** Each genre crate is added to `pencil-puzzles` behind
@@ -252,46 +248,32 @@ Each genre has T1-T9 and follows T10 and T11.
 
 ## Versions and compatibility
 
-The Python package, the command-line tool and the web app are what ships;
-the Rust crates are not published.
+Releases contain the Python package, the command-line tool and the web app.
+The Rust crates are not published to crates.io.
 
 - **V1. Semantic versioning.** Released packages follow
   [semantic versioning](https://semver.org). Breaking changes are those that
   stop existing puzzle files, IDs or JSON from being read, or that change the
   public Python API.
-- **V2. Old files keep working.** Text, IDs and JSON written by any version of
-  a stable genre stay readable within the same major version.
+- **V2. Old files keep working.** Text, IDs and JSON written by any released
+  version stay readable within the same major version.
 - **V3. Generator and rater versions.** The generator version increases
   whenever the same parameters, difficulty and seed could give a different
   puzzle; the rater version whenever a rating could change. Both are noted in
-  `CHANGELOG.md` as **(new puzzles)** or **(new ratings)**. Old versions are
-  removed.
+  `CHANGELOG.md` as **(new puzzles)** or **(new ratings)**. The code for older
+  versions is deleted.
 - **V4. Patch releases** do not change any generator or rater version.
 - **V5. Sharing puzzles.** Seeds reproduce a puzzle only within one generator
   version, so docs and tools share puzzles by ID.
 
-## Status
-
-- **S1.** Every genre is **experimental** or **stable**, as stated in the
-  README and in its metadata.
-- **S2. Experimental genres** still meet G1-G10, T1, T3, T5, T9 and the
-  soundness check of [L23](difficulty.md#checking-a-genres-rater).
-- **S3. Stable genres** meet every MUST here and in
-  [difficulty.md](difficulty.md), with a complete page, a corpus covering
-  every level they generate, and recorded benchmark results.
-- **S4.** Experimental genres MAY change formats, rule numbering, ratings and
-  generated puzzles in any minor release, with a changelog entry.
-
 ## Naming
 
 - **N1. Ids.** The most widely used name, in lowercase ASCII with `-` between
-  words: `kakurasu`, `star-battle`. Ids do not change once a genre is stable.
+  words: `kakurasu`, `star-battle`. Ids do not change once a genre is released.
 - **N2. Aliases.** Listed in the metadata and on the genre page, and accepted
   wherever an id is. An alias belongs to one genre only.
 - **N3. Crates.** `pencil-puzzles-<id>` in `crates/genres/<id>/`; its feature
   in `pencil-puzzles` and its CLI subcommand are the id.
-- **N4. Trademarks.** Genre names are used descriptively; the project claims
-  no endorsement.
 
 ## Shared infrastructure
 
@@ -321,7 +303,7 @@ See [the framework design](design/framework.md).
 3. Copy [the template](genres/TEMPLATE.md) to `docs/genres/<id>.md` and write
    the rules, variables, rule instances and techniques first (D1).
 4. Implement the shape, parameters, puzzle and answer types and their formats
-   (P2-P4, F1-F15).
+   (P2-P4, F1-F14).
 5. Implement the solver and check it against brute force (P5, T1, T10).
 6. Implement the checker (P8, T6).
 7. Implement the techniques on the shared solve loop (P6, P9, T2).
@@ -330,9 +312,7 @@ See [the framework design](design/framework.md).
 9. Add the corpus (C1-C4, T7) and record the benchmark (B1-B4).
 10. Register the genre (I1) and add a line to `CHANGELOG.md`.
 
-The genre is experimental until it meets every MUST (S3).
-
 ## Changing these guidelines
 
-Changes go through pull requests. A change that makes a requirement stricter
-says how existing genres will meet it. Requirement numbers are not reused.
+A change that makes a requirement stricter says how existing genres will meet
+it. Requirement numbers are not reused.

@@ -1,5 +1,6 @@
 //! Bounded iterative reachability, rule instances and complete binary search.
 use crate::*;
+use pencil_puzzles_core::grid::{self, flood};
 use std::rc::Rc;
 pub(crate) const LAND: u16 = 1;
 pub(crate) const SEA: u16 = 2;
@@ -27,25 +28,7 @@ impl Topology {
         let sh = p.shape();
         let (rows, cols) = (sh.rows(), sh.cols());
         let v = sh.cells();
-        let neighbours = (0..v)
-            .map(|i| {
-                let (r, c) = (i / cols, i % cols);
-                let mut n = Vec::new();
-                if r > 0 {
-                    n.push(i - cols)
-                }
-                if c > 0 {
-                    n.push(i - 1)
-                }
-                if c + 1 < cols {
-                    n.push(i + 1)
-                }
-                if r + 1 < rows {
-                    n.push(i + cols)
-                }
-                n
-            })
-            .collect();
+        let neighbours = grid::neighbours(rows, cols);
         let mut instances = Vec::new();
         for (i, &n) in p.clues().iter().enumerate().filter(|(_, n)| **n > 0) {
             let scope = (0..v)
@@ -91,27 +74,6 @@ pub(crate) fn cell(i: usize, cols: usize) -> Place {
         col: (i % cols) as u32,
     }
 }
-/// Flood a permitted set without recursion.
-pub(crate) fn flood(start: usize, allowed: &[bool], neighbours: &[Vec<usize>]) -> Vec<usize> {
-    if !allowed[start] {
-        return Vec::new();
-    }
-    let mut seen = vec![false; allowed.len()];
-    let mut out = vec![start];
-    seen[start] = true;
-    let mut at = 0;
-    while at < out.len() {
-        let i = out[at];
-        at += 1;
-        for &j in &neighbours[i] {
-            if allowed[j] && !seen[j] {
-                seen[j] = true;
-                out.push(j);
-            }
-        }
-    }
-    out
-}
 #[derive(Clone)]
 pub(crate) struct Board<'a> {
     pub puzzle: &'a Puzzle,
@@ -151,8 +113,8 @@ impl<'a> Board<'a> {
             possible[i] = m[i] & LAND != 0;
         }
         (
-            flood(origin, &fixed, &self.topology.neighbours).len(),
-            flood(origin, &possible, &self.topology.neighbours).len(),
+            flood(origin, |j| fixed[j], &self.topology.neighbours).len(),
+            flood(origin, |j| possible[j], &self.topology.neighbours).len(),
         )
     }
     pub fn broken(&self, k: usize, m: &[u16], tier: u8) -> Result<bool, BudgetExceeded> {
@@ -182,7 +144,7 @@ impl<'a> Board<'a> {
                         .collect();
                     let reached = flood(
                         required.first().copied().unwrap_or(start),
-                        &possible,
+                        |j| possible[j],
                         &self.topology.neighbours,
                     );
                     required.iter().any(|i| !reached.contains(i))
@@ -197,7 +159,7 @@ impl<'a> Board<'a> {
                 let mut visited = vec![false; m.len()];
                 for i in 0..m.len() {
                     if fixed[i] && !visited[i] {
-                        let component = flood(i, &fixed, &self.topology.neighbours);
+                        let component = flood(i, |j| fixed[j], &self.topology.neighbours);
                         for &j in &component {
                             visited[j] = true;
                         }
@@ -209,7 +171,7 @@ impl<'a> Board<'a> {
                         {
                             return Ok(true);
                         }
-                        let reachable = flood(i, &possible, &self.topology.neighbours);
+                        let reachable = flood(i, |j| possible[j], &self.topology.neighbours);
                         if !reachable.iter().any(|&j| self.puzzle.clues()[j] > 0) {
                             return Ok(true);
                         }
@@ -410,7 +372,7 @@ fn component_count(b: &Board<'_>, bit: u16) -> usize {
     for i in 0..allowed.len() {
         if allowed[i] && !seen[i] {
             n += 1;
-            for j in flood(i, &allowed, &b.topology.neighbours) {
+            for j in flood(i, |j| allowed[j], &b.topology.neighbours) {
                 seen[j] = true;
             }
         }

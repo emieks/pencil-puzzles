@@ -1,8 +1,9 @@
 //! Reproducible connected-sea construction with uniqueness and exact ratings.
-use crate::board::{Topology, flood};
+use crate::board::Topology;
 use crate::human::{analyze_state, initial_masks};
 use crate::*;
 use pencil_puzzles_core::SplitMix64;
+use pencil_puzzles_core::grid::flood;
 use pencil_puzzles_core::search::{Construct, Move, Outcome, SearchError, search};
 use std::{error::Error, fmt};
 /// Generator version (V3).
@@ -120,7 +121,7 @@ impl Grower {
             })
         });
         !pool
-            && flood(first, sea, &self.topology.neighbours).len()
+            && flood(first, |j| sea[j], &self.topology.neighbours).len()
                 == sea.iter().filter(|&&s| s).count()
     }
 
@@ -138,7 +139,7 @@ impl Grower {
             if !land[i] || seen[i] {
                 continue;
             }
-            let island = flood(i, &land, &self.topology.neighbours);
+            let island = flood(i, |j| land[j], &self.topology.neighbours);
             for &j in &island {
                 seen[j] = true;
             }
@@ -199,7 +200,7 @@ impl Construct for Grower {
         let clues = (0..land.len())
             .map(|i| {
                 if c.numbered[i] {
-                    flood(i, &land, &self.topology.neighbours).len() as u32
+                    flood(i, |j| land[j], &self.topology.neighbours).len() as u32
                 } else {
                     0
                 }

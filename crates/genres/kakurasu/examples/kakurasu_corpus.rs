@@ -1,5 +1,5 @@
 //! Regenerate C1–C4 fixtures and T4 golden puzzles with `cargo run --release
-//! -p pencil-puzzles-kakurasu --example corpus -- --write`.
+//! -p pencil-puzzles-kakurasu --example kakurasu_corpus -- --write`.
 use pencil_puzzles_kakurasu::*;
 use std::{fs, path::Path};
 fn main() {

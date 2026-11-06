@@ -5,9 +5,9 @@ the Rust engine compiled to WebAssembly in a Web Worker, so it gives the same
 results as the library. It is deployed to GitHub Pages by
 `.github/workflows/pages.yml` on every push to `main`.
 
-The site has no server-side code, no frontend dependencies and no
-genre-specific frontend code: `web/build.mjs` reads the registry and builds
-the pages for every genre. Saves stay in the browser's `localStorage`.
+The site is static and has no frontend dependencies. `web/build.mjs` reads
+the registry and builds the pages for every genre, so the frontend has no
+genre-specific code. Saves stay in the browser's `localStorage`.
 
 ## Pages
 

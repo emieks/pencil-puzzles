@@ -1,6 +1,7 @@
-//! Typed Python bindings. Public Python objects live in the mixed-package facade.
+//! The native module behind the Python package; the public API is in
+//! `python/pencil_puzzles/__init__.py`.
 #![forbid(unsafe_code)]
-use pencil_puzzles::{kakurasu, nurikabe, sudoku};
+use pencil_puzzles::{fillomino, kakurasu, nurikabe, sudoku};
 use pencil_puzzles_core::{Budget, Difficulty, Genre, RateError, Record, Solutions};
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList};
@@ -75,6 +76,11 @@ fn error(error: &(dyn Error + 'static)) -> Failure {
         kakurasu::GenerateError,
         kakurasu::GenerateError::AttemptsExhausted,
         kakurasu::GenerateError::BudgetExceeded
+    );
+    generation!(
+        fillomino::GenerateError,
+        fillomino::GenerateError::AttemptsExhausted,
+        fillomino::GenerateError::BudgetExceeded
     );
     generation!(
         nurikabe::GenerateError,
@@ -185,6 +191,7 @@ enum PuzzleData {
     Sudoku(sudoku::Puzzle),
     Kakurasu(kakurasu::Puzzle),
     Nurikabe(nurikabe::Puzzle),
+    Fillomino(fillomino::Puzzle),
 }
 #[pyclass(frozen, module = "pencil_puzzles._native")]
 #[derive(Clone)]
@@ -196,6 +203,7 @@ macro_rules! dispatch {
         PuzzleData::Sudoku(p) => $fun::<sudoku::Sudoku>(p $(, $arg)*),
         PuzzleData::Kakurasu(p) => $fun::<kakurasu::Kakurasu>(p $(, $arg)*),
         PuzzleData::Nurikabe(p) => $fun::<nurikabe::Nurikabe>(p $(, $arg)*),
+        PuzzleData::Fillomino(p) => $fun::<fillomino::Fillomino>(p $(, $arg)*),
     } };
 }
 fn puzzle_value<G: Genre>(p: &G::Puzzle) -> Value
@@ -303,6 +311,9 @@ fn from_id(id: &str) -> PyResult<NativePuzzle> {
         "nurikabe" => {
             PuzzleData::Nurikabe(nurikabe::Puzzle::from_id(&canonical).map_err(|e| error(&e).py())?)
         }
+        "fillomino" => PuzzleData::Fillomino(
+            fillomino::Puzzle::from_id(&canonical).map_err(|e| error(&e).py())?,
+        ),
         _ => unreachable!(),
     };
     Ok(NativePuzzle { data })
@@ -318,6 +329,9 @@ fn from_json(genre: &str, puzzle: &str) -> PyResult<NativePuzzle> {
             serde_json::from_str(puzzle).map_err(|e| Failure::new("parse", e).py())?,
         ),
         "nurikabe" => PuzzleData::Nurikabe(
+            serde_json::from_str(puzzle).map_err(|e| Failure::new("parse", e).py())?,
+        ),
+        "fillomino" => PuzzleData::Fillomino(
             serde_json::from_str(puzzle).map_err(|e| Failure::new("parse", e).py())?,
         ),
         _ => return Err(Failure::new("unsupported", "unknown genre").py()),
@@ -395,6 +409,7 @@ fn generate(
             "sudoku" => go!(sudoku::Sudoku, PuzzleData::Sudoku),
             "kakurasu" => go!(kakurasu::Kakurasu, PuzzleData::Kakurasu),
             "nurikabe" => go!(nurikabe::Nurikabe, PuzzleData::Nurikabe),
+            "fillomino" => go!(fillomino::Fillomino, PuzzleData::Fillomino),
             _ => unreachable!(),
         }
     })?;

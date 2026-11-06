@@ -28,7 +28,7 @@ class Engine {
   stop(message){this.worker?.terminate();this.worker=null;for(const p of this.pending.values()){clearTimeout(p.timer);p.reject(new Error(message));}this.pending.clear();}
 }
 const engine=new Engine();
-function errorMessage(error){return /budget/i.test(error.message)?'This puzzle needs more time. Try a smaller size, a lower difficulty, or another puzzle.':error.message;}
+function errorMessage(error){return /budget/i.test(error.message)?'This puzzle needs more work than the site allows. Try a smaller size, a lower difficulty or another puzzle.':error.message;}
 function board(view,{interactive=false,notes,selected=-1}={}){
   const table=element('table',undefined,'board');table.setAttribute('aria-label',interactive?'Puzzle board':'Puzzle solution');
   const left=view.left.length>0, right=view.right.length>0, blank=view.marks[0]?.value, focus=selected>=0?selected:view.cells.findIndex(cell=>cell.editable);
@@ -77,12 +77,12 @@ function home(catalogue){
   const repo='https://github.com/emieks/pencil-puzzles';
   main.innerHTML=`<h1>pencil-puzzles</h1>
 <div class="prose"><p>Open-source generators, solvers and difficulty raters for pencil puzzles, written in Rust. Every generated puzzle has exactly one solution and a rating on a shared difficulty scale.</p>
-<p>This site runs the same engine in your browser through WebAssembly, so every supported game can be played and solved here. The library is also available as a command-line tool and a Python package.</p></div>
-<h2>Games</h2><table class="overview"><thead><tr><th>Game</th><th class="description">Goal</th><th class="status-cell">Status</th><th>Open</th></tr></thead><tbody id="games"></tbody></table>
+<p>This site runs the same engine in your browser through WebAssembly. The library is also a Python package and a command-line tool.</p></div>
+<h2>Games</h2><table class="overview"><thead><tr><th>Game</th><th class="description">Goal</th><th>Open</th></tr></thead><tbody id="games"></tbody></table>
 <h2>Contribute</h2>
 <div class="prose"><p>pencil-puzzles is MIT-licensed, and contributions of every size are welcome. Report a bug or a rating that feels off, make generation faster for large grids, or add a new genre.</p>
 <p class="link-row"><a href="${repo}" target="_blank" rel="noopener noreferrer">Source on GitHub</a><a href="${repo}/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener noreferrer">Contributing guide</a><a href="${repo}/issues" target="_blank" rel="noopener noreferrer">Open an issue</a></p></div>`;
-  for(const game of catalogue){const m=game.metadata;const row=document.createElement('tr');row.innerHTML=`<td class="game-name"><a href="${m.id}/player/">${escape(m.name)}</a></td><td class="description">${escape(m.summary)}</td><td class="status-cell">${escape(m.status)}</td><td class="tools"><a href="${m.id}/player/">Player</a><a href="${m.id}/solver/">Solver</a></td>`;$('#games').append(row);}
+  for(const game of catalogue){const m=game.metadata;const row=document.createElement('tr');row.innerHTML=`<td class="game-name"><a href="${m.id}/player/">${escape(m.name)}</a></td><td class="description">${escape(m.summary)}</td><td class="tools"><a href="${m.id}/player/">Player</a><a href="${m.id}/solver/">Solver</a></td>`;$('#games').append(row);}
 }
 function heading(game,page){const id=game.metadata.id;main.innerHTML=`<div class="title-row"><h1>${escape(game.metadata.name)}</h1><nav class="mode-links" aria-label="Game mode"><a id="tab-player" href="${id}/player/" ${page==='player'?'aria-current="page"':''}>Player</a><a id="tab-solver" href="${id}/solver/" ${page==='solver'?'aria-current="page"':''}>Solver</a></nav></div>`;document.title=`${game.metadata.name} ${page} · pencil-puzzles`;}
 function status(message,kind=''){const box=$('#status');box.className='status'+(kind?' '+kind:'');box.textContent=message;}
@@ -256,6 +256,6 @@ function solver(game){
 }
 
 try{
-  const response=await fetch('catalogue.json');if(!response.ok)throw new Error('Could not load the game collection.');const catalogue=await response.json();
-  const current=route(location.pathname.slice(new URL(document.baseURI).pathname.length-1),catalogue);directory(catalogue,current);if(current.page==='home')home(catalogue);else if(current.page==='player')player(current.game);else if(current.page==='solver')solver(current.game);else{document.title='Page not found · pencil-puzzles';main.innerHTML='<h1>Page not found</h1><p>That game or page is not in this collection.</p><p><a href="./">Back to all games</a></p>';}
-}catch(e){main.replaceChildren(element('h1','Unable to open the collection'),element('p',errorMessage(e)));}
+  const response=await fetch('catalogue.json');if(!response.ok)throw new Error('Could not load the list of games.');const catalogue=await response.json();
+  const current=route(location.pathname.slice(new URL(document.baseURI).pathname.length-1),catalogue);directory(catalogue,current);if(current.page==='home')home(catalogue);else if(current.page==='player')player(current.game);else if(current.page==='solver')solver(current.game);else{document.title='Page not found · pencil-puzzles';main.innerHTML='<h1>Page not found</h1><p>That game or page does not exist.</p><p><a href="./">Back to all games</a></p>';}
+}catch(e){main.replaceChildren(element('h1','Could not load the list of games'),element('p',errorMessage(e)));}

@@ -90,11 +90,6 @@ impl From<BudgetExceeded> for GenerateError {
         Self::BudgetExceeded
     }
 }
-fn shuffle<T>(values: &mut [T], rng: &mut SplitMix64) {
-    for i in (1..values.len()).rev() {
-        values.swap(i, rng.below(i as u64 + 1) as usize);
-    }
-}
 fn complete(
     params: Params,
     rng: &mut SplitMix64,
@@ -117,7 +112,7 @@ fn complete(
             .map(|v| 1u16 << v)
             .filter(|bit| board.masks[cell] & bit != 0)
             .collect();
-        shuffle(&mut candidates, rng);
+        rng.shuffle(&mut candidates);
         for bit in candidates {
             let mut next = board.clone();
             next.masks[cell] = bit;
@@ -161,7 +156,7 @@ impl Digger {
             cells
         })
             .collect();
-        shuffle(&mut order, rng);
+        rng.shuffle(&mut order);
         order
     }
 }
@@ -231,7 +226,7 @@ impl Construct for Digger {
         let mut more = c.clone();
         more.givens = c.best.as_ref().expect("just set").0.clone();
         let mut missing: Vec<_> = (0..total).filter(|&i| more.givens[i] == 0).collect();
-        shuffle(&mut missing, rng);
+        rng.shuffle(&mut missing);
         for &i in missing.iter().take(4 + rng.below(5) as usize) {
             more.givens[i] = more.solution.cells[i];
         }

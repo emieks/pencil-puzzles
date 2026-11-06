@@ -7,5 +7,3 @@ the text and ID formats, and the `SplitMix64` random number generator. The
 
 See [the framework design](../../docs/design/framework.md) and
 [the guidelines](../../docs/guidelines.md).
-
-License: [MIT](../../LICENSE)

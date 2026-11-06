@@ -5,6 +5,13 @@ and versions follow [Semantic Versioning](https://semver.org/). Changes that
 alter generated puzzles are marked **(new puzzles)**, and changes that alter
 ratings **(new ratings)**.
 
+## [Unreleased]
+
+### Added
+
+- Fillomino: generate, solve, rate, check and hint, for
+  grids up to 10x10.
+
 ## [0.1.0] - 2026-11-05
 
 ### Added

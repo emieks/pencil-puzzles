@@ -105,7 +105,6 @@ main > h2 { margin-top: 36px; }
 .overview tbody tr:hover { background: var(--subtle); }
 .overview .game-name { white-space: nowrap; font-weight: 600; }
 .overview .description { max-width: 460px; color: var(--muted); }
-.overview .status-cell { color: var(--muted); font-size: 13px; white-space: nowrap; }
 .overview .tools { white-space: nowrap; }
 .overview .tools a + a { margin-left: 14px; }
 
@@ -236,7 +235,7 @@ button.cell:hover:not(:disabled) { background: var(--subtle); border: 0; }
   aside { display: none; z-index: 2; width: 220px; box-shadow: 0 0 0 100vmax rgba(0, 0, 0, .25); }
   body.directory-open aside { display: block; }
   main { margin-left: 0; padding: 20px 16px 40px; }
-  .overview .description, .overview .status-cell { display: none; }
+  .overview .description { display: none; }
   .player-layout, .solver-layout { grid-template-columns: 100%; --avail: calc(100vw - 44px); }
   .side { max-width: none; }
 }

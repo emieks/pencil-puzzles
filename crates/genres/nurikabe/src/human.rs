@@ -27,25 +27,7 @@ pub(crate) struct Grid {
 impl Grid {
     pub(crate) fn new(puzzle: &Puzzle) -> Self {
         let (rows, cols) = (puzzle.shape().rows(), puzzle.shape().cols());
-        let neighbours = (0..rows * cols)
-            .map(|i| {
-                let (r, c) = (i / cols, i % cols);
-                let mut n = Vec::new();
-                if r > 0 {
-                    n.push(i - cols);
-                }
-                if c > 0 {
-                    n.push(i - 1);
-                }
-                if c + 1 < cols {
-                    n.push(i + 1);
-                }
-                if r + 1 < rows {
-                    n.push(i + cols);
-                }
-                n
-            })
-            .collect();
+        let neighbours = pencil_puzzles_core::grid::neighbours(rows, cols);
         Self {
             cols,
             clues: puzzle.clues().to_vec(),
@@ -182,7 +164,8 @@ fn broken(grid: &Grid, masks: &[u16]) -> bool {
             0 => {
                 // Unnumbered land must be able to reach some number.
                 let possible: Vec<bool> = masks.iter().map(|&m| m & LAND != 0).collect();
-                let region = crate::board::flood(island[0], &possible, &grid.neighbours);
+                let region =
+                    pencil_puzzles_core::grid::flood(island[0], |j| possible[j], &grid.neighbours);
                 if !region.iter().any(|&i| grid.clues[i] > 0) {
                     return true;
                 }
@@ -203,7 +186,7 @@ fn broken(grid: &Grid, masks: &[u16]) -> bool {
     // The sea must be able to connect.
     let possible: Vec<bool> = masks.iter().map(|&m| m & SEA != 0).collect();
     if let Some(first) = masks.iter().position(|&m| m == SEA) {
-        let region = crate::board::flood(first, &possible, &grid.neighbours);
+        let region = pencil_puzzles_core::grid::flood(first, |j| possible[j], &grid.neighbours);
         let mut reached = vec![false; masks.len()];
         for i in region {
             reached[i] = true;
@@ -487,7 +470,7 @@ mod tests {
         let grid = Grid::new(&Puzzle::new(shape, vec![0; cells]).unwrap());
         for i in 0..cells {
             if land[i] && !seen[i] {
-                let island = crate::board::flood(i, &land, &grid.neighbours);
+                let island = pencil_puzzles_core::grid::flood(i, |j| land[j], &grid.neighbours);
                 for &j in &island {
                     seen[j] = true;
                 }

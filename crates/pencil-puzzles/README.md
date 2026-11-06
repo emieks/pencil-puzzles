@@ -6,5 +6,3 @@ record, ID or JSON envelope. Each genre has a feature named after its id;
 `all-genres` enables all of them. The benchmark lives in `examples/`.
 
 See the [root README](../../README.md).
-
-License: [MIT](../../LICENSE)

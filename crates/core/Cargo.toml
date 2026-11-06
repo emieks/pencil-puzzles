@@ -1,6 +1,6 @@
 [package]
 name = "pencil-puzzles-core"
-description = "Shared types for the pencil-puzzles collection: the difficulty scale and a reproducible random number generator"
+description = "Code shared by the pencil-puzzles genres: the difficulty scale, the solve and generator loops, text and ID formats, and a seeded random number generator"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

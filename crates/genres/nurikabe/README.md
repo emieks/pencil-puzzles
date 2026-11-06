@@ -6,5 +6,3 @@ and generation. The rules, formats and techniques are in
 
 The `serde` feature adds JSON. The `pencil-puzzles` crate re-exports this one
 as `pencil_puzzles::nurikabe` and registers it for the command-line tool and web app.
-
-License: [MIT](../../../LICENSE)

@@ -17,8 +17,9 @@ from . import _native
 __version__ = "0.1.0"
 __all__ = [
     "AttemptsExhaustedError", "BudgetExceededError", "CancellationToken", "CancelledError",
-    "Difficulty", "Generated", "KakurasuPuzzle", "Limits", "Mark", "MultipleSolutionsError",
-    "NoSolutionError", "NurikabePuzzle", "ParseError", "PencilPuzzlesError", "Puzzle", "Rating",
+    "Difficulty", "FillominoPuzzle", "Generated", "KakurasuPuzzle", "Limits", "Mark",
+    "MultipleSolutionsError", "NoSolutionError", "NurikabePuzzle", "ParseError",
+    "PencilPuzzlesError", "Puzzle", "Rating",
     "Solution", "Step", "SudokuPuzzle", "UnratedPuzzleError", "UnsupportedRequestError",
     "Violation", "check", "generate", "genres", "hint", "rate", "solve",
 ]
@@ -105,7 +106,7 @@ def _integer(value: Any, name: str, maximum: int) -> int:
 
 @dataclass(frozen=True)
 class Limits:
-    """Bounds on an operation: they decide whether it finishes, never what it returns."""
+    """Bounds on an operation. Running out raises an error; a result is the same under any limits."""
     work: int = 100_000_000
     attempts: int = 10_000
 
@@ -119,12 +120,12 @@ CancellationToken = _native.CancellationToken
 
 @dataclass(frozen=True)
 class Rating:
-    """The human techniques a puzzle's canonical solution needs."""
+    """A puzzle's difficulty, from solving it with human techniques."""
     level: Difficulty
     techniques: tuple[str, ...]
     steps: int
     score: int
-    """Total explanation size. Unstable between versions; not a solving-time estimate."""
+    """Total size of the step explanations. It changes between rater versions and does not measure solving time."""
     rater_version: int
 
     @classmethod
@@ -162,7 +163,8 @@ class Violation:
 
 @dataclass(frozen=True)
 class Solution:
-    """A complete or partial answer: digits for Sudoku (0 for empty), `Mark`s otherwise."""
+    """A complete or partial answer: numbers for Sudoku and Fillomino (0 for
+    unmarked), `Mark`s otherwise."""
     genre: str
     cells: tuple[tuple[int | Mark, ...], ...]
 
@@ -174,11 +176,20 @@ class Solution:
     def _read(cls, genre: str, rows: list[str]) -> Solution:
         if genre == "sudoku":
             cells = tuple(tuple(int(c) if c.isdigit() else 0 for c in row) for row in rows)
+        elif genre == "fillomino":
+            cells = tuple(tuple(0 if t == "." else int(t) for t in _tokens(rows, row)) for row in rows)
         else:
             cells = tuple(tuple(Mark(c) for c in row) for row in rows)
         return cls(genre, cells)
 
     def _wire(self) -> list[str]:
+        if self.genre == "fillomino":
+            if any(type(v) is not int or v < 0 for row in self.cells for v in row):
+                raise ParseError("Fillomino cells must be whole numbers, 0 for unmarked")
+            tokens = [[str(v) if v else "." for v in row] for row in self.cells]
+            spaced = any(len(t) > 1 for row in tokens for t in row)
+            return [(" " if spaced else "").join(row) for row in tokens]
+
         def text(value: int | Mark) -> str:
             if isinstance(value, Mark):
                 return value.value
@@ -222,9 +233,19 @@ class NurikabePuzzle(Puzzle):
 
 
 @dataclass(frozen=True)
+class FillominoPuzzle(Puzzle):
+    clues: tuple[tuple[int, ...], ...]
+
+
+@dataclass(frozen=True)
 class KakurasuPuzzle(Puzzle):
     row_clues: tuple[int, ...]
     col_clues: tuple[int, ...]
+
+
+def _tokens(rows: list[str], row: str) -> list[str]:
+    """A grid row's cells: space-separated when any row of the grid has a space."""
+    return row.split(" ") if any(" " in r for r in rows) else list(row)
 
 
 def _puzzle(handle: Any) -> Puzzle:
@@ -235,12 +256,10 @@ def _puzzle(handle: Any) -> Puzzle:
     if genre == "sudoku":
         rows = clues["grid"] if isinstance(clues, dict) else clues
         return SudokuPuzzle(*common, tuple(tuple(int(c) if c.isdigit() else 0 for c in row) for row in rows))
-    if genre == "nurikabe":
+    if genre in ("nurikabe", "fillomino"):
         rows = clues["grid"]
-        spaced = any(" " in row for row in rows)
-        values = tuple(tuple(int(c) if c != "." else 0 for c in (row.split() if spaced else row))
-                       for row in rows)
-        return NurikabePuzzle(*common, values)
+        values = tuple(tuple(int(c) if c != "." else 0 for c in _tokens(rows, row)) for row in rows)
+        return (NurikabePuzzle if genre == "nurikabe" else FillominoPuzzle)(*common, values)
     return KakurasuPuzzle(*common, tuple(clues["row_clues"]), tuple(clues["col_clues"]))
 
 

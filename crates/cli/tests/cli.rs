@@ -29,7 +29,8 @@ fn list_generate_and_aliases() {
     let o = run(&["list", "--format", "json"], "");
     success(&o);
     let value: serde_json::Value = serde_json::from_str(&stdout(&o)).unwrap();
-    assert_eq!(value[0]["id"], "kakurasu");
+    assert_eq!(value[0]["id"], "fillomino");
+    assert_eq!(value[1]["id"], "kakurasu");
     let args = ["generate", "index-sums", "--shape", "3x5", "--seed", "42"];
     let a = run(&args, "");
     success(&a);

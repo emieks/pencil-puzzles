@@ -1,4 +1,5 @@
-//! Nurikabe: numbered islands, one connected sea, and no shaded pools.
+//! Nurikabe: shade a connected sea with no 2x2 pools, so that each number is
+//! the size of its island.
 //!
 //! The rules, formats and techniques are described in
 //! `docs/genres/nurikabe.md` in the repository.

@@ -1,4 +1,4 @@
-//! Shared types for the pencil-puzzles collection.
+//! Code shared by every pencil-puzzles genre.
 //!
 //! - [`Difficulty`] and [`Rating`]: the difficulty scale every genre uses
 //!   and the ratings genres report (`docs/difficulty.md`).
@@ -6,6 +6,7 @@
 //!   uses, so that a seed gives the same puzzle on every platform.
 //! - [`Budget`]: caps on how much work an operation may do.
 //! - [`text`] and [`id`]: the text format and puzzle IDs every genre shares.
+//! - [`grid`]: neighbours and floods on rectangular grids.
 //! - [`Solutions`], [`Violation`], [`Step`]: what solvers, checkers and
 //!   raters report.
 //! - [`human`]: the human solve loop genres plug their techniques into.
@@ -22,6 +23,7 @@ mod budget;
 mod difficulty;
 mod error;
 mod genre;
+pub mod grid;
 pub mod id;
 mod place;
 mod rating;
@@ -39,7 +41,7 @@ pub use record::Record;
 pub use rng::SplitMix64;
 pub use solutions::Solutions;
 
-pub use genre::{Generation, Genre, Metadata, Rule, Status};
+pub use genre::{Generation, Genre, Metadata, Rule};
 
 mod view;
 pub use view::{ClueInput, MarkOption, PuzzleEditor, View, ViewCell};
