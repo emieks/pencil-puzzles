@@ -31,7 +31,8 @@ or share a puzzle, use its ID. Every operation takes
 running out of a limit raises an error. Cancellation can come from another
 thread, and Ctrl-C raises `KeyboardInterrupt`.
 
-All public names are listed in [docs/design/python-api.md](../docs/design/python-api.md).
+All public names are listed in
+[docs/design/python-api.md](https://github.com/emieks/pencil-puzzles/blob/main/docs/design/python-api.md).
 
 ## Building
 
