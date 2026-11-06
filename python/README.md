@@ -1,6 +1,6 @@
 # pencil-puzzles for Python
 
-Generate, solve, rate and check sudoku, nurikabe, kakurasu and fillomino puzzles.
+Generate, solve, rate and check pencil puzzles such as sudoku and nurikabe.
 Generated puzzles have exactly one solution and a difficulty from easy to
 expert, set by the hardest solving technique they need.
 

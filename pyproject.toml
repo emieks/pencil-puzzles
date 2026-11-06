@@ -5,7 +5,7 @@ build-backend = "maturin"
 [project]
 name = "pencil-puzzles"
 version = "0.1.0"
-description = "Generate, solve, rate and check Sudoku, Nurikabe, Kakurasu and Fillomino puzzles, with difficulty set by the human techniques they need"
+description = "Generate, solve, rate and check pencil puzzles such as Sudoku and Nurikabe, with difficulty set by the human techniques they need"
 requires-python = ">=3.10"
 license = "MIT"
 license-files = ["LICENSE"]
