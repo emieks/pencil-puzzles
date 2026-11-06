@@ -57,18 +57,19 @@ The API is six functions (`genres`, `generate`, `solve`, `rate`, `check`,
 
 ## Genres
 
-| Genre | Goal | Sizes | Generation time (median, easy → expert) |
+| Genre | Goal | Sizes | Generation time (easy → expert) |
 | --- | --- | --- | --- |
-| [Fillomino](docs/genres/fillomino.md) | Divide the grid into regions and write each region's size in its cells. | up to 10x10 | 6x6: 13 ms → 0.9 s |
-| [Hashi](docs/genres/hashi.md) | Join the islands with bridges; each island has as many bridges as its number. | up to 15x15 | not measured yet |
-| [Hitori](docs/genres/hitori.md) | Shade cells so no number repeats in a row or column; shaded cells never touch and the rest stay connected. | up to 12x12 | not measured yet |
-| [Kakurasu](docs/genres/kakurasu.md) | Shade cells so each row and column adds up to its clue. | up to 32x32 | 8x8: 2 ms → 0.3 s |
-| [Kakuro](docs/genres/kakuro.md) | Write digits so each run of white cells adds up to the sum before it, without repeats. | up to 16x16 | not measured yet |
-| [Nurikabe](docs/genres/nurikabe.md) | Shade one connected sea; each number is the size of its island. | up to 8x8 | 6x6: 4 ms → 3.7 s |
-| [Sudoku](docs/genres/sudoku.md) | Fill every row, column and box with each digit once. | 4x4, 9x9 | 9x9: 0.2 s → 2.7 s |
+| [Fillomino](docs/genres/fillomino.md) | Divide the grid into regions and write each region's size in its cells. | ≤ 10x10 | 6x6: 13 ms → 950 ms |
+| [Hashi](docs/genres/hashi.md) | Join the islands with bridges; each island has as many bridges as its number. | ≤ 15x15 | 7x7: 0.3 ms → 355 ms |
+| [Hitori](docs/genres/hitori.md) | Shade cells so no number repeats in a row or column; shaded cells never touch and the rest stay connected. | ≤ 12x12 | 8x8: 1.6 ms → 558 ms |
+| [Kakurasu](docs/genres/kakurasu.md) | Shade cells so each row and column adds up to its clue. | ≤ 32x32 | 6x6: 0.4 ms → 307 ms |
+| [Kakuro](docs/genres/kakuro.md) | Write digits so each run of white cells adds up to the sum before it, without repeats. | ≤ 16x16 | 8x8: 2.6 ms → 213 ms |
+| [Nurikabe](docs/genres/nurikabe.md) | Shade one connected sea; each number is the size of its island. | ≤ 8x8 | 6x6: 3.4 ms → 4.3 s |
+| [Sudoku](docs/genres/sudoku.md) | Fill every row, column and box with each digit once. | 4x4, 9x9 | 9x9: 185 ms → 2.8 s |
 
-Each genre page lists its techniques per level and measured generation
-times per size. See also [how puzzles are rated](docs/difficulty.md).
+Generation times are medians at each genre's default size. Each genre page
+lists its techniques per level and measured generation times per size. See
+also [how puzzles are rated](docs/difficulty.md).
 
 ## Command line
 

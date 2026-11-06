@@ -100,10 +100,9 @@ Generator version 1 grows a random network: starting from an island in a
 random cell, it repeatedly runs one or two bridges from a random island to a
 new island at a free cell in line with it, never next to another island,
 until a third of the cells are islands or it has made 20 tries per island
-wanted. It then adds single
-bridges between islands that see each other, one in eight free slots (one in
-three for hard and expert), so that the network has loops. The numbers come
-from the bridges.
+wanted. It then adds single bridges between islands that see each other, one
+in eight free slots (one in three for hard and expert), so that the network
+has loops. The numbers come from the bridges.
 
 Screening runs the exact solver first. If the puzzle has two solutions, the
 slots where they differ count as unresolved; otherwise the techniques up to
@@ -159,9 +158,43 @@ with the value `.`, `1` or `2` (`0`, `1` or `2` in steps).
 
 ## Performance
 
-Not measured yet. The benchmark
-(`cargo run --release -p pencil-puzzles --example benchmark -- hashi 20`)
-will be recorded in `docs/benchmarks/hashi.csv` and summarised here.
+Measured with `cargo run --release -p pencil-puzzles --example benchmark -- hashi 20`,
+seeds 0-19 and default limits, in the run described in
+[docs/benchmarks](../benchmarks/README.md). Failures count as infinite
+time. Operation counts are in [`hashi.csv`](../benchmarks/hashi.csv).
+
+| Size | Level | Found | Median | 95th percentile | Mean attempts |
+| --- | --- | --- | --- | --- | --- |
+| 5x5 | any | 20/20 | 0.1 ms | 0.3 ms | 2 |
+| 5x5 | easy | 20/20 | 0.1 ms | 0.4 ms | 3 |
+| 5x5 | medium | 20/20 | 8.4 ms | 39 ms | 414 |
+| 5x5 | hard | 20/20 | 35 ms | 155 ms | 1330 |
+| 5x5 | expert | 0/20 | — | — | — |
+| 7x7 | any | 20/20 | 0.3 ms | 0.9 ms | 5 |
+| 7x7 | easy | 20/20 | 0.3 ms | 1.2 ms | 5 |
+| 7x7 | medium | 20/20 | 7.0 ms | 53 ms | 103 |
+| 7x7 | hard | 20/20 | 18 ms | 60 ms | 149 |
+| 7x7 | expert | 20/20 | 355 ms | 961 ms | 2194 |
+| 10x10 | any | 20/20 | 0.8 ms | 1.4 ms | 2 |
+| 10x10 | easy | 20/20 | 0.9 ms | 11 ms | 6 |
+| 10x10 | medium | 20/20 | 20 ms | 126 ms | 82 |
+| 10x10 | hard | 20/20 | 38 ms | 232 ms | 123 |
+| 10x10 | expert | 20/20 | 250 ms | 1.1 s | 415 |
+| 12x12 | any | 20/20 | 1.7 ms | 3.6 ms | 8 |
+| 12x12 | easy | 20/20 | 1.8 ms | 6.0 ms | 10 |
+| 12x12 | medium | 20/20 | 31 ms | 85 ms | 61 |
+| 12x12 | hard | 20/20 | 74 ms | 336 ms | 116 |
+| 12x12 | expert | 18/20 | 297 ms | — | 257 |
+| 15x15 | any | 20/20 | 3.7 ms | 22 ms | 5 |
+| 15x15 | easy | 20/20 | 5.8 ms | 34 ms | 14 |
+| 15x15 | medium | 20/20 | 38 ms | 480 ms | 56 |
+| 15x15 | hard | 20/20 | 150 ms | 577 ms | 119 |
+| 15x15 | expert | 14/20 | 1.3 s | — | 294 |
+
+Largest practical size (B1): easy 15x15, medium 15x15, hard 15x15, expert
+10x10. Rating a corpus puzzle takes at most 3.5 ms. In WebAssembly
+([`web/benchmark.mjs`](../../web/benchmark.mjs), 7x7), generation took 0.84
+times the native time.
 
 ## References
 

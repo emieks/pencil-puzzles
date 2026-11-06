@@ -138,10 +138,43 @@ number of parts of the open area holding unshaded cells.
 
 ## Performance
 
-Not measured yet. The benchmark
-(`cargo run --release -p pencil-puzzles --example benchmark -- hitori 20`)
-will be recorded in `docs/benchmarks/hitori.csv` and summarised here.
-Memory is O(N^2) for N cells.
+Measured with `cargo run --release -p pencil-puzzles --example benchmark -- hitori 20`,
+seeds 0-19 and default limits, in the run described in
+[docs/benchmarks](../benchmarks/README.md). Failures count as infinite
+time. Operation counts are in [`hitori.csv`](../benchmarks/hitori.csv).
+
+| Size | Level | Found | Median | 95th percentile | Mean attempts |
+| --- | --- | --- | --- | --- | --- |
+| 5x5 | any | 20/20 | 0.2 ms | 1.1 ms | 6 |
+| 5x5 | easy | 20/20 | 0.2 ms | 1.4 ms | 10 |
+| 5x5 | medium | 20/20 | 0.7 ms | 4.7 ms | 22 |
+| 5x5 | hard | 20/20 | 6.4 ms | 40 ms | 105 |
+| 5x5 | expert | 17/20 | 312 ms | — | 3150 |
+| 6x6 | any | 20/20 | 0.2 ms | 1.2 ms | 6 |
+| 6x6 | easy | 20/20 | 0.2 ms | 5.2 ms | 13 |
+| 6x6 | medium | 20/20 | 1.3 ms | 5.1 ms | 23 |
+| 6x6 | hard | 20/20 | 20 ms | 83 ms | 162 |
+| 6x6 | expert | 20/20 | 375 ms | 1.2 s | 1848 |
+| 8x8 | any | 20/20 | 1.2 ms | 5.8 ms | 55 |
+| 8x8 | easy | 20/20 | 1.6 ms | 9.7 ms | 63 |
+| 8x8 | medium | 20/20 | 8.2 ms | 35 ms | 104 |
+| 8x8 | hard | 20/20 | 50 ms | 123 ms | 221 |
+| 8x8 | expert | 20/20 | 558 ms | 2.9 s | 1558 |
+| 10x10 | any | 20/20 | 0.9 ms | 20 ms | 65 |
+| 10x10 | easy | 20/20 | 1.0 ms | 19 ms | 67 |
+| 10x10 | medium | 20/20 | 24 ms | 98 ms | 146 |
+| 10x10 | hard | 20/20 | 200 ms | 621 ms | 491 |
+| 10x10 | expert | 20/20 | 1.3 s | 8.2 s | 2085 |
+| 12x12 | any | 20/20 | 24 ms | 59 ms | 186 |
+| 12x12 | easy | 20/20 | 24 ms | 103 ms | 205 |
+| 12x12 | medium | 20/20 | 106 ms | 322 ms | 385 |
+| 12x12 | hard | 20/20 | 487 ms | 2.2 s | 1175 |
+| 12x12 | expert | 14/20 | 6.0 s | — | 2522 |
+
+Largest practical size (B1): easy 12x12, medium 12x12, hard 12x12, expert
+8x8. Rating a corpus puzzle takes at most 3.8 ms. In WebAssembly
+([`web/benchmark.mjs`](../../web/benchmark.mjs), 8x8), generation took 0.88
+times the native time. Memory is O(N^2) for N cells.
 
 ## References
 

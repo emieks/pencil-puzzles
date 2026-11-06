@@ -225,11 +225,13 @@ Each genre has T1-T9 and follows T10 and T11.
 - **B2. Benchmark.** Every genre is measured with
   `cargo run --release -p pencil-puzzles --example benchmark -- <genre> [seeds]`.
   Results go in `docs/benchmarks/<genre>.csv`, and the largest practical size
-  for each level goes on the genre page (D3).
+  for each level goes on the genre page (D3). All genres are measured in one
+  run on one machine, described in `docs/benchmarks/README.md`; times are
+  comparable within a run.
 - **B3. Operation counts.** Benchmarks record deterministic operation counts,
   which catch regressions independently of the machine.
 - **B4. WebAssembly.** Results SHOULD include how much slower the genre runs
-  in a browser.
+  in a browser, measured with `node web/benchmark.mjs <genre> <shape> [seeds]`.
 
 ## Code conventions
 

@@ -38,6 +38,8 @@ function board(view,{interactive=false,notes,selected=-1}={}){
   const entry=view.marks.length>3, from=selected>=0&&(entry||view.cells[selected].label)?view.cells[selected]:null;
   const same=from?.label||(from&&from.value!==blank?from.value:null);
   const sr=Math.floor(selected/view.cols), sc=selected%view.cols;
+  // On boards with blocks (Kakuro), the peers are the cells of the selected cell's two runs.
+  const runs=from&&view.cells.some(c=>c.block)?runCells(view,selected):null;
   if(view.top.length){const row=document.createElement('tr');if(left)row.append(element('th',''));for(let c=0;c<view.cols;c++){const th=element('th',view.top[c]||'');th.scope='col';row.append(th);}if(right)row.append(element('th',''));table.append(row);}
   for(let r=0;r<view.rows;r++){
     const row=document.createElement('tr');if(left){const th=element('th',view.left[r]||'');th.scope='row';row.append(th);}
@@ -52,7 +54,7 @@ function board(view,{interactive=false,notes,selected=-1}={}){
         if(cell.block.upper||cell.block.lower){block.classList.add('split');block.append(element('span',cell.block.upper,'upper'),element('span',cell.block.lower,'lower'));}
         td.append(block);row.append(td);continue;
       }
-      const peer=from&&i!==selected&&(r===sr||c===sc||(cell.region!=null&&cell.region===from.region));
+      const peer=from&&i!==selected&&(runs?runs.has(i):r===sr||c===sc||(cell.region!=null&&cell.region===from.region));
       const label=cell.label||'',dot=choice?.symbol==='·',matches=same!==null&&(label?label===same:cell.value===same);
       const button=element(interactive?'button':'span',cell.circled?undefined:label||(choice?.symbol??cell.value),'cell'+(choice?.shaded?' shaded':'')+(dot?(label?' circled':' dot'):'')+(label?' labelled':'')+(!cell.editable?' given':'')+(i===selected?' selected':'')+(matches?' same':'')+(peer?' peer':'')+(ends.has(i)?' end':''));button.dataset.index=String(i);
       if(cell.circled)button.append(element('span',cell.value,'circle'));
@@ -72,6 +74,12 @@ const svgNS='http://www.w3.org/2000/svg';
 const svg=(tag,attrs={})=>{const e=document.createElementNS(svgNS,tag);for(const [k,v] of Object.entries(attrs))e.setAttribute(k,String(v));return e;};
 const linkKey=p=>`${p.row},${p.col},${p.row2},${p.col2}`;
 /** Each cell at the end of a link, with the links leaving it: link index and the cell at the other end. */
+/** The cells in line with `index` up to the nearest block in each direction. */
+function runCells(view,index){
+  const cells=new Set(),r0=Math.floor(index/view.cols),c0=index%view.cols;
+  for(const [dr,dc] of [[0,-1],[0,1],[-1,0],[1,0]])for(let r=r0+dr,c=c0+dc;r>=0&&r<view.rows&&c>=0&&c<view.cols&&!view.cells[r*view.cols+c].block;r+=dr,c+=dc)cells.add(r*view.cols+c);
+  return cells;
+}
 function linkEnds(view){
   const ends=new Map(),add=(i,k,other)=>{if(!ends.has(i))ends.set(i,[]);ends.get(i).push({k,other});};
   (view.links||[]).forEach((link,k)=>{const p=link.place.link,a=p.row*view.cols+p.col,b=p.row2*view.cols+p.col2;add(a,k,b);add(b,k,a);});

@@ -36,7 +36,7 @@ class Difficulty(str, Enum):
 
 
 class Mark(str, Enum):
-    """A cell in a Nurikabe, Kakurasu or Hitori answer."""
+    """A cell in a nurikabe, kakurasu or hitori answer."""
     SHADED = "#"
     UNSHADED = "-"
     UNMARKED = "."
@@ -138,7 +138,7 @@ class Rating:
 class Step:
     """One deduction: the technique and the candidates it removes, as
     (row, col, value) for a cell, or (row, col, row2, col2, value) for the
-    bridges between two Hashi islands."""
+    bridges between two hashi islands."""
     level: Difficulty
     technique: str
     removed: tuple[tuple[int, int, str] | tuple[int, int, int, int, str], ...]
@@ -169,8 +169,8 @@ class Violation:
 
 @dataclass(frozen=True)
 class Solution:
-    """A complete or partial answer: numbers for Sudoku, Fillomino and Kakuro
-    (0 for unmarked, None for Kakuro blocks), each cell's text for Hashi
+    """A complete or partial answer: numbers for sudoku, fillomino and kakuro
+    (0 for unmarked, None for kakuro blocks), each cell's text for hashi
     (`"."`, an island number, `"-"`, `"="`, `"|"` or `"H"`), `Mark`s
     otherwise."""
     genre: str
@@ -383,7 +383,7 @@ def check(puzzle: Puzzle, answer: Solution, *, finished: bool = False, limits: L
     """Every rule the answer breaks; empty when it breaks none.
 
     With `finished`, unmarked cells and undrawn bridges first take the
-    genre's default for a finished answer, such as no bridge in Hashi.
+    genre's default for a finished answer, such as no bridge in hashi.
     """
     if not isinstance(finished, bool):
         raise TypeError("finished must be True or False")
