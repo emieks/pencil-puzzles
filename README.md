@@ -43,7 +43,7 @@ pip install pencil-puzzles
 ```python
 import pencil_puzzles as pp
 
-print(pp.genres())                           # ('fillomino', 'kakurasu', 'nurikabe', 'sudoku')
+print(pp.genres())                           # ('fillomino', 'kakurasu', 'nurikabe', ...)
 g = pp.generate("nurikabe", (6, 6), difficulty="hard", seed=7)  # (rows, cols)
 assert pp.solve(g.puzzle) == g.solution     # the only solution
 assert pp.rate(g.puzzle).level == "hard"     # rated by its hardest technique
