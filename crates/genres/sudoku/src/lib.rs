@@ -1,4 +1,4 @@
-//! Sudoku: bounded solving, logical ratings, seeded generation and checking.
+//! Sudoku: fill every row, column and box with each digit once.
 //! See `docs/genres/sudoku.md` for rules, formats and the rating model.
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]

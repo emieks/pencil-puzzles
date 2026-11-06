@@ -2,7 +2,7 @@
 use crate::model::{EMPTY, read_document};
 use crate::*;
 use pencil_puzzles_core::{
-    ClueInput, Generation, Genre, MarkOption, Metadata, PuzzleEditor, Rule, Status, View, ViewCell,
+    ClueInput, Generation, Genre, MarkOption, Metadata, PuzzleEditor, Rule, View, ViewCell,
     text::Document,
 };
 /// Sudoku: digit placement in rows, columns and square boxes.
@@ -13,7 +13,6 @@ static METADATA: Metadata = {
         "sudoku",
         "Sudoku",
         "Fill rows, columns and boxes with each digit exactly once.",
-        Status::Stable,
         GENERATOR_VERSION,
         RATER_VERSION,
     );

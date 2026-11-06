@@ -1,8 +1,14 @@
 # pencil-puzzles for Python
 
-Generate, solve, rate and check sudoku, nurikabe and kakurasu puzzles.
+Generate, solve, rate and check sudoku, nurikabe, kakurasu and fillomino puzzles.
 Generated puzzles have exactly one solution and a difficulty from easy to
 expert, set by the hardest solving technique they need.
+
+Requires CPython 3.10 or newer on Windows, macOS or Linux:
+
+```sh
+pip install pencil-puzzles
+```
 
 ```python
 import pencil_puzzles as pp
@@ -35,5 +41,3 @@ maturin build --release
 pip install target/wheels/pencil_puzzles-*.whl
 python -m unittest discover -s python/tests
 ```
-
-CPython 3.10+ on Windows, macOS and Linux.

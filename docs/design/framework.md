@@ -7,7 +7,7 @@ moves.
 | Shared (core) | Per genre |
 | --- | --- |
 | Candidates, step record, solve loop, level assignment | Variables, values and the starting candidates |
-| Bookkeeping versus skill | Its bookkeeping technique |
+| The split into bookkeeping and skill techniques | Its bookkeeping technique |
 | Rating, hints, step trace | Its technique list, each with a level |
 | Generator loop: build, screen, edit, certify, search | How to build a candidate and how to change one |
 | | A brute-force solver for uniqueness |
@@ -60,13 +60,14 @@ One loop for every genre:
    perturb it, and restart after a fixed number of tries.
 
 Seeds, attempt counts and restart limits are part of the generator version.
-The only quality rule so far is sudoku's clue symmetry below expert.
+Apart from the level, the only constraint on generated puzzles so far is
+symmetric clues in sudoku below expert.
 
-| | Sudoku | Kakurasu | Nurikabe |
-| --- | --- | --- | --- |
-| Variables / values | cells / digits | cells / shaded or not | cells / land or sea |
-| Bookkeeping | a placed digit leaves its peers | a line already at its total | wall off a completed island; the rest is sea once every island is complete |
-| Build / edit | full grid / remove or restore a clue | shaded grid / flip a cell | grown sea / reshape an island |
+| | Sudoku | Kakurasu | Nurikabe | Fillomino |
+| --- | --- | --- | --- | --- |
+| Variables / values | cells / digits | cells / shaded or not | cells / land or sea | cells / sizes 1-15 and 16+ |
+| Bookkeeping | a placed digit is removed from its peers | a line already at its total | wall off a completed island; the rest is sea once every island is complete | wall off a complete region |
+| Build / edit | full grid / remove or restore a clue | shaded grid / flip a cell | grown sea / reshape an island | random partition with every clue / remove or restore a clue |
 
 ## Interfaces
 

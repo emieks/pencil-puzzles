@@ -1,4 +1,4 @@
-//! Registry-based command-line tools (I2). Genre-specific types stay in the libraries.
+//! The `pencil-puzzles` command-line tool, built on the genre registry.
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 use anyhow::{Result, anyhow, bail};
@@ -203,10 +203,9 @@ fn run(cli: Cli, selected: Option<&str>) -> Result<bool> {
                 for g in genres() {
                     let m = g.metadata();
                     println!(
-                        "{}\t{}\t{:?}\t{}{}",
+                        "{}\t{}\t{}{}",
                         m.id,
                         m.name,
-                        m.status,
                         m.summary,
                         if m.aliases.is_empty() {
                             String::new()

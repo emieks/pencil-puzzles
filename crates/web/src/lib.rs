@@ -1,4 +1,4 @@
-//! Browser requests backed by the same registry as the CLI (I2).
+//! Handles the web app's requests through the genre registry.
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 use pencil_puzzles::{Budget, Difficulty, Input, RegistryError, Solutions, find, genres, read};

@@ -223,6 +223,7 @@ name = "pencil-puzzles"
 version = "0.1.0"
 dependencies = [
  "pencil-puzzles-core",
+ "pencil-puzzles-fillomino",
  "pencil-puzzles-kakurasu",
  "pencil-puzzles-nurikabe",
  "pencil-puzzles-sudoku",
@@ -245,6 +246,16 @@ name = "pencil-puzzles-core"
 version = "0.1.0"
 dependencies = [
  "serde",
+]
+
+[[package]]
+name = "pencil-puzzles-fillomino"
+version = "0.1.0"
+dependencies = [
+ "pencil-puzzles-core",
+ "serde",
+ "serde_json",
+ "wasm-bindgen-test",
 ]
 
 [[package]]

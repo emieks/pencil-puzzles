@@ -11,8 +11,11 @@ Contributions of every size are welcome. Everyone taking part follows the
   the rating you'd expect, and why: for example, the step that seems harder or
   easier than its level. See [how puzzles are rated](docs/difficulty.md).
 - **Make something faster.** Generating large grids is slow for some genres;
-  each genre page lists its practical sizes.
-- **Add a genre.** See [Adding a genre](#adding-a-genre) below.
+  each genre page lists the largest size per level that generates in about a
+  second.
+- **Add a genre.** Open an issue first, so that nobody else starts on the same
+  genre, then follow the
+  [checklist in the guidelines](docs/guidelines.md#adding-a-genre).
 
 Every genre follows the [guidelines](docs/guidelines.md) and rates puzzles on
 the shared [difficulty scale](docs/difficulty.md). Please read both before
@@ -59,22 +62,19 @@ docs/
 ```
 
 To see how a genre's generator performs after a change, run the shared
-benchmark (20 seeds per size and level here):
+benchmark. The last argument is the number of seeds per size and level:
 
 ```sh
 cargo run --release -p pencil-puzzles --example benchmark -- kakurasu 20
 ```
 
-If a change alters generated puzzles or ratings, regenerate the corpus and
-golden files with the genre's corpus example, for example
-`cargo run --release -p pencil-puzzles-sudoku --example sudoku_corpus -- --write`
-(kakurasu: `--example corpus`; nurikabe: `--example nurikabe_corpus`).
+If a change alters generated puzzles or ratings, regenerate the genre's corpus
+and golden files:
+
+```sh
+cargo run --release -p pencil-puzzles-<genre> --example <genre>_corpus -- --write
+```
 
 The Python package builds with [maturin](https://www.maturin.rs); see
 [python/README.md](python/README.md). The web app needs Node.js; see
 [web/README.md](web/README.md).
-
-## Adding a genre
-
-Open an issue first, so that nobody else starts on the same genre, then follow
-the [checklist in the guidelines](docs/guidelines.md#adding-a-genre).

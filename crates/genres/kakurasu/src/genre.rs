@@ -1,6 +1,6 @@
 //! Kakurasu's implementation of the common genre contract (I1).
 use crate::*;
-use pencil_puzzles_core::{Generation, Genre, Metadata, Rule, Status, text::Document};
+use pencil_puzzles_core::{Generation, Genre, Metadata, Rule, text::Document};
 /// The Kakurasu genre (P1-P9, I1).
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Kakurasu;
@@ -10,7 +10,6 @@ static METADATA: Metadata = {
         "kakurasu",
         "Kakurasu",
         "Shade cells so every weighted row and column total matches its clue.",
-        Status::Stable,
         GENERATOR_VERSION,
         RATER_VERSION,
     );

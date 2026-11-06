@@ -1,8 +1,8 @@
 //! Generators, solvers and difficulty raters for pencil puzzles.
 //!
 //! Each genre is a module, behind a feature of the same name. All genres are
-//! enabled by default; turn off default features and enable the genres you
-//! want to build less.
+//! enabled by default. To compile fewer genres, turn off default features and
+//! enable the ones you need.
 //!
 //! ```
 //! # #[cfg(feature = "kakurasu")] {
@@ -27,6 +27,10 @@
 #![warn(missing_docs)]
 
 pub use pencil_puzzles_core::*;
+
+/// Fillomino: regions numbered with their sizes, same sizes never touching.
+#[cfg(feature = "fillomino")]
+pub use pencil_puzzles_fillomino as fillomino;
 
 /// Kakurasu: shade cells so that every row and column adds up to its clue.
 #[cfg(feature = "kakurasu")]

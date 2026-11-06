@@ -1,4 +1,5 @@
-//! Solve, generate and rate Kakurasu puzzles.
+//! Kakurasu: shade cells so that the weighted totals match every row and
+//! column clue.
 //!
 //! Kakurasu is a grid with a clue for every row and column. Each cell is
 //! worth its column number to its row, and its row number to its column,
@@ -31,9 +32,7 @@
 //! - `serde`: implements `Serialize` and `Deserialize` for [`Puzzle`],
 //!   [`Answer`], [`Shape`], [`Params`] and the shared types.
 //!
-//! This crate is part of the pencil-puzzles collection, which also has a
-//! command-line tool. Most people use it through the `pencil-puzzles` crate,
-//! as `pencil_puzzles::kakurasu`.
+//! The `pencil-puzzles` crate re-exports it as `pencil_puzzles::kakurasu`.
 
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]

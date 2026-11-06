@@ -1,6 +1,6 @@
 [package]
 name = "pencil-puzzles"
-description = "Generators, solvers and difficulty raters for pencil puzzles, with guaranteed unique solutions"
+description = "Generators, solvers and difficulty raters for pencil puzzles"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -12,15 +12,17 @@ categories = ["games", "algorithms"]
 [features]
 default = ["all-genres"]
 # Every genre. Turn off default features and pick genres to build less.
-all-genres = ["kakurasu", "nurikabe", "sudoku"]
+all-genres = ["fillomino", "kakurasu", "nurikabe", "sudoku"]
+fillomino = ["dep:pencil-puzzles-fillomino"]
 kakurasu = ["dep:pencil-puzzles-kakurasu"]
 nurikabe = ["dep:pencil-puzzles-nurikabe"]
 sudoku = ["dep:pencil-puzzles-sudoku"]
 # Serialize and deserialize puzzles, solutions and ratings with serde.
-serde = ["dep:serde", "dep:serde_json", "pencil-puzzles-core/serde", "pencil-puzzles-kakurasu?/serde", "pencil-puzzles-sudoku?/serde", "pencil-puzzles-nurikabe?/serde"]
+serde = ["dep:serde", "dep:serde_json", "pencil-puzzles-core/serde", "pencil-puzzles-fillomino?/serde", "pencil-puzzles-kakurasu?/serde", "pencil-puzzles-sudoku?/serde", "pencil-puzzles-nurikabe?/serde"]
 
 [dependencies]
 pencil-puzzles-core.workspace = true
+pencil-puzzles-fillomino = { workspace = true, optional = true }
 pencil-puzzles-kakurasu = { workspace = true, optional = true }
 pencil-puzzles-nurikabe = { workspace = true, optional = true }
 pencil-puzzles-sudoku = { workspace = true, optional = true }

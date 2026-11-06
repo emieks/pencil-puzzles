@@ -1,6 +1,6 @@
 [package]
 name = "pencil-puzzles-kakurasu"
-description = "Kakurasu puzzle solver, generator with guaranteed unique solutions, and difficulty rater"
+description = "Kakurasu solver, generator, checker and difficulty rater"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

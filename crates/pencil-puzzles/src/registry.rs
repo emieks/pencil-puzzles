@@ -115,7 +115,12 @@ pub struct Input {
 }
 // The typed adapter is only needed when a genre is compiled in. Add future
 // genre features here as they join the registry.
-#[cfg(any(feature = "kakurasu", feature = "sudoku", feature = "nurikabe"))]
+#[cfg(any(
+    feature = "fillomino",
+    feature = "kakurasu",
+    feature = "sudoku",
+    feature = "nurikabe"
+))]
 mod typed {
     use super::*;
     use pencil_puzzles_core::{Genre, Record};
@@ -394,6 +399,8 @@ mod typed {
             })
         }
     }
+    #[cfg(feature = "fillomino")]
+    pub(super) static FILLOMINO: Adapter<crate::fillomino::Fillomino> = Adapter(PhantomData);
     #[cfg(feature = "kakurasu")]
     pub(super) static KAKURASU: Adapter<crate::kakurasu::Kakurasu> = Adapter(PhantomData);
     #[cfg(feature = "nurikabe")]
@@ -403,6 +410,8 @@ mod typed {
 }
 /// Every compiled-in genre, in canonical id order (I1, K4).
 static GENRES: &[&dyn DynGenre] = &[
+    #[cfg(feature = "fillomino")]
+    &typed::FILLOMINO,
     #[cfg(feature = "kakurasu")]
     &typed::KAKURASU,
     #[cfg(feature = "nurikabe")]

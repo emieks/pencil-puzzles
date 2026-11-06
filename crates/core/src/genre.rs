@@ -6,17 +6,6 @@ use crate::{
 };
 use std::{error::Error, fmt::Display, str::FromStr};
 
-/// A genre's maturity (S1-S4).
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
-#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
-#[non_exhaustive]
-pub enum Status {
-    /// Safe and reproducible, with requirements still being completed.
-    Experimental,
-    /// Meets every MUST in the guidelines.
-    Stable,
-}
 /// A numbered rule's short name (P1).
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize))]
@@ -40,8 +29,6 @@ pub struct Metadata {
     pub aliases: &'static [&'static str],
     /// One sentence explaining the goal.
     pub summary: &'static str,
-    /// Experimental or stable.
-    pub status: Status,
     /// Version determining seeded generation (V3).
     pub generator_version: u32,
     /// Version determining ratings (V3).
@@ -55,7 +42,6 @@ impl Metadata {
         id: &'static str,
         name: &'static str,
         summary: &'static str,
-        status: Status,
         generator_version: u32,
         rater_version: u32,
     ) -> Self {
@@ -63,7 +49,6 @@ impl Metadata {
             id,
             name,
             summary,
-            status,
             generator_version,
             rater_version,
             aliases: &[],

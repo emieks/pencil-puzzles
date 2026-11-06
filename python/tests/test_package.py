@@ -10,7 +10,8 @@ import pencil_puzzles as pp
 
 class PackageTests(unittest.TestCase):
     def test_all_genres_generate_solve_rate_check_and_round_trip(self):
-        for genre, shape in (("sudoku", (4, 4)), ("nurikabe", (3, 3)), ("kakurasu", (3, 4))):
+        for genre, shape in (("sudoku", (4, 4)), ("nurikabe", (3, 3)), ("kakurasu", (3, 4)),
+                             ("fillomino", (3, 4))):
             with self.subTest(genre=genre):
                 g = pp.generate(genre, shape, difficulty="easy", seed=42)
                 self.assertEqual(g.rating.level, pp.Difficulty.EASY)
@@ -23,6 +24,19 @@ class PackageTests(unittest.TestCase):
                 self.assertEqual(pp.Puzzle.from_text(g.puzzle.to_text()), g.puzzle)
                 self.assertEqual(g.solution.shape, shape)
                 self.assertIn(genre, pp.genres())
+
+    def test_fillomino_numbers_and_two_digit_sizes(self):
+        puzzle = pp.Puzzle.from_text("genre: fillomino\ngrid:\n2.\n..\n.1")
+        self.assertIsInstance(puzzle, pp.FillominoPuzzle)
+        self.assertEqual(puzzle.clues, ((2, 0), (0, 0), (0, 1)))
+        solution = pp.solve(puzzle)
+        self.assertEqual(solution.cells, ((2, 2), (3, 3), (3, 1)))
+        partial = pp.Solution("fillomino", ((2, 0), (0, 0), (0, 1)))
+        self.assertEqual(pp.hint(puzzle, partial).level, pp.Difficulty.EASY)
+        wrong = pp.Solution("fillomino", ((2, 2), (3, 3), (1, 1)))
+        self.assertEqual({v.rule for v in pp.check(puzzle, wrong)}, {1})
+        big = pp.Puzzle.from_id("fillomino:1x10:-10i")
+        self.assertEqual(pp.solve(big).cells, ((10,) * 10,))
 
     def test_generation_is_reproducible(self):
         first = pp.generate("sudoku", (4, 4), difficulty=pp.Difficulty.EASY, seed=(1 << 64) - 1)
