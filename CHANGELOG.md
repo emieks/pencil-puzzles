@@ -5,32 +5,31 @@ and versions follow [Semantic Versioning](https://semver.org/). Changes that
 alter generated puzzles are marked **(new puzzles)**, and changes that alter
 ratings **(new ratings)**.
 
-## [Unreleased]
+## [0.2.0] - 2026-11-06
 
 ### Added
 
-- Fillomino: generate, solve, rate, check and hint, for
-  grids up to 10x10.
-- Hashi: generate, solve, rate, check and hint, for grids up to 15x15.
-- Hitori: generate, solve, rate, check and hint, for grids up to 12x12.
-- Kakuro: generate, solve, rate, check and hint, for grids up to 16x16.
-  The web app draws its blocks with their sums, and its solver page takes
-  cells as text such as `4/6`.
-- Links between cells in steps, violations and the web app's boards
-  (`Place::Link`, `View.links`). The web app draws them. Players click or
-  right-click a link to change it, or select a cell at its end and press
-  Shift with an arrow key or WASD.
-- `ViewCell.label`: text printed in a cell under its mark. The web app draws
-  it, circles it for the unshaded mark and highlights cells with the same
-  label as the selected one.
+- Fillomino (up to 10x10), hashi (up to 15x15), hitori (up to 12x12) and
+  kakuro (up to 16x16): generate, solve, rate, check and hint.
+- Web app: hashi bridges (click between two islands, or Shift with an arrow
+  key), hitori numbers under the marks and kakuro blocks with their sums.
+  Selecting a kakuro cell highlights its two runs.
+- Web app: WASD to move, and Q, E and R to shade, dot and clear a cell.
 - Python: `check(..., finished=True)` checks an answer as finished, with
-  unmarked cells and undrawn bridges at the genre's default. Steps that
-  remove Hashi bridge counts list them as `(row, col, row2, col2, value)`.
+  unmarked cells and undrawn bridges at the genre's default. Hashi steps list
+  bridges as `(row, col, row2, col2, value)`.
+- Rust: links between cells (`Place::Link`, `View.links`, `ViewLink`),
+  `ViewCell.circled`, `ViewCell.label`, `ViewCell.block` with `BlockCell`,
+  `ClueInput::text`, `Profile::contradictions_where`, the `grid` module
+  (`neighbours`, `flood`, `flood_from`) and `Rng::shuffle`.
 
 ### Changed
 
-- Nurikabe: the default size is 6x6 (was 5x5). **(new puzzles)** when no
-  size is given.
+- Nurikabe: generating without a size gives 6x6 puzzles (was 5x5).
+  **(new puzzles)**
+- Web app: click shades a cell and right-click dots it, where both used to
+  cycle through the marks. Dots are larger.
+- Web app: each request may use 50 million operations (was 2 million).
 
 ## [0.1.0] - 2026-11-05
 
