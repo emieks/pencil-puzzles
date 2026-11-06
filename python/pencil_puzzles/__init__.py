@@ -14,7 +14,7 @@ from typing import Any
 
 from . import _native
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __all__ = [
     "AttemptsExhaustedError", "BudgetExceededError", "CancellationToken", "CancelledError",
     "Difficulty", "FillominoPuzzle", "Generated", "HashiPuzzle", "HitoriPuzzle", "KakurasuPuzzle", "KakuroPuzzle", "Limits", "Mark",

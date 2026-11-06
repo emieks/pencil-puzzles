@@ -220,7 +220,7 @@ checksum = "384b8ab6d37215f3c5301a95a4accb5d64aa607f1fcb26a11b5303878451b4fe"
 
 [[package]]
 name = "pencil-puzzles"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "pencil-puzzles-core",
  "pencil-puzzles-fillomino",
@@ -236,7 +236,7 @@ dependencies = [
 
 [[package]]
 name = "pencil-puzzles-cli"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -246,14 +246,14 @@ dependencies = [
 
 [[package]]
 name = "pencil-puzzles-core"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "serde",
 ]
 
 [[package]]
 name = "pencil-puzzles-fillomino"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "pencil-puzzles-core",
  "serde",
@@ -263,7 +263,7 @@ dependencies = [
 
 [[package]]
 name = "pencil-puzzles-hashi"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "pencil-puzzles-core",
  "serde",
@@ -273,7 +273,7 @@ dependencies = [
 
 [[package]]
 name = "pencil-puzzles-hitori"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "pencil-puzzles-core",
  "serde",
@@ -283,7 +283,7 @@ dependencies = [
 
 [[package]]
 name = "pencil-puzzles-kakurasu"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "pencil-puzzles-core",
  "serde",
@@ -293,7 +293,7 @@ dependencies = [
 
 [[package]]
 name = "pencil-puzzles-kakuro"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "pencil-puzzles-core",
  "serde",
@@ -303,7 +303,7 @@ dependencies = [
 
 [[package]]
 name = "pencil-puzzles-nurikabe"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "pencil-puzzles-core",
  "serde",
@@ -313,7 +313,7 @@ dependencies = [
 
 [[package]]
 name = "pencil-puzzles-python"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "pencil-puzzles",
  "pencil-puzzles-core",
@@ -324,7 +324,7 @@ dependencies = [
 
 [[package]]
 name = "pencil-puzzles-sudoku"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "pencil-puzzles-core",
  "serde",
@@ -334,7 +334,7 @@ dependencies = [
 
 [[package]]
 name = "pencil-puzzles-web"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "pencil-puzzles",
  "serde",
