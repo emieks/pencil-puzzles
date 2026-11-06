@@ -46,6 +46,12 @@ function board(view,{interactive=false,notes,selected=-1}={}){
       const td=document.createElement('td');td.dataset.cellRow=String(r);td.dataset.cellCol=String(c);if(cell.region!==null&&cell.region!==undefined)td.dataset.region=String(cell.region);
       if(view.row_separators?.includes(r))td.classList.add('box-top');if(view.col_separators?.includes(c))td.classList.add('box-left');
       if(r===0)td.classList.add('edge-top');if(r===view.rows-1)td.classList.add('edge-bottom');if(c===0)td.classList.add('edge-left');if(c===view.cols-1)td.classList.add('edge-right');
+      if(cell.block){
+        // A block: shaded, and split by a diagonal when it holds labels.
+        const block=element('span','','cell block'+(i===selected?' selected':''));block.dataset.index=String(i);block.setAttribute('aria-label',`Row ${r+1}, column ${c+1}: ${cell.block.name}`);
+        if(cell.block.upper||cell.block.lower){block.classList.add('split');block.append(element('span',cell.block.upper,'upper'),element('span',cell.block.lower,'lower'));}
+        td.append(block);row.append(td);continue;
+      }
       const peer=from&&i!==selected&&(r===sr||c===sc||(cell.region!=null&&cell.region===from.region));
       const label=cell.label||'',dot=choice?.symbol==='·',matches=same!==null&&(label?label===same:cell.value===same);
       const button=element(interactive?'button':'span',cell.circled?undefined:label||(choice?.symbol??cell.value),'cell'+(choice?.shaded?' shaded':'')+(dot?(label?' circled':' dot'):'')+(label?' labelled':'')+(!cell.editable?' given':'')+(i===selected?' selected':'')+(matches?' same':'')+(peer?' peer':'')+(ends.has(i)?' end':''));button.dataset.index=String(i);
@@ -288,7 +294,7 @@ function solver(game){
     editor=value;$('#editor-shape').value=value.shape;
     const table=board(value.view);table.setAttribute('aria-label','Puzzle clues');
     fields=value.fields.map((field,i)=>{
-      const input=document.createElement('input');input.type='number';input.inputMode='numeric';input.min=String(field.min);input.max=String(field.max);input.step='1';input.required=!field.optional;input.value=field.value;input.className='clue-input';input.setAttribute('aria-label',label(field.place));input.dataset.field=String(i);input.oninput=invalidate;
+      const input=document.createElement('input');if(field.pattern){input.type='text';input.pattern=field.pattern;input.maxLength=5;input.spellcheck=false;input.autocomplete='off';}else{input.type='number';input.inputMode='numeric';input.min=String(field.min);input.max=String(field.max);input.step='1';}input.required=!field.optional;input.value=field.value;input.className='clue-input';input.setAttribute('aria-label',label(field.place));input.dataset.field=String(i);input.oninput=invalidate;
       let target;
       if('row'in field.place)target=table.querySelector(`[data-row="${field.place.row}"]`);
       else if('col'in field.place)target=table.querySelector(`[data-col="${field.place.col}"]`);

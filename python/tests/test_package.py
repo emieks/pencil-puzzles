@@ -11,7 +11,7 @@ import pencil_puzzles as pp
 class PackageTests(unittest.TestCase):
     def test_all_genres_generate_solve_rate_check_and_round_trip(self):
         for genre, shape in (("sudoku", (4, 4)), ("nurikabe", (3, 3)), ("kakurasu", (3, 4)),
-                             ("fillomino", (3, 4)), ("hashi", (5, 5)), ("hitori", (4, 5))):
+                             ("fillomino", (3, 4)), ("hashi", (5, 5)), ("hitori", (4, 5)), ("kakuro", (5, 6))):
             with self.subTest(genre=genre):
                 g = pp.generate(genre, shape, difficulty="easy", seed=42)
                 self.assertEqual(g.rating.level, pp.Difficulty.EASY)
@@ -68,6 +68,21 @@ class PackageTests(unittest.TestCase):
         self.assertEqual({v.rule for v in pp.check(puzzle, wrong)}, {3})
         wide = pp.Puzzle.from_id("hitori:1x11:123456789ab")
         self.assertEqual(wide.numbers, (tuple(range(1, 12)),))
+
+    def test_kakuro_blocks_sums_and_digits(self):
+        puzzle = pp.Puzzle.from_text("genre: kakuro\ngrid:\n# 4/ 6/\n/3 . .\n/7 . .")
+        self.assertIsInstance(puzzle, pp.KakuroPuzzle)
+        self.assertEqual(puzzle.cells, (((0, 0), (4, 0), (6, 0)), ((0, 3), None, None),
+                                        ((0, 7), None, None)))
+        self.assertEqual(puzzle.id, "kakuro:3x3:DbAb/4.6.3.7")
+        solution = pp.solve(puzzle)
+        self.assertEqual(solution.cells, ((None, None, None), (None, 1, 2), (None, 3, 4)))
+        partial = pp.Solution("kakuro", ((None, None, None), (None, 1, 0), (None, 0, 0)))
+        self.assertIsNotNone(pp.hint(puzzle, partial))
+        wrong = pp.Solution("kakuro", ((None, None, None), (None, 2, 1), (None, 3, 4)))
+        violations = pp.check(puzzle, wrong)
+        self.assertEqual({v.rule for v in violations}, {1})
+        self.assertEqual(violations[0].place, {"cell": {"row": 0, "col": 1}})
 
     def test_generation_is_reproducible(self):
         first = pp.generate("sudoku", (4, 4), difficulty=pp.Difficulty.EASY, seed=(1 << 64) - 1)

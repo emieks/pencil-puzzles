@@ -13,6 +13,9 @@ ratings **(new ratings)**.
   grids up to 10x10.
 - Hashi: generate, solve, rate, check and hint, for grids up to 15x15.
 - Hitori: generate, solve, rate, check and hint, for grids up to 12x12.
+- Kakuro: generate, solve, rate, check and hint, for grids up to 16x16.
+  The web app draws its blocks with their sums, and its solver page takes
+  cells as text such as `4/6`.
 - Links between cells in steps, violations and the web app's boards
   (`Place::Link`, `View.links`). The web app draws them. Players click or
   right-click a link to change it, or select a cell at its end and press

@@ -40,6 +40,21 @@ test('visual clue entry produces the same puzzle and solution as ID input',()=>{
   assert.equal(call({operation:'compose',genre:'kakurasu',shape:'2x2',values:['4','2','1','2']}).ok,false);
 });
 
+test('Kakuro blocks carry their sums and clue cells are typed as text',()=>{
+  const editor=call({operation:'editor',genre:'kakuro',shape:'3x3',puzzle:null}).value;
+  assert.equal(editor.fields.length,9);
+  assert.ok(editor.fields.every(f=>typeof f.pattern==='string'));
+  assert.deepEqual(editor.fields.map(f=>f.value),['#','#','#','#','','','#','','']);
+  const puzzle=call({operation:'compose',genre:'kakuro',shape:editor.shape,values:['#','4/','6/','/3','','','/7','','']});
+  assert.equal(puzzle.value.id,'kakuro:3x3:DbAb/4.6.3.7');
+  const block=puzzle.value.view.cells[1].block;
+  assert.deepEqual([block.upper,block.lower,block.name],['','4','down 4']);
+  assert.equal(puzzle.value.view.cells[4].block,undefined);
+  const solved=call({operation:'solve',genre:'kakuro',puzzle:puzzle.value.id});
+  assert.equal(solved.value.status,'unique');
+  assert.equal(call({operation:'compose',genre:'kakuro',shape:'3x3',values:['#','#','#','#','','','#','','']}).ok,false);
+});
+
 test('Sudoku givens can be entered visually and empty answers do not pass',()=>{
   const editor=call({operation:'editor',genre:'sudoku',shape:'4x4',puzzle:null}).value;
   assert.equal(editor.fields.length,16);

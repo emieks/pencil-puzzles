@@ -17,7 +17,7 @@ from . import _native
 __version__ = "0.1.0"
 __all__ = [
     "AttemptsExhaustedError", "BudgetExceededError", "CancellationToken", "CancelledError",
-    "Difficulty", "FillominoPuzzle", "Generated", "HashiPuzzle", "HitoriPuzzle", "KakurasuPuzzle", "Limits", "Mark",
+    "Difficulty", "FillominoPuzzle", "Generated", "HashiPuzzle", "HitoriPuzzle", "KakurasuPuzzle", "KakuroPuzzle", "Limits", "Mark",
     "MultipleSolutionsError", "NoSolutionError", "NurikabePuzzle", "ParseError",
     "PencilPuzzlesError", "Puzzle", "Rating",
     "Solution", "Step", "SudokuPuzzle", "UnratedPuzzleError", "UnsupportedRequestError",
@@ -169,11 +169,12 @@ class Violation:
 
 @dataclass(frozen=True)
 class Solution:
-    """A complete or partial answer: numbers for Sudoku and Fillomino (0 for
-    unmarked), each cell's text for Hashi (`"."`, an island number, `"-"`,
-    `"="`, `"|"` or `"H"`), `Mark`s otherwise."""
+    """A complete or partial answer: numbers for Sudoku, Fillomino and Kakuro
+    (0 for unmarked, None for Kakuro blocks), each cell's text for Hashi
+    (`"."`, an island number, `"-"`, `"="`, `"|"` or `"H"`), `Mark`s
+    otherwise."""
     genre: str
-    cells: tuple[tuple[int | str | Mark, ...], ...]
+    cells: tuple[tuple[int | str | Mark | None, ...], ...]
 
     @property
     def shape(self) -> tuple[int, int]:
@@ -187,6 +188,9 @@ class Solution:
             cells = tuple(tuple(0 if t == "." else int(t) for t in _tokens(rows, row)) for row in rows)
         elif genre == "hashi":
             cells = tuple(tuple(_tokens(rows, row)) for row in rows)
+        elif genre == "kakuro":
+            cells = tuple(tuple(None if c == "#" else 0 if c == "." else int(c) for c in row)
+                          for row in rows)
         else:
             cells = tuple(tuple(Mark(c) for c in row) for row in rows)
         return cls(genre, cells)
@@ -197,6 +201,10 @@ class Solution:
                 raise ParseError('Hashi cells are text, such as ".", "2" or "="')
             spaced = any(len(t) > 1 for row in self.cells for t in row)
             return [(" " if spaced else "").join(row) for row in self.cells]
+        if self.genre == "kakuro":
+            if any(not (v is None or (type(v) is int and 0 <= v <= 9)) for row in self.cells for v in row):
+                raise ParseError("Kakuro cells must be digits, 0 for unmarked or None for blocks")
+            return ["".join("#" if v is None else str(v) if v else "." for v in row) for row in self.cells]
         if self.genre == "fillomino":
             if any(type(v) is not int or v < 0 for row in self.cells for v in row):
                 raise ParseError("Fillomino cells must be whole numbers, 0 for unmarked")
@@ -263,6 +271,13 @@ class HitoriPuzzle(Puzzle):
 
 
 @dataclass(frozen=True)
+class KakuroPuzzle(Puzzle):
+    """Per cell: None for a white cell, (down, across) sums for a block, 0 for
+    a missing sum."""
+    cells: tuple[tuple[tuple[int, int] | None, ...], ...]
+
+
+@dataclass(frozen=True)
 class KakurasuPuzzle(Puzzle):
     row_clues: tuple[int, ...]
     col_clues: tuple[int, ...]
@@ -289,6 +304,17 @@ def _puzzle(handle: Any) -> Puzzle:
     if genre == "hitori":
         rows = clues["grid"]
         return HitoriPuzzle(*common, tuple(tuple(int(t) for t in _tokens(rows, row)) for row in rows))
+    if genre == "kakuro":
+        rows = clues["grid"]
+
+        def cell(token: str) -> tuple[int, int] | None:
+            if token == ".":
+                return None
+            if token == "#":
+                return (0, 0)
+            down, _, across = token.partition("/")
+            return (int(down or 0), int(across or 0))
+        return KakuroPuzzle(*common, tuple(tuple(cell(t) for t in _tokens(rows, row)) for row in rows))
     return KakurasuPuzzle(*common, tuple(clues["row_clues"]), tuple(clues["col_clues"]))
 
 

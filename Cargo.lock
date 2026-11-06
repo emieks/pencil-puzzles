@@ -227,6 +227,7 @@ dependencies = [
  "pencil-puzzles-hashi",
  "pencil-puzzles-hitori",
  "pencil-puzzles-kakurasu",
+ "pencil-puzzles-kakuro",
  "pencil-puzzles-nurikabe",
  "pencil-puzzles-sudoku",
  "serde",
@@ -282,6 +283,16 @@ dependencies = [
 
 [[package]]
 name = "pencil-puzzles-kakurasu"
+version = "0.1.0"
+dependencies = [
+ "pencil-puzzles-core",
+ "serde",
+ "serde_json",
+ "wasm-bindgen-test",
+]
+
+[[package]]
+name = "pencil-puzzles-kakuro"
 version = "0.1.0"
 dependencies = [
  "pencil-puzzles-core",

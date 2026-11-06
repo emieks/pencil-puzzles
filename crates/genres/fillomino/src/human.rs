@@ -499,62 +499,6 @@ fn fill_areas(
     Ok(steps)
 }
 
-/// For each cell allowed by `filter`, assume each of its sizes in turn; a
-/// size is removed if techniques up to `cap` break a rule within
-/// `max_steps` steps. Only the shortest chains found are returned, lowest
-/// cell first; later cells are searched only as far as the shortest so far.
-/// Unlike the shared `Profile::contradictions`, every refuted size of a cell
-/// goes in one step.
-fn contradictions(
-    c: &Candidates<'_, Grid>,
-    technique: &'static str,
-    cap: Difficulty,
-    max_steps: usize,
-    filter: impl Fn(usize) -> bool,
-) -> Result<Vec<HumanStep>, BudgetExceeded> {
-    let mut best = max_steps;
-    let mut found = Vec::new();
-    for x in 0..c.masks.len() {
-        let mask = c.masks[x];
-        if fixed(mask) || !filter(x) {
-            continue;
-        }
-        let mut removed = 0;
-        let mut longest = 0;
-        let mut support = vec![x];
-        let mut units = Vec::new();
-        let mut nodes = 0;
-        for b in bits(mask) {
-            c.charge()?;
-            let Some(chain) = PROFILE.refute(c, x, b, cap, best)? else {
-                continue;
-            };
-            removed |= b;
-            longest = longest.max(chain.len());
-            for step in &chain {
-                support.extend(&step.support);
-                units.extend(&step.units);
-                nodes += step.proof_nodes;
-            }
-        }
-        if removed == 0 {
-            continue;
-        }
-        units.sort_unstable();
-        units.dedup();
-        if let Some(mut step) = c.step(technique, support, units, vec![(x, !removed)]) {
-            step.proof_nodes += nodes;
-            best = best.min(longest);
-            found.push((longest, step));
-        }
-    }
-    Ok(found
-        .into_iter()
-        .filter(|&(length, _)| length == best)
-        .map(|(_, step)| step)
-        .collect())
-}
-
 /// Whether an open cell touches a fixed one.
 fn frontier(c: &Candidates<'_, Grid>, x: usize) -> bool {
     c.context.nb[x].iter().any(|&j| fixed(c.masks[j]))
@@ -593,15 +537,15 @@ static TECHNIQUES: [Technique<Grid>; 12] = [
     }),
     // A size that breaks a rule as soon as it is written in: no chain.
     entry("forced", Medium, Skill, false, |c| {
-        contradictions(c, "forced", Easy, 0, |x| frontier(c, x))
+        PROFILE.contradictions_where(c, "forced", Easy, 0, |x| frontier(c, x))
     }),
     entry("short_contradiction", Hard, Skill, true, |c| {
-        contradictions(c, "short_contradiction", Medium, SHORT_CHAIN, |x| {
+        PROFILE.contradictions_where(c, "short_contradiction", Medium, SHORT_CHAIN, |x| {
             c.masks[x].count_ones() <= SHORT_CANDIDATES
         })
     }),
     entry("contradiction", Expert, Skill, true, |c| {
-        contradictions(c, "contradiction", Hard, LONG_CHAIN, |x| {
+        PROFILE.contradictions_where(c, "contradiction", Hard, LONG_CHAIN, |x| {
             c.masks[x].count_ones() <= LONG_CANDIDATES
         })
     }),

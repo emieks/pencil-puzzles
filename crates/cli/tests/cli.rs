@@ -33,6 +33,7 @@ fn list_generate_and_aliases() {
     assert_eq!(value[1]["id"], "hashi");
     assert_eq!(value[2]["id"], "hitori");
     assert_eq!(value[3]["id"], "kakurasu");
+    assert_eq!(value[4]["id"], "kakuro");
     let args = ["generate", "index-sums", "--shape", "3x5", "--seed", "42"];
     let a = run(&args, "");
     success(&a);

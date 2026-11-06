@@ -43,6 +43,10 @@ pub use pencil_puzzles_hitori as hitori;
 #[cfg(feature = "kakurasu")]
 pub use pencil_puzzles_kakurasu as kakurasu;
 
+/// Kakuro: digits in white cells adding up to the sums in the blocks.
+#[cfg(feature = "kakuro")]
+pub use pencil_puzzles_kakuro as kakuro;
+
 mod registry;
 pub use registry::{DynGenre, Generated, Input, RegistryError, find, genres, read};
 
