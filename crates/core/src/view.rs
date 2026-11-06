@@ -58,6 +58,9 @@ pub struct ViewCell {
     /// Text printed in the cell whatever its mark, such as a Hitori number;
     /// empty for none. Marks are drawn around it.
     pub label: String,
+    /// Drawn as a block instead of a mark, as Kakuro clue cells are.
+    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
+    pub block: Option<BlockCell>,
 }
 impl ViewCell {
     /// An editable cell with the given mark.
@@ -68,7 +71,37 @@ impl ViewCell {
             region: None,
             circled: false,
             label: String::new(),
+            block: None,
         }
+    }
+
+    /// A block cell that players cannot change, holding `value` in answers.
+    pub fn block(value: String, block: BlockCell) -> Self {
+        Self {
+            editable: false,
+            block: Some(block),
+            ..Self::editable(value)
+        }
+    }
+}
+/// A shaded cell that holds no mark. When either label is non-empty, a
+/// diagonal from the top-left to the bottom-right corner splits it, with
+/// `upper` in the top-right half and `lower` in the bottom-left half.
+#[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[non_exhaustive]
+pub struct BlockCell {
+    /// Label in the top-right half; empty for none.
+    pub upper: String,
+    /// Label in the bottom-left half; empty for none.
+    pub lower: String,
+    /// Accessible name, such as `down 4, across 6`.
+    pub name: String,
+}
+impl BlockCell {
+    /// A block with two labels and an accessible name.
+    pub fn new(upper: String, lower: String, name: String) -> Self {
+        Self { upper, lower, name }
     }
 }
 /// A straight link between the centres of two cells in the same row or
@@ -154,6 +187,10 @@ pub struct ClueInput {
     pub max: u32,
     /// Whether an empty field is a valid absent clue.
     pub optional: bool,
+    /// For a text field instead of a number: the pattern a value must match
+    /// (as in HTML), with `min` and `max` unused.
+    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
+    pub pattern: Option<String>,
 }
 impl ClueInput {
     /// A bounded numeric clue input.
@@ -164,6 +201,19 @@ impl ClueInput {
             min,
             max,
             optional,
+            pattern: None,
+        }
+    }
+
+    /// A text field whose value must match `pattern` (as in HTML).
+    pub fn text(place: crate::Place, value: String, pattern: &str, optional: bool) -> Self {
+        Self {
+            place,
+            value,
+            min: 0,
+            max: 0,
+            optional,
+            pattern: Some(pattern.into()),
         }
     }
 }

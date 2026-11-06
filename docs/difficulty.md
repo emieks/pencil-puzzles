@@ -36,6 +36,7 @@ need not take the same time.
 | [Hashi](genres/hashi.md) | island bounds, isolated pairs | only connections, immediate rule breaks | contradiction chains of up to 6 steps | up to 20 steps |
 | [Kakurasu](genres/kakurasu.md) | weight bounds | short lists of combinations | long lists, contradiction chains of up to 6 steps | up to 20 steps |
 | [Hitori](genres/hitori.md) | sandwiches, pairs, corners, cut cells | two rounds of routine consequences breaking a rule | contradiction chains of up to 6 steps | up to 20 steps |
+| [Kakuro](genres/kakuro.md) | sum combinations, singles, a digit with one place in a run | combinations that fit the candidates of a run | contradiction chains of up to 6 steps | up to 20 steps |
 
 ## Rating procedure
 

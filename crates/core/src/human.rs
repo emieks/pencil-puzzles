@@ -341,6 +341,63 @@ impl<C> Profile<C> {
             .collect())
     }
 
+    /// Like [`Profile::contradictions`], but only for variables where
+    /// `filter` holds, and every refuted value of a variable goes in one
+    /// step. Only the shortest chains found are returned, lowest variable
+    /// first; later variables are searched only as far as the shortest so
+    /// far.
+    pub fn contradictions_where(
+        &self,
+        candidates: &Candidates<'_, C>,
+        technique: &'static str,
+        cap: Difficulty,
+        max_steps: usize,
+        filter: impl Fn(usize) -> bool,
+    ) -> Result<Vec<HumanStep>, BudgetExceeded> {
+        let mut best = max_steps;
+        let mut found = Vec::new();
+        for variable in 0..candidates.masks.len() {
+            let mask = candidates.masks[variable];
+            if mask.count_ones() < 2 || !filter(variable) {
+                continue;
+            }
+            let mut removed = 0;
+            let mut longest = 0;
+            let mut support = vec![variable];
+            let mut units = Vec::new();
+            let mut nodes = 0;
+            for bit in (0..16).map(|v| 1u16 << v).filter(|bit| mask & bit != 0) {
+                candidates.charge()?;
+                let Some(chain) = self.refute(candidates, variable, bit, cap, best)? else {
+                    continue;
+                };
+                removed |= bit;
+                longest = longest.max(chain.len());
+                for step in &chain {
+                    support.extend(&step.support);
+                    units.extend(&step.units);
+                    nodes += step.proof_nodes;
+                }
+            }
+            if removed == 0 {
+                continue;
+            }
+            units.sort_unstable();
+            units.dedup();
+            let changes = vec![(variable, !removed)];
+            if let Some(mut step) = candidates.step(technique, support, units, changes) {
+                step.proof_nodes += nodes;
+                best = best.min(longest);
+                found.push((longest, step));
+            }
+        }
+        Ok(found
+            .into_iter()
+            .filter(|&(length, _)| length == best)
+            .map(|(_, step)| step)
+            .collect())
+    }
+
     /// Distinct placements offered by Easy skill techniques: the direct moves
     /// a solver could make.
     pub fn placements(&self, candidates: &Candidates<'_, C>) -> Result<u32, BudgetExceeded> {

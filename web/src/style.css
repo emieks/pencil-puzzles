@@ -194,6 +194,13 @@ button.cell:hover:not(:disabled) { background: var(--subtle); border: 0; }
 .board.entry .cell.same { background: var(--same); }
 .board.entry .cell.selected, .board.entry button.cell.selected:hover:not(:disabled) { background: var(--select); }
 .board .invalid { color: var(--error); text-decoration: underline; font-weight: 600; }
+/* Blocks, split from the top-left to the bottom-right corner when they hold labels. */
+.cell.block { position: relative; background: var(--shaded); color: var(--bg); font-size: calc(var(--size) * .3); font-weight: 600; font-variant-numeric: tabular-nums; }
+.cell.block.split { background: linear-gradient(to bottom left, var(--shaded) calc(50% - 1px), var(--bg) 50%, var(--shaded) calc(50% + 1px)); }
+.cell.block .upper { position: absolute; top: 6%; right: 8%; }
+.cell.block .lower { position: absolute; bottom: 6%; left: 8%; }
+.board .cell.block.invalid { color: var(--bg); text-decoration: none; box-shadow: inset 0 0 0 3px var(--error); }
+.board.entry .cell.block.selected { box-shadow: inset 0 0 0 3px var(--select); }
 .board td.invalid { outline: 1px solid var(--error); outline-offset: -1px; }
 /* Boards with links (Hashi): no inner grid lines, circled cells, lines drawn over the table. */
 .board-wrap { position: relative; width: fit-content; }
