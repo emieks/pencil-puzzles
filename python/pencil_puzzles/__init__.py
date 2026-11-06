@@ -17,7 +17,7 @@ from . import _native
 __version__ = "0.1.0"
 __all__ = [
     "AttemptsExhaustedError", "BudgetExceededError", "CancellationToken", "CancelledError",
-    "Difficulty", "FillominoPuzzle", "Generated", "HashiPuzzle", "KakurasuPuzzle", "Limits", "Mark",
+    "Difficulty", "FillominoPuzzle", "Generated", "HashiPuzzle", "HitoriPuzzle", "KakurasuPuzzle", "Limits", "Mark",
     "MultipleSolutionsError", "NoSolutionError", "NurikabePuzzle", "ParseError",
     "PencilPuzzlesError", "Puzzle", "Rating",
     "Solution", "Step", "SudokuPuzzle", "UnratedPuzzleError", "UnsupportedRequestError",
@@ -36,7 +36,7 @@ class Difficulty(str, Enum):
 
 
 class Mark(str, Enum):
-    """A cell in a Nurikabe or Kakurasu answer."""
+    """A cell in a Nurikabe, Kakurasu or Hitori answer."""
     SHADED = "#"
     UNSHADED = "-"
     UNMARKED = "."
@@ -258,6 +258,11 @@ class HashiPuzzle(Puzzle):
 
 
 @dataclass(frozen=True)
+class HitoriPuzzle(Puzzle):
+    numbers: tuple[tuple[int, ...], ...]
+
+
+@dataclass(frozen=True)
 class KakurasuPuzzle(Puzzle):
     row_clues: tuple[int, ...]
     col_clues: tuple[int, ...]
@@ -281,6 +286,9 @@ def _puzzle(handle: Any) -> Puzzle:
         values = tuple(tuple(int(c) if c != "." else 0 for c in _tokens(rows, row)) for row in rows)
         kind = {"nurikabe": NurikabePuzzle, "fillomino": FillominoPuzzle, "hashi": HashiPuzzle}[genre]
         return kind(*common, values)
+    if genre == "hitori":
+        rows = clues["grid"]
+        return HitoriPuzzle(*common, tuple(tuple(int(t) for t in _tokens(rows, row)) for row in rows))
     return KakurasuPuzzle(*common, tuple(clues["row_clues"]), tuple(clues["col_clues"]))
 
 

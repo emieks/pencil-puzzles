@@ -34,8 +34,9 @@ function board(view,{interactive=false,notes,selected=-1}={}){
   const left=view.left.length>0, right=view.right.length>0, blank=view.marks[0]?.value, ends=linkEnds(view);
   const first=view.cells.findIndex(cell=>cell.editable), focus=selected>=0?selected:first>=0||!ends.size?first:Math.min(...ends.keys());
   table.style.setProperty('--cols',String(view.cols+(left?1:0)+(right?1:0)));
-  const entry=view.marks.length>3, from=entry&&selected>=0?view.cells[selected]:null;
-  const same=from&&from.value!==blank?from.value:null;
+  // Number entry highlights equal values; a labelled board (Hitori) highlights equal labels.
+  const entry=view.marks.length>3, from=selected>=0&&(entry||view.cells[selected].label)?view.cells[selected]:null;
+  const same=from?.label||(from&&from.value!==blank?from.value:null);
   const sr=Math.floor(selected/view.cols), sc=selected%view.cols;
   if(view.top.length){const row=document.createElement('tr');if(left)row.append(element('th',''));for(let c=0;c<view.cols;c++){const th=element('th',view.top[c]||'');th.scope='col';row.append(th);}if(right)row.append(element('th',''));table.append(row);}
   for(let r=0;r<view.rows;r++){
@@ -46,10 +47,12 @@ function board(view,{interactive=false,notes,selected=-1}={}){
       if(view.row_separators?.includes(r))td.classList.add('box-top');if(view.col_separators?.includes(c))td.classList.add('box-left');
       if(r===0)td.classList.add('edge-top');if(r===view.rows-1)td.classList.add('edge-bottom');if(c===0)td.classList.add('edge-left');if(c===view.cols-1)td.classList.add('edge-right');
       const peer=from&&i!==selected&&(r===sr||c===sc||(cell.region!=null&&cell.region===from.region));
-      const button=element(interactive?'button':'span',cell.circled?undefined:choice?.symbol??cell.value,'cell'+(choice?.shaded?' shaded':'')+(choice?.symbol==='·'?' dot':'')+(!cell.editable?' given':'')+(i===selected?' selected':'')+(same!==null&&cell.value===same?' same':'')+(peer?' peer':'')+(ends.has(i)?' end':''));button.dataset.index=String(i);
+      const label=cell.label||'',dot=choice?.symbol==='·',matches=same!==null&&(label?label===same:cell.value===same);
+      const button=element(interactive?'button':'span',cell.circled?undefined:label||(choice?.symbol??cell.value),'cell'+(choice?.shaded?' shaded':'')+(dot?(label?' circled':' dot'):'')+(label?' labelled':'')+(!cell.editable?' given':'')+(i===selected?' selected':'')+(matches?' same':'')+(peer?' peer':'')+(ends.has(i)?' end':''));button.dataset.index=String(i);
       if(cell.circled)button.append(element('span',cell.value,'circle'));
       if(noted){const set=new Set(notes[i].split(',')),grid=element('span',undefined,'notes');grid.style.setProperty('--note-cols',String(Math.ceil(Math.sqrt(view.marks.length-1))));for(const m of view.marks.slice(1))grid.append(element('span',set.has(m.value)?m.symbol:''));button.replaceChildren(grid);}
-      button.setAttribute('aria-label',`Row ${r+1}, column ${c+1}: ${noted?'notes '+notes[i]:choice?.name??cell.value}`);
+      const state=noted?'notes '+notes[i]:choice?.name??cell.value;
+      button.setAttribute('aria-label',`Row ${r+1}, column ${c+1}: ${label?`${label}, ${state.toLowerCase()}`:state}`);
       if(interactive){button.type='button';button.tabIndex=i===focus?0:-1;}
       td.append(button);row.append(td);
     }

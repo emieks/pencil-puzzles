@@ -118,6 +118,7 @@ pub struct Input {
 #[cfg(any(
     feature = "fillomino",
     feature = "hashi",
+    feature = "hitori",
     feature = "kakurasu",
     feature = "sudoku",
     feature = "nurikabe"
@@ -404,6 +405,8 @@ mod typed {
     pub(super) static FILLOMINO: Adapter<crate::fillomino::Fillomino> = Adapter(PhantomData);
     #[cfg(feature = "hashi")]
     pub(super) static HASHI: Adapter<crate::hashi::Hashi> = Adapter(PhantomData);
+    #[cfg(feature = "hitori")]
+    pub(super) static HITORI: Adapter<crate::hitori::Hitori> = Adapter(PhantomData);
     #[cfg(feature = "kakurasu")]
     pub(super) static KAKURASU: Adapter<crate::kakurasu::Kakurasu> = Adapter(PhantomData);
     #[cfg(feature = "nurikabe")]
@@ -417,6 +420,8 @@ static GENRES: &[&dyn DynGenre] = &[
     &typed::FILLOMINO,
     #[cfg(feature = "hashi")]
     &typed::HASHI,
+    #[cfg(feature = "hitori")]
+    &typed::HITORI,
     #[cfg(feature = "kakurasu")]
     &typed::KAKURASU,
     #[cfg(feature = "nurikabe")]

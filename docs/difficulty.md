@@ -35,6 +35,7 @@ need not take the same time.
 | [Fillomino](genres/fillomino.md) | wall-offs, single exits, room counting, enclosed pairs | cells a region needs, ways to finish a region, small pockets, immediate rule breaks | contradiction chains of up to 6 steps | up to 20 steps |
 | [Hashi](genres/hashi.md) | island bounds, isolated pairs | only connections, immediate rule breaks | contradiction chains of up to 6 steps | up to 20 steps |
 | [Kakurasu](genres/kakurasu.md) | weight bounds | short lists of combinations | long lists, contradiction chains of up to 6 steps | up to 20 steps |
+| [Hitori](genres/hitori.md) | sandwiches, pairs, corners, cut cells | two rounds of routine consequences breaking a rule | contradiction chains of up to 6 steps | up to 20 steps |
 
 ## Rating procedure
 
