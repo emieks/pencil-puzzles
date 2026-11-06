@@ -24,6 +24,19 @@ pub enum Place {
     Region(u32),
     /// The whole board.
     Board,
+    /// A straight link between the centres of two cells in the same row or
+    /// column, such as a Hashi bridge. The first cell comes first in
+    /// row-major order.
+    Link {
+        /// The first cell's row, counted from 0.
+        row: u32,
+        /// The first cell's column, counted from 0.
+        col: u32,
+        /// The second cell's row, counted from 0.
+        row2: u32,
+        /// The second cell's column, counted from 0.
+        col2: u32,
+    },
 }
 
 impl fmt::Display for Place {
@@ -40,6 +53,19 @@ impl fmt::Display for Place {
             Self::Col(col) => write!(f, "column {}", u64::from(*col) + 1),
             Self::Region(region) => write!(f, "region {}", u64::from(*region) + 1),
             Self::Board => f.write_str("the whole board"),
+            Self::Link {
+                row,
+                col,
+                row2,
+                col2,
+            } => write!(
+                f,
+                "between row {}, column {} and row {}, column {}",
+                u64::from(*row) + 1,
+                u64::from(*col) + 1,
+                u64::from(*row2) + 1,
+                u64::from(*col2) + 1
+            ),
         }
     }
 }

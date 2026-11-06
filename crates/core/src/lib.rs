@@ -44,7 +44,7 @@ pub use solutions::Solutions;
 pub use genre::{Generation, Genre, Metadata, Rule};
 
 mod view;
-pub use view::{ClueInput, MarkOption, PuzzleEditor, View, ViewCell};
+pub use view::{ClueInput, MarkOption, PuzzleEditor, View, ViewCell, ViewLink};
 
 #[cfg(feature = "serde")]
 pub mod serde_helpers;

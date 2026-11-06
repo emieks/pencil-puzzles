@@ -291,8 +291,9 @@ See [the framework design](design/framework.md).
 - **I3. Shared tests.** Tests that are the same for every genre (T1, T3-T7,
   T9) SHOULD be written once and called with each genre's inputs.
 - **I4. View.** `pencil-puzzles-core` defines a view: a board as layers of
-  cells, edges, vertices and outside clues, which the web app draws without
-  genre-specific code.
+  cells, links between cells, edges, vertices and outside clues, which the
+  web app draws without genre-specific code. Clients send marks back as the
+  cell values followed by the link values.
 - **I5. Shared helpers.** Helpers more than one genre needs SHOULD live in
   `pencil-puzzles-core`.
 

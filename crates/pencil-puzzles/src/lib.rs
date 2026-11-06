@@ -32,6 +32,10 @@ pub use pencil_puzzles_core::*;
 #[cfg(feature = "fillomino")]
 pub use pencil_puzzles_fillomino as fillomino;
 
+/// Hashi: islands joined by bridges matching their numbers.
+#[cfg(feature = "hashi")]
+pub use pencil_puzzles_hashi as hashi;
+
 /// Kakurasu: shade cells so that every row and column adds up to its clue.
 #[cfg(feature = "kakurasu")]
 pub use pencil_puzzles_kakurasu as kakurasu;

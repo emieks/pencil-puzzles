@@ -1,0 +1,9 @@
+# params difficulty seed id generator_version
+1x1 easy 0 hashi:1x1:a 1
+3x3 easy 0 hashi:3x3:a2e2a 1
+5x8 medium 0 hashi:5x8:4b4c3a1b5a4a4a1l12a3a4a2a 1
+7x7 easy 0 hashi:7x7:2a6c2g2a7c2g1b1a3g13a6b4a 1
+7x7 medium 0 hashi:7x7:4a6c2g3a4a4a4g3b2a3g22a2b3a 1
+7x7 hard 0 hashi:7x7:3b4b3a2c2a2i2a3b3d41g2b1a2 1
+7x7 expert 0 hashi:7x7:2b3b3g3a3b1h3c2a4g1a2c3 1
+15x15 medium 0 hashi:15x15:2b3j4a4b6c6d4a2f2i1b1c3b3m1b3b2a3b4a3b2p3b1b5a6a5a5o1a3b2a1d1a3c3f2e2c5b6b6b6b32b2m2f1a5b2a4a4a1b2a3b2a 1

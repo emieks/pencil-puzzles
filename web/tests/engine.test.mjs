@@ -12,7 +12,7 @@ test('compiled browser engine solves and checks every registered game',()=>{
     const puzzle=generated.value.id;
     const solved=call({operation:'solve',genre,puzzle});
     assert.equal(solved.value.status,'unique');
-    const marks=solved.value.views[0].cells.map(c=>c.value);
+    const view=solved.value.views[0],marks=[...view.cells,...view.links].map(c=>c.value);
     assert.equal(call({operation:'check',genre,puzzle,marks,finished:true}).value.solved,true);
     assert.equal(call({operation:'check',genre,puzzle,marks:[],finished:true}).ok,false);
   }
