@@ -79,8 +79,8 @@ separate_clues     no_pool      island_exit     unreachable
 
 | Parameter | Part of the shape? | Limits | Default |
 | --- | --- | --- | --- |
-| rows | yes | 1-8 | 5 |
-| columns | yes | 1-8 | 5 |
+| rows | yes | 1-8 | 6 |
+| columns | yes | 1-8 | 6 |
 
 The shape is written `<rows>x<columns>`, such as `5x5`. Clues go from 1 to
 the number of cells. Contradictory clues still parse and have no solution.
@@ -116,37 +116,38 @@ for R4, and `clue` for R5.
 
 ## Performance
 
-Measured with `cargo run --release -p pencil-puzzles --example benchmark -- nurikabe 20`
-on an Intel Core i5-1135G7 (Windows 11), seeds 0-19 and default limits.
-Failures count as infinite time. Operation counts are in
-[`nurikabe.csv`](../benchmarks/nurikabe.csv).
+Measured with `cargo run --release -p pencil-puzzles --example benchmark -- nurikabe 20`,
+seeds 0-19 and default limits, in the run described in
+[docs/benchmarks](../benchmarks/README.md). Failures count as infinite
+time. Operation counts are in [`nurikabe.csv`](../benchmarks/nurikabe.csv).
 
 | Size | Level | Found | Median | 95th percentile | Mean attempts |
 | --- | --- | --- | --- | --- | --- |
-| 5x5 | any | 20/20 | 4.9 ms | 1.4 s | 39 |
-| 5x5 | easy | 20/20 | 1.1 ms | 5.0 ms | 25 |
+| 5x5 | any | 20/20 | 5.2 ms | 1.3 s | 39 |
+| 5x5 | easy | 20/20 | 1.2 ms | 5.0 ms | 25 |
 | 5x5 | medium | 20/20 | 2.7 ms | 18 ms | 16 |
-| 5x5 | hard | 20/20 | 84 ms | 1.3 s | 54 |
-| 5x5 | expert | 20/20 | 2.2 s | 13.4 s | 316 |
-| 6x6 | any | 20/20 | 268 ms | 2.4 s | 34 |
-| 6x6 | easy | 20/20 | 3.6 ms | 14 ms | 35 |
-| 6x6 | medium | 20/20 | 8.4 ms | 32 ms | 28 |
-| 6x6 | hard | 20/20 | 248 ms | 1.8 s | 47 |
-| 6x6 | expert | 20/20 | 3.7 s | 14.3 s | 207 |
-| 7x7 | any | 20/20 | 945 ms | 16.0 s | 62 |
-| 7x7 | easy | 20/20 | 7.5 ms | 28 ms | 42 |
-| 7x7 | medium | 20/20 | 13 ms | 112 ms | 28 |
-| 7x7 | hard | 20/20 | 895 ms | 9.9 s | 90 |
-| 7x7 | expert | 20/20 | 3.3 s | 27.1 s | 126 |
-| 8x8 | any | 20/20 | 3.6 s | 45.1 s | 30 |
-| 8x8 | easy | 20/20 | 14 ms | 74 ms | 62 |
-| 8x8 | medium | 20/20 | 29 ms | 239 ms | 37 |
-| 8x8 | hard | 20/20 | 2.0 s | 13.5 s | 50 |
-| 8x8 | expert | 20/20 | 14.8 s | 57.9 s | 161 |
+| 5x5 | hard | 20/20 | 85 ms | 1.3 s | 54 |
+| 5x5 | expert | 20/20 | 2.2 s | 11.2 s | 316 |
+| 6x6 | any | 20/20 | 283 ms | 2.9 s | 34 |
+| 6x6 | easy | 20/20 | 3.4 ms | 13 ms | 35 |
+| 6x6 | medium | 20/20 | 8.7 ms | 32 ms | 28 |
+| 6x6 | hard | 20/20 | 306 ms | 1.9 s | 47 |
+| 6x6 | expert | 20/20 | 4.3 s | 16.4 s | 207 |
+| 7x7 | any | 20/20 | 812 ms | 16.1 s | 62 |
+| 7x7 | easy | 20/20 | 7.3 ms | 28 ms | 42 |
+| 7x7 | medium | 20/20 | 12 ms | 106 ms | 28 |
+| 7x7 | hard | 20/20 | 753 ms | 9.6 s | 90 |
+| 7x7 | expert | 20/20 | 2.9 s | 26.1 s | 126 |
+| 8x8 | any | 20/20 | 4.4 s | 48.2 s | 30 |
+| 8x8 | easy | 20/20 | 15 ms | 76 ms | 62 |
+| 8x8 | medium | 20/20 | 38 ms | 273 ms | 37 |
+| 8x8 | hard | 20/20 | 2.3 s | 13.6 s | 50 |
+| 8x8 | expert | 20/20 | 15.4 s | 59.7 s | 161 |
 
 Largest practical size (B1): easy 8x8, medium 8x8, hard 6x6; no measured
-size is practical for expert. Rating a corpus puzzle takes at most 40 ms.
-Memory is O(N^2) for N cells.
+size is practical for expert. Rating a corpus puzzle takes at most 39 ms. In
+WebAssembly ([`web/benchmark.mjs`](../../web/benchmark.mjs), 6x6),
+generation took 0.60 times the native time. Memory is O(N^2) for N cells.
 
 ## References
 

@@ -59,9 +59,6 @@ One loop for every genre:
 5. **Search** when the result is too easy: keep the best candidate so far,
    perturb it, and restart after a fixed number of tries.
 
-Hashi's screen also runs the exact solver, so that a puzzle with two
-solutions is stuck at the slots where they differ.
-
 Seeds, attempt counts and restart limits are part of the generator version.
 Apart from the level, the only constraint on generated puzzles so far is
 symmetric clues in sudoku below expert.

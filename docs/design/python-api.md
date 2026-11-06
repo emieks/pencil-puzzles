@@ -1,8 +1,7 @@
 # Python package API
 
-Every public name in the `pencil-puzzles` Python package. The API is small on
-purpose, since removing things later is harder than adding them. For an
-example, see [python/README.md](../../python/README.md).
+Every public name in the `pencil-puzzles` Python package. For an example,
+see [python/README.md](../../python/README.md).
 
 ## Names
 

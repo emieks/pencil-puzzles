@@ -140,42 +140,43 @@ group's size) for R1, nothing for R2, and `clue` for R3.
 
 ## Performance
 
-Measured with `cargo run --release -p pencil-puzzles --example benchmark -- fillomino 20`
-on an Intel Core i7-8700K (Windows 11), seeds 0-19 and default limits.
-Failures count as infinite time. Operation counts are in
-[`fillomino.csv`](../benchmarks/fillomino.csv).
+Measured with `cargo run --release -p pencil-puzzles --example benchmark -- fillomino 20`,
+seeds 0-19 and default limits, in the run described in
+[docs/benchmarks](../benchmarks/README.md). Failures count as infinite
+time. Operation counts are in [`fillomino.csv`](../benchmarks/fillomino.csv).
 
 | Size | Level | Found | Median | 95th percentile | Mean attempts |
 | --- | --- | --- | --- | --- | --- |
-| 5x5 | any | 20/20 | 19 ms | 61 ms | 26 |
-| 5x5 | easy | 20/20 | 5.2 ms | 10 ms | 26 |
-| 5x5 | medium | 20/20 | 9.3 ms | 16 ms | 26 |
-| 5x5 | hard | 20/20 | 769 ms | 1.5 s | 940 |
-| 5x5 | expert | 20/20 | 409 ms | 2.5 s | 434 |
-| 6x6 | any | 20/20 | 63 ms | 196 ms | 37 |
-| 6x6 | easy | 20/20 | 13 ms | 18 ms | 37 |
-| 6x6 | medium | 20/20 | 23 ms | 46 ms | 37 |
-| 6x6 | hard | 20/20 | 962 ms | 2.8 s | 764 |
-| 6x6 | expert | 20/20 | 864 ms | 2.9 s | 291 |
-| 7x7 | any | 20/20 | 156 ms | 1.2 s | 50 |
-| 7x7 | easy | 20/20 | 31 ms | 47 ms | 50 |
-| 7x7 | medium | 20/20 | 49 ms | 74 ms | 50 |
-| 7x7 | hard | 20/20 | 1.3 s | 6.1 s | 700 |
-| 7x7 | expert | 20/20 | 884 ms | 6.0 s | 288 |
-| 8x8 | any | 20/20 | 469 ms | 1.5 s | 65 |
-| 8x8 | easy | 20/20 | 58 ms | 121 ms | 65 |
-| 8x8 | medium | 20/20 | 103 ms | 222 ms | 65 |
-| 8x8 | hard | 20/20 | 2.0 s | 10.2 s | 642 |
-| 8x8 | expert | 20/20 | 1.3 s | 18.3 s | 258 |
-| 10x10 | any | 20/20 | 2.7 s | 10.2 s | 101 |
-| 10x10 | easy | 20/20 | 196 ms | 467 ms | 101 |
-| 10x10 | medium | 20/20 | 439 ms | 781 ms | 101 |
-| 10x10 | hard | 20/20 | 2.0 s | 31.1 s | 404 |
-| 10x10 | expert | 20/20 | 5.4 s | 19.7 s | 150 |
+| 5x5 | any | 20/20 | 20 ms | 69 ms | 26 |
+| 5x5 | easy | 20/20 | 5.3 ms | 11 ms | 26 |
+| 5x5 | medium | 20/20 | 9.4 ms | 18 ms | 26 |
+| 5x5 | hard | 20/20 | 826 ms | 1.7 s | 940 |
+| 5x5 | expert | 20/20 | 468 ms | 2.7 s | 434 |
+| 6x6 | any | 20/20 | 60 ms | 184 ms | 37 |
+| 6x6 | easy | 20/20 | 13 ms | 19 ms | 37 |
+| 6x6 | medium | 20/20 | 24 ms | 50 ms | 37 |
+| 6x6 | hard | 20/20 | 1.2 s | 3.1 s | 764 |
+| 6x6 | expert | 20/20 | 950 ms | 3.2 s | 291 |
+| 7x7 | any | 20/20 | 185 ms | 1.5 s | 50 |
+| 7x7 | easy | 20/20 | 30 ms | 48 ms | 50 |
+| 7x7 | medium | 20/20 | 56 ms | 85 ms | 50 |
+| 7x7 | hard | 20/20 | 1.5 s | 7.4 s | 700 |
+| 7x7 | expert | 20/20 | 1.1 s | 7.1 s | 288 |
+| 8x8 | any | 20/20 | 544 ms | 1.8 s | 65 |
+| 8x8 | easy | 20/20 | 63 ms | 125 ms | 65 |
+| 8x8 | medium | 20/20 | 118 ms | 254 ms | 65 |
+| 8x8 | hard | 20/20 | 2.4 s | 12.8 s | 642 |
+| 8x8 | expert | 20/20 | 1.8 s | 22.8 s | 258 |
+| 10x10 | any | 20/20 | 3.2 s | 12.8 s | 101 |
+| 10x10 | easy | 20/20 | 218 ms | 573 ms | 101 |
+| 10x10 | medium | 20/20 | 506 ms | 836 ms | 101 |
+| 10x10 | hard | 20/20 | 2.2 s | 38.7 s | 404 |
+| 10x10 | expert | 20/20 | 6.0 s | 22.8 s | 150 |
 
-Largest practical size (B1): easy 10x10, medium 10x10, hard 6x6, expert
-6x6. Rating a corpus puzzle takes at most 16 ms. Memory is O(N^2) for N
-cells.
+Largest practical size (B1): easy 10x10, medium 10x10, hard 5x5, expert 6x6.
+Rating a corpus puzzle takes at most 15 ms. In WebAssembly
+([`web/benchmark.mjs`](../../web/benchmark.mjs), 6x6), generation took 0.76
+times the native time. Memory is O(N^2) for N cells.
 
 ## References
 

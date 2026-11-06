@@ -94,37 +94,39 @@ far) and `clue`.
 
 ## Performance
 
-Measured with `cargo run --release -p pencil-puzzles --example benchmark -- kakurasu 20`
-on an Intel Core i5-1135G7 (Windows 11), seeds 0-19 and default limits.
-Failures count as infinite time. Operation counts are in
-[`kakurasu.csv`](../benchmarks/kakurasu.csv).
+Measured with `cargo run --release -p pencil-puzzles --example benchmark -- kakurasu 20`,
+seeds 0-19 and default limits, in the run described in
+[docs/benchmarks](../benchmarks/README.md). Failures count as infinite
+time. Operation counts are in [`kakurasu.csv`](../benchmarks/kakurasu.csv).
 
 | Size | Level | Found | Median | 95th percentile | Mean attempts |
 | --- | --- | --- | --- | --- | --- |
-| 6x6 | any | 20/20 | 0.4 ms | 9.6 ms | 1 |
+| 6x6 | any | 20/20 | 0.4 ms | 8.7 ms | 1 |
 | 6x6 | easy | 20/20 | 0.4 ms | 0.9 ms | 2 |
-| 6x6 | medium | 20/20 | 0.7 ms | 5.9 ms | 8 |
-| 6x6 | hard | 20/20 | 14 ms | 32 ms | 26 |
-| 6x6 | expert | 20/20 | 318 ms | 782 ms | 116 |
-| 8x8 | any | 20/20 | 68 ms | 1.1 s | 4 |
-| 8x8 | easy | 20/20 | 1.8 ms | 5.9 ms | 15 |
+| 6x6 | medium | 20/20 | 0.7 ms | 6.2 ms | 8 |
+| 6x6 | hard | 20/20 | 19 ms | 40 ms | 26 |
+| 6x6 | expert | 20/20 | 307 ms | 834 ms | 116 |
+| 8x8 | any | 20/20 | 60 ms | 873 ms | 4 |
+| 8x8 | easy | 20/20 | 2.1 ms | 6.1 ms | 15 |
 | 8x8 | medium | 20/20 | 1.5 ms | 3.7 ms | 10 |
-| 8x8 | hard | 20/20 | 70 ms | 219 ms | 7 |
-| 8x8 | expert | 20/20 | 303 ms | 936 ms | 12 |
-| 10x10 | any | 20/20 | 1.8 s | 3.6 s | 38 |
-| 10x10 | easy | 20/20 | 12 ms | 22 ms | 66 |
+| 8x8 | hard | 20/20 | 65 ms | 217 ms | 7 |
+| 8x8 | expert | 20/20 | 272 ms | 865 ms | 12 |
+| 10x10 | any | 20/20 | 1.8 s | 3.5 s | 38 |
+| 10x10 | easy | 20/20 | 12 ms | 21 ms | 66 |
 | 10x10 | medium | 20/20 | 12 ms | 25 ms | 56 |
-| 10x10 | hard | 20/20 | 580 ms | 1.7 s | 48 |
-| 10x10 | expert | 20/20 | 2.0 s | 3.5 s | 39 |
+| 10x10 | hard | 20/20 | 533 ms | 1.5 s | 48 |
+| 10x10 | expert | 20/20 | 2.1 s | 3.5 s | 39 |
 | 12x12 | any | 20/20 | 6.7 s | 15.0 s | 127 |
-| 12x12 | easy | 20/20 | 53 ms | 78 ms | 198 |
-| 12x12 | medium | 20/20 | 37 ms | 72 ms | 144 |
-| 12x12 | hard | 20/20 | 2.6 s | 6.5 s | 146 |
-| 12x12 | expert | 20/20 | 7.0 s | 15.0 s | 128 |
+| 12x12 | easy | 20/20 | 51 ms | 81 ms | 198 |
+| 12x12 | medium | 20/20 | 38 ms | 63 ms | 144 |
+| 12x12 | hard | 20/20 | 2.6 s | 6.4 s | 146 |
+| 12x12 | expert | 20/20 | 6.9 s | 15.0 s | 128 |
 
 Largest practical size (B1): easy 12x12, medium 12x12, hard 10x10, expert
-8x8. Rating a corpus puzzle takes at most 196 ms. Memory is O(N^2)
-for N cells. Generating puzzles near the 32x32 limit is slow.
+8x8. Rating a corpus puzzle takes at most 186 ms. In WebAssembly
+([`web/benchmark.mjs`](../../web/benchmark.mjs), 6x6), generation took 0.65
+times the native time. Memory is O(N^2) for N cells. Generating puzzles near
+the 32x32 limit is slow.
 
 ## References
 

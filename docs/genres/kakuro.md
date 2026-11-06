@@ -99,10 +99,11 @@ a share of the inner cells set by the level is blocked (30% easy, 25%
 medium, 22% hard, 20% expert, 25% for any level). A new block also blocks
 any white cell left in a run of one cell; a block that would change more
 than 3 cells or split the white cells is skipped. Runs longer than a level's
-limit (5 cells up to medium, 6 at hard and any level, 7 at expert) are
-then broken the same way, and the layout starts over if one cannot be. Digits are filled in row-major order by
-backtracking, each run preferring low or high digits at random, more
-strictly at lower levels; the layout starts over after 20,000 steps.
+limit (5 cells up to medium, 6 at hard and any level, 7 at expert) are then
+broken the same way, and the layout starts over if one cannot be. Digits are
+filled in row-major order by backtracking, each run preferring low or high
+digits at random, more strictly at lower levels; the layout starts over
+after 20,000 steps.
 
 The sums follow from the digits. While the techniques up to the requested
 level leave cells unresolved, unresolved cells change: a cell gets a digit
@@ -141,8 +142,8 @@ a lowercase letter for a run of white cells (`A` or `a` is one cell, `Z` or
 blocks row-major with the down sum first, such as
 `kakuro:3x3:DbAb/4.6.3.7`.
 
-Answers have one character per cell: `#` for every block, `.` for
-unmarked, `0` for a cell left empty and a digit. Finishing turns unmarked
+Answers have one character per cell: `#` for every block, `.` for unmarked,
+`0` for a cell left empty and `1`-`9` for a digit. Finishing turns unmarked
 cells into empty ones, which breaks R2. Violations of R1 are placed at the
 block holding the run's sum and carry `down` (1 for a down run, 0 for an
 across run), `sum`, `total` (the run's digits added up) and, when a digit
@@ -151,9 +152,45 @@ nothing.
 
 ## Performance
 
-Not measured yet.
+Measured with `cargo run --release -p pencil-puzzles --example benchmark -- kakuro 20`,
+seeds 0-19 and default limits, in the run described in
+[docs/benchmarks](../benchmarks/README.md). Failures count as infinite
+time. Operation counts are in [`kakuro.csv`](../benchmarks/kakuro.csv).
+
+| Size | Level | Found | Median | 95th percentile | Mean attempts |
+| --- | --- | --- | --- | --- | --- |
+| 6x6 | any | 20/20 | 4.8 ms | 30 ms | 38 |
+| 6x6 | easy | 20/20 | 0.8 ms | 3.2 ms | 35 |
+| 6x6 | medium | 20/20 | 5.8 ms | 33 ms | 50 |
+| 6x6 | hard | 20/20 | 26 ms | 190 ms | 194 |
+| 6x6 | expert | 20/20 | 163 ms | 562 ms | 691 |
+| 8x8 | any | 20/20 | 16 ms | 273 ms | 80 |
+| 8x8 | easy | 20/20 | 2.6 ms | 54 ms | 73 |
+| 8x8 | medium | 20/20 | 10 ms | 102 ms | 61 |
+| 8x8 | hard | 20/20 | 67 ms | 254 ms | 144 |
+| 8x8 | expert | 20/20 | 213 ms | 1.1 s | 233 |
+| 10x10 | any | 20/20 | 72 ms | 784 ms | 105 |
+| 10x10 | easy | 20/20 | 8.7 ms | 133 ms | 147 |
+| 10x10 | medium | 20/20 | 22 ms | 414 ms | 116 |
+| 10x10 | hard | 20/20 | 222 ms | 554 ms | 154 |
+| 10x10 | expert | 20/20 | 425 ms | 1.9 s | 262 |
+| 12x12 | any | 14/20 | 469 ms | — | 95 |
+| 12x12 | easy | 20/20 | 159 ms | 1.4 s | 595 |
+| 12x12 | medium | 20/20 | 127 ms | 2.4 s | 267 |
+| 12x12 | hard | 12/20 | 1.2 s | — | 207 |
+| 12x12 | expert | 6/20 | — | — | 101 |
+| 16x16 | any | 2/20 | — | — | 39 |
+| 16x16 | easy | 15/20 | 1.9 s | — | 914 |
+| 16x16 | medium | 4/20 | — | — | 34 |
+| 16x16 | hard | 2/20 | — | — | 74 |
+| 16x16 | expert | 0/20 | — | — | — |
+
+Largest practical size (B1): easy 12x12, medium 12x12, hard 10x10, expert
+10x10. Rating a corpus puzzle takes at most 23 ms. In WebAssembly
+([`web/benchmark.mjs`](../../web/benchmark.mjs), 8x8), generation took 0.91
+times the native time.
 
 ## References
 
 Kakuro first appeared in Dell Magazines in the United States as Cross Sums
-(`cross-sums`); Nikoli named it Kakuro.
+(`cross-sums`); Nikoli named it kakuro.
