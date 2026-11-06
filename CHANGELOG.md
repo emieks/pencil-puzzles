@@ -27,6 +27,11 @@ ratings **(new ratings)**.
   unmarked cells and undrawn bridges at the genre's default. Steps that
   remove Hashi bridge counts list them as `(row, col, row2, col2, value)`.
 
+### Changed
+
+- Nurikabe: the default size is 6x6 (was 5x5). **(new puzzles)** when no
+  size is given.
+
 ## [0.1.0] - 2026-11-05
 
 ### Added

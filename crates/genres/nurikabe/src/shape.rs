@@ -53,9 +53,9 @@ impl Shape {
 }
 
 impl Default for Shape {
-    /// 5×5.
+    /// 6×6.
     fn default() -> Self {
-        Self { rows: 5, cols: 5 }
+        Self { rows: 6, cols: 6 }
     }
 }
 
