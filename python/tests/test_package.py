@@ -11,7 +11,7 @@ import pencil_puzzles as pp
 class PackageTests(unittest.TestCase):
     def test_all_genres_generate_solve_rate_check_and_round_trip(self):
         for genre, shape in (("sudoku", (4, 4)), ("nurikabe", (3, 3)), ("kakurasu", (3, 4)),
-                             ("fillomino", (3, 4))):
+                             ("fillomino", (3, 4)), ("hashi", (5, 5))):
             with self.subTest(genre=genre):
                 g = pp.generate(genre, shape, difficulty="easy", seed=42)
                 self.assertEqual(g.rating.level, pp.Difficulty.EASY)
@@ -37,6 +37,25 @@ class PackageTests(unittest.TestCase):
         self.assertEqual({v.rule for v in pp.check(puzzle, wrong)}, {1})
         big = pp.Puzzle.from_id("fillomino:1x10:-10i")
         self.assertEqual(pp.solve(big).cells, ((10,) * 10,))
+
+    def test_hashi_bridges_steps_and_finished_checks(self):
+        puzzle = pp.Puzzle.from_text("genre: hashi\ngrid:\n2.2\n...\n1.1")
+        self.assertIsInstance(puzzle, pp.HashiPuzzle)
+        self.assertEqual(puzzle.clues, ((2, 0, 2), (0, 0, 0), (1, 0, 1)))
+        solution = pp.solve(puzzle)
+        self.assertEqual(solution.cells, (("2", "-", "2"), ("|", ".", "|"), ("1", ".", "1")))
+        self.assertEqual(pp.check(puzzle, solution, finished=True), [])
+        empty = pp.Solution("hashi", (("2", ".", "2"), (".", ".", "."), ("1", ".", "1")))
+        # Undrawn bridges are undecided unless the answer is finished.
+        self.assertEqual(pp.check(puzzle, empty), [])
+        self.assertEqual({v.rule for v in pp.check(puzzle, empty, finished=True)}, {1, 3})
+        step = pp.hint(puzzle, empty)
+        self.assertTrue(all(len(r) == 5 for r in step.removed))
+        crossing = pp.Puzzle.from_text("genre: hashi\ngrid:\n.1.\n1.1\n.1.")
+        crossed = pp.Solution("hashi", ((".", "1", "."), ("1", "-|", "1"), (".", "1", ".")))
+        self.assertIn(2, {v.rule for v in pp.check(crossing, crossed)})
+        with self.assertRaises(pp.ParseError):
+            pp.check(puzzle, pp.Solution("hashi", ((2, ".", 2), (".", ".", "."), (1, ".", 1))))
 
     def test_generation_is_reproducible(self):
         first = pp.generate("sudoku", (4, 4), difficulty=pp.Difficulty.EASY, seed=(1 << 64) - 1)

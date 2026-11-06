@@ -60,6 +60,7 @@ The API is six functions (`genres`, `generate`, `solve`, `rate`, `check`,
 | Genre | Goal | Sizes | Generation time (median, easy → expert) |
 | --- | --- | --- | --- |
 | [Fillomino](docs/genres/fillomino.md) | Divide the grid into regions and write each region's size in its cells. | up to 10x10 | 6x6: 13 ms → 0.9 s |
+| [Hashi](docs/genres/hashi.md) | Join the islands with bridges; each island has as many bridges as its number. | up to 15x15 | not measured yet |
 | [Kakurasu](docs/genres/kakurasu.md) | Shade cells so each row and column adds up to its clue. | up to 32x32 | 8x8: 2 ms → 0.3 s |
 | [Nurikabe](docs/genres/nurikabe.md) | Shade one connected sea; each number is the size of its island. | up to 8x8 | 6x6: 4 ms → 3.7 s |
 | [Sudoku](docs/genres/sudoku.md) | Fill every row, column and box with each digit once. | 4x4, 9x9 | 9x9: 0.2 s → 2.7 s |

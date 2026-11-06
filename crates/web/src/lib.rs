@@ -137,11 +137,16 @@ fn execute(request: Request) -> Result<Value, RegistryError> {
             let violations = input
                 .genre
                 .check(&input.text, Some(&answer), finished, &budget)?;
+            // Without `finished`, an answer is complete when every editable
+            // cell is marked. Unmarked links are valid in a solution, so a
+            // view with editable links is complete only when finished.
+            let view = input.genre.view(&input.text, None)?;
             let complete = finished
-                || marks
+                || (marks
                     .iter()
-                    .zip(input.genre.view(&input.text, None)?.cells)
-                    .all(|(mark, cell)| !cell.editable || mark != &cell.value);
+                    .zip(&view.cells)
+                    .all(|(mark, cell)| !cell.editable || mark != &cell.value)
+                    && view.links.iter().all(|link| !link.editable));
             Ok(json!({"violations":violations,"solved":complete && violations.is_empty()}))
         }
     }
@@ -180,10 +185,11 @@ mod tests {
             let puzzle = generated["value"]["id"].clone();
             let solved = call(json!({"operation":"solve","genre":genre,"puzzle":puzzle}));
             assert_eq!(solved["value"]["status"], "unique");
-            let marks: Vec<_> = solved["value"]["views"][0]["cells"]
-                .as_array()
-                .unwrap()
+            // Cell values, then link values (I4).
+            let view = &solved["value"]["views"][0];
+            let marks: Vec<_> = ["cells", "links"]
                 .iter()
+                .flat_map(|layer| view[*layer].as_array().unwrap())
                 .map(|c| c["value"].clone())
                 .collect();
             let checked = call(

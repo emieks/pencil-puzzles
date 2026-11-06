@@ -17,7 +17,7 @@ from . import _native
 __version__ = "0.1.0"
 __all__ = [
     "AttemptsExhaustedError", "BudgetExceededError", "CancellationToken", "CancelledError",
-    "Difficulty", "FillominoPuzzle", "Generated", "KakurasuPuzzle", "Limits", "Mark",
+    "Difficulty", "FillominoPuzzle", "Generated", "HashiPuzzle", "KakurasuPuzzle", "Limits", "Mark",
     "MultipleSolutionsError", "NoSolutionError", "NurikabePuzzle", "ParseError",
     "PencilPuzzlesError", "Puzzle", "Rating",
     "Solution", "Step", "SudokuPuzzle", "UnratedPuzzleError", "UnsupportedRequestError",
@@ -136,16 +136,22 @@ class Rating:
 
 @dataclass(frozen=True)
 class Step:
-    """One deduction: the technique and the candidates it removes, as (row, col, value)."""
+    """One deduction: the technique and the candidates it removes, as
+    (row, col, value) for a cell, or (row, col, row2, col2, value) for the
+    bridges between two Hashi islands."""
     level: Difficulty
     technique: str
-    removed: tuple[tuple[int, int, str], ...]
+    removed: tuple[tuple[int, int, str] | tuple[int, int, int, int, str], ...]
 
     @classmethod
     def _read(cls, data: dict[str, Any]) -> Step:
-        removed = tuple((r["place"]["cell"]["row"], r["place"]["cell"]["col"], r["value"])
-                        for r in data["removed"])
-        return cls(Difficulty(data["level"]), data["technique"], removed)
+        def literal(r: dict[str, Any]) -> tuple[Any, ...]:
+            place = r["place"]
+            if "link" in place:
+                link = place["link"]
+                return (link["row"], link["col"], link["row2"], link["col2"], r["value"])
+            return (place["cell"]["row"], place["cell"]["col"], r["value"])
+        return cls(Difficulty(data["level"]), data["technique"], tuple(map(literal, data["removed"])))
 
 
 @dataclass(frozen=True)
@@ -164,9 +170,10 @@ class Violation:
 @dataclass(frozen=True)
 class Solution:
     """A complete or partial answer: numbers for Sudoku and Fillomino (0 for
-    unmarked), `Mark`s otherwise."""
+    unmarked), each cell's text for Hashi (`"."`, an island number, `"-"`,
+    `"="`, `"|"` or `"H"`), `Mark`s otherwise."""
     genre: str
-    cells: tuple[tuple[int | Mark, ...], ...]
+    cells: tuple[tuple[int | str | Mark, ...], ...]
 
     @property
     def shape(self) -> tuple[int, int]:
@@ -178,11 +185,18 @@ class Solution:
             cells = tuple(tuple(int(c) if c.isdigit() else 0 for c in row) for row in rows)
         elif genre == "fillomino":
             cells = tuple(tuple(0 if t == "." else int(t) for t in _tokens(rows, row)) for row in rows)
+        elif genre == "hashi":
+            cells = tuple(tuple(_tokens(rows, row)) for row in rows)
         else:
             cells = tuple(tuple(Mark(c) for c in row) for row in rows)
         return cls(genre, cells)
 
     def _wire(self) -> list[str]:
+        if self.genre == "hashi":
+            if any(type(v) is not str for row in self.cells for v in row):
+                raise ParseError('Hashi cells are text, such as ".", "2" or "="')
+            spaced = any(len(t) > 1 for row in self.cells for t in row)
+            return [(" " if spaced else "").join(row) for row in self.cells]
         if self.genre == "fillomino":
             if any(type(v) is not int or v < 0 for row in self.cells for v in row):
                 raise ParseError("Fillomino cells must be whole numbers, 0 for unmarked")
@@ -238,6 +252,12 @@ class FillominoPuzzle(Puzzle):
 
 
 @dataclass(frozen=True)
+class HashiPuzzle(Puzzle):
+    clues: tuple[tuple[int, ...], ...]
+    """Island numbers, 0 for empty cells."""
+
+
+@dataclass(frozen=True)
 class KakurasuPuzzle(Puzzle):
     row_clues: tuple[int, ...]
     col_clues: tuple[int, ...]
@@ -256,10 +276,11 @@ def _puzzle(handle: Any) -> Puzzle:
     if genre == "sudoku":
         rows = clues["grid"] if isinstance(clues, dict) else clues
         return SudokuPuzzle(*common, tuple(tuple(int(c) if c.isdigit() else 0 for c in row) for row in rows))
-    if genre in ("nurikabe", "fillomino"):
+    if genre in ("nurikabe", "fillomino", "hashi"):
         rows = clues["grid"]
         values = tuple(tuple(int(c) if c != "." else 0 for c in _tokens(rows, row)) for row in rows)
-        return (NurikabePuzzle if genre == "nurikabe" else FillominoPuzzle)(*common, values)
+        kind = {"nurikabe": NurikabePuzzle, "fillomino": FillominoPuzzle, "hashi": HashiPuzzle}[genre]
+        return kind(*common, values)
     return KakurasuPuzzle(*common, tuple(clues["row_clues"]), tuple(clues["col_clues"]))
 
 
@@ -301,11 +322,12 @@ def generate(genre: str, shape: tuple[int, int], *, difficulty: Difficulty | str
 
 
 def _operate(puzzle: Puzzle, operation: str, limits: Limits, cancel: CancellationToken | None,
-             answer: Solution | None = None) -> Any:
+             answer: Solution | None = None, finished: bool = False) -> Any:
     if answer is not None and (answer.genre != puzzle.genre or answer.shape != puzzle.shape):
         raise ParseError("the answer's genre or shape differs from the puzzle's")
     wire = json.dumps(answer._wire()) if answer is not None else None
-    return _call(puzzle._handle.operate, operation, limits.work, cancel or CancellationToken(), wire)
+    return _call(puzzle._handle.operate, operation, limits.work, cancel or CancellationToken(), wire,
+                 finished)
 
 
 def solve(puzzle: Puzzle, *, limits: Limits = Limits(), cancel: CancellationToken | None = None) -> Solution:
@@ -322,10 +344,16 @@ def rate(puzzle: Puzzle, *, limits: Limits = Limits(), cancel: CancellationToken
     return Rating._read(_operate(puzzle, "rate", limits, cancel))
 
 
-def check(puzzle: Puzzle, answer: Solution, *, limits: Limits = Limits(),
+def check(puzzle: Puzzle, answer: Solution, *, finished: bool = False, limits: Limits = Limits(),
           cancel: CancellationToken | None = None) -> list[Violation]:
-    """Every rule the answer breaks; empty when it breaks none."""
-    return [Violation._read(v) for v in _operate(puzzle, "check", limits, cancel, answer)]
+    """Every rule the answer breaks; empty when it breaks none.
+
+    With `finished`, unmarked cells and undrawn bridges first take the
+    genre's default for a finished answer, such as no bridge in Hashi.
+    """
+    if not isinstance(finished, bool):
+        raise TypeError("finished must be True or False")
+    return [Violation._read(v) for v in _operate(puzzle, "check", limits, cancel, answer, finished)]
 
 
 def hint(puzzle: Puzzle, answer: Solution | None = None, *, limits: Limits = Limits(),

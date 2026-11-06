@@ -11,6 +11,14 @@ ratings **(new ratings)**.
 
 - Fillomino: generate, solve, rate, check and hint, for
   grids up to 10x10.
+- Hashi: generate, solve, rate, check and hint, for grids up to 15x15.
+- Links between cells in steps, violations and the web app's boards
+  (`Place::Link`, `View.links`). The web app draws them. Players click or
+  right-click a link to change it, or select a cell at its end and press
+  Shift with an arrow key or WASD.
+- Python: `check(..., finished=True)` checks an answer as finished, with
+  unmarked cells and undrawn bridges at the genre's default. Steps that
+  remove Hashi bridge counts list them as `(row, col, row2, col2, value)`.
 
 ## [0.1.0] - 2026-11-05
 

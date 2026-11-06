@@ -1,7 +1,7 @@
 //! The native module behind the Python package; the public API is in
 //! `python/pencil_puzzles/__init__.py`.
 #![forbid(unsafe_code)]
-use pencil_puzzles::{fillomino, kakurasu, nurikabe, sudoku};
+use pencil_puzzles::{fillomino, hashi, kakurasu, nurikabe, sudoku};
 use pencil_puzzles_core::{Budget, Difficulty, Genre, RateError, Record, Solutions};
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList};
@@ -81,6 +81,11 @@ fn error(error: &(dyn Error + 'static)) -> Failure {
         fillomino::GenerateError,
         fillomino::GenerateError::AttemptsExhausted,
         fillomino::GenerateError::BudgetExceeded
+    );
+    generation!(
+        hashi::GenerateError,
+        hashi::GenerateError::AttemptsExhausted,
+        hashi::GenerateError::BudgetExceeded
     );
     generation!(
         nurikabe::GenerateError,
@@ -192,6 +197,7 @@ enum PuzzleData {
     Kakurasu(kakurasu::Puzzle),
     Nurikabe(nurikabe::Puzzle),
     Fillomino(fillomino::Puzzle),
+    Hashi(hashi::Puzzle),
 }
 #[pyclass(frozen, module = "pencil_puzzles._native")]
 #[derive(Clone)]
@@ -204,6 +210,7 @@ macro_rules! dispatch {
         PuzzleData::Kakurasu(p) => $fun::<kakurasu::Kakurasu>(p $(, $arg)*),
         PuzzleData::Nurikabe(p) => $fun::<nurikabe::Nurikabe>(p $(, $arg)*),
         PuzzleData::Fillomino(p) => $fun::<fillomino::Fillomino>(p $(, $arg)*),
+        PuzzleData::Hashi(p) => $fun::<hashi::Hashi>(p $(, $arg)*),
     } };
 }
 fn puzzle_value<G: Genre>(p: &G::Puzzle) -> Value
@@ -223,7 +230,7 @@ impl NativePuzzle {
     fn to_text(&self) -> String {
         dispatch!(self, puzzle_text)
     }
-    #[pyo3(signature=(operation, work, cancel, answer=None))]
+    #[pyo3(signature=(operation, work, cancel, answer=None, finished=false))]
     fn operate(
         &self,
         py: Python<'_>,
@@ -231,6 +238,7 @@ impl NativePuzzle {
         work: u64,
         cancel: CancellationToken,
         answer: Option<String>,
+        finished: bool,
     ) -> PyResult<Py<PyAny>> {
         let puzzle = self.clone();
         let value = execute(py, cancel, move |flag| {
@@ -246,7 +254,14 @@ impl NativePuzzle {
                     })
                     .map_err(|e| error(&e));
             }
-            dispatch!(puzzle, operate, &operation, &budget, answer.as_deref())
+            dispatch!(
+                puzzle,
+                operate,
+                &operation,
+                &budget,
+                answer.as_deref(),
+                finished
+            )
         })?;
         to_python(py, value)
     }
@@ -256,6 +271,7 @@ fn operate<G: Genre>(
     operation: &str,
     budget: &Budget,
     answer: Option<&str>,
+    finished: bool,
 ) -> Result<Value, Failure>
 where
     G::Answer: Serialize + DeserializeOwned,
@@ -278,6 +294,7 @@ where
                 None => G::empty_answer(p),
             };
             if operation == "check" {
+                let a = if finished { G::finished(&a) } else { a };
                 G::check(p, &a, budget)
                     .map(|v| json!(v))
                     .map_err(|e| error(e.as_ref()))
@@ -314,6 +331,9 @@ fn from_id(id: &str) -> PyResult<NativePuzzle> {
         "fillomino" => PuzzleData::Fillomino(
             fillomino::Puzzle::from_id(&canonical).map_err(|e| error(&e).py())?,
         ),
+        "hashi" => {
+            PuzzleData::Hashi(hashi::Puzzle::from_id(&canonical).map_err(|e| error(&e).py())?)
+        }
         _ => unreachable!(),
     };
     Ok(NativePuzzle { data })
@@ -332,6 +352,9 @@ fn from_json(genre: &str, puzzle: &str) -> PyResult<NativePuzzle> {
             serde_json::from_str(puzzle).map_err(|e| Failure::new("parse", e).py())?,
         ),
         "fillomino" => PuzzleData::Fillomino(
+            serde_json::from_str(puzzle).map_err(|e| Failure::new("parse", e).py())?,
+        ),
+        "hashi" => PuzzleData::Hashi(
             serde_json::from_str(puzzle).map_err(|e| Failure::new("parse", e).py())?,
         ),
         _ => return Err(Failure::new("unsupported", "unknown genre").py()),
@@ -410,6 +433,7 @@ fn generate(
             "kakurasu" => go!(kakurasu::Kakurasu, PuzzleData::Kakurasu),
             "nurikabe" => go!(nurikabe::Nurikabe, PuzzleData::Nurikabe),
             "fillomino" => go!(fillomino::Fillomino, PuzzleData::Fillomino),
+            "hashi" => go!(hashi::Hashi, PuzzleData::Hashi),
             _ => unreachable!(),
         }
     })?;

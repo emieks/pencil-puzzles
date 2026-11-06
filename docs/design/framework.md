@@ -59,15 +59,18 @@ One loop for every genre:
 5. **Search** when the result is too easy: keep the best candidate so far,
    perturb it, and restart after a fixed number of tries.
 
+Hashi's screen also runs the exact solver, so that a puzzle with two
+solutions is stuck at the slots where they differ.
+
 Seeds, attempt counts and restart limits are part of the generator version.
 Apart from the level, the only constraint on generated puzzles so far is
 symmetric clues in sudoku below expert.
 
-| | Sudoku | Kakurasu | Nurikabe | Fillomino |
-| --- | --- | --- | --- | --- |
-| Variables / values | cells / digits | cells / shaded or not | cells / land or sea | cells / sizes 1-15 and 16+ |
-| Bookkeeping | a placed digit is removed from its peers | a line already at its total | wall off a completed island; the rest is sea once every island is complete | wall off a complete region |
-| Build / edit | full grid / remove or restore a clue | shaded grid / flip a cell | grown sea / reshape an island | random partition with every clue / remove or restore a clue |
+| | Sudoku | Kakurasu | Nurikabe | Fillomino | Hashi |
+| --- | --- | --- | --- | --- | --- |
+| Variables / values | cells / digits | cells / shaded or not | cells / land or sea | cells / sizes 1-15 and 16+ | pairs of islands that see each other / 0, 1 or 2 bridges |
+| Bookkeeping | a placed digit is removed from its peers | a line already at its total | wall off a completed island; the rest is sea once every island is complete | wall off a complete region | a complete island gets no more bridges; a bridge blocks the slots it crosses |
+| Build / edit | full grid / remove or restore a clue | shaded grid / flip a cell | grown sea / reshape an island | random partition with every clue / remove or restore a clue | random network of bridges / add, remove or change bridges, or put an island on a bridge |
 
 ## Interfaces
 

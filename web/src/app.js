@@ -31,7 +31,8 @@ const engine=new Engine();
 function errorMessage(error){return /budget/i.test(error.message)?'This puzzle needs more work than the site allows. Try a smaller size, a lower difficulty or another puzzle.':error.message;}
 function board(view,{interactive=false,notes,selected=-1}={}){
   const table=element('table',undefined,'board');table.setAttribute('aria-label',interactive?'Puzzle board':'Puzzle solution');
-  const left=view.left.length>0, right=view.right.length>0, blank=view.marks[0]?.value, focus=selected>=0?selected:view.cells.findIndex(cell=>cell.editable);
+  const left=view.left.length>0, right=view.right.length>0, blank=view.marks[0]?.value, ends=linkEnds(view);
+  const first=view.cells.findIndex(cell=>cell.editable), focus=selected>=0?selected:first>=0||!ends.size?first:Math.min(...ends.keys());
   table.style.setProperty('--cols',String(view.cols+(left?1:0)+(right?1:0)));
   const entry=view.marks.length>3, from=entry&&selected>=0?view.cells[selected]:null;
   const same=from&&from.value!==blank?from.value:null;
@@ -45,7 +46,8 @@ function board(view,{interactive=false,notes,selected=-1}={}){
       if(view.row_separators?.includes(r))td.classList.add('box-top');if(view.col_separators?.includes(c))td.classList.add('box-left');
       if(r===0)td.classList.add('edge-top');if(r===view.rows-1)td.classList.add('edge-bottom');if(c===0)td.classList.add('edge-left');if(c===view.cols-1)td.classList.add('edge-right');
       const peer=from&&i!==selected&&(r===sr||c===sc||(cell.region!=null&&cell.region===from.region));
-      const button=element(interactive?'button':'span',choice?.symbol??cell.value,'cell'+(choice?.shaded?' shaded':'')+(choice?.symbol==='·'?' dot':'')+(!cell.editable?' given':'')+(i===selected?' selected':'')+(same!==null&&cell.value===same?' same':'')+(peer?' peer':''));button.dataset.index=String(i);
+      const button=element(interactive?'button':'span',cell.circled?undefined:choice?.symbol??cell.value,'cell'+(choice?.shaded?' shaded':'')+(choice?.symbol==='·'?' dot':'')+(!cell.editable?' given':'')+(i===selected?' selected':'')+(same!==null&&cell.value===same?' same':'')+(peer?' peer':'')+(ends.has(i)?' end':''));button.dataset.index=String(i);
+      if(cell.circled)button.append(element('span',cell.value,'circle'));
       if(noted){const set=new Set(notes[i].split(',')),grid=element('span',undefined,'notes');grid.style.setProperty('--note-cols',String(Math.ceil(Math.sqrt(view.marks.length-1))));for(const m of view.marks.slice(1))grid.append(element('span',set.has(m.value)?m.symbol:''));button.replaceChildren(grid);}
       button.setAttribute('aria-label',`Row ${r+1}, column ${c+1}: ${noted?'notes '+notes[i]:choice?.name??cell.value}`);
       if(interactive){button.type='button';button.tabIndex=i===focus?0:-1;}
@@ -54,7 +56,43 @@ function board(view,{interactive=false,notes,selected=-1}={}){
     if(right){const clue=element('th',view.right[r]||'','clue');clue.dataset.row=String(r);row.append(clue);}table.append(row);
   }
   if(view.bottom.length){const row=document.createElement('tr');if(left)row.append(element('th',''));for(let c=0;c<view.cols;c++){const clue=element('th',view.bottom[c]||'','clue');clue.dataset.col=String(c);row.append(clue);}if(right)row.append(element('th',''));table.append(row);}
-  return table;
+  return view.links?.length?linked(table,view,interactive):table;
+}
+// Links between cell centres (I4), drawn as lines over the table once it has a size.
+const svgNS='http://www.w3.org/2000/svg';
+const svg=(tag,attrs={})=>{const e=document.createElementNS(svgNS,tag);for(const [k,v] of Object.entries(attrs))e.setAttribute(k,String(v));return e;};
+const linkKey=p=>`${p.row},${p.col},${p.row2},${p.col2}`;
+/** Each cell at the end of a link, with the links leaving it: link index and the cell at the other end. */
+function linkEnds(view){
+  const ends=new Map(),add=(i,k,other)=>{if(!ends.has(i))ends.set(i,[]);ends.get(i).push({k,other});};
+  (view.links||[]).forEach((link,k)=>{const p=link.place.link,a=p.row*view.cols+p.col,b=p.row2*view.cols+p.col2;add(a,k,b);add(b,k,a);});
+  return ends;
+}
+// Players reach links with the mouse, or from the cells at their ends with the keyboard.
+function linked(table,view,interactive){
+  table.classList.add('linked');
+  const wrap=element('div',undefined,'board-wrap'),layer=svg('svg',{class:'links','aria-hidden':'true'});
+  const groups=view.links.map((link,k)=>{
+    const p=link.place.link,mark=view.link_marks.find(m=>m.value===link.value),lines=mark?.lines??0;
+    const g=svg('g',{class:'link'+(link.editable&&interactive?' editable':'')+(lines?'':' empty')});
+    g.dataset.link=String(k);g.dataset.linkPlace=linkKey(p);
+    layer.append(g);return {g,p,lines};
+  });
+  wrap.append(table,layer);
+  const draw=()=>{
+    if(!wrap.isConnected){observer.disconnect();return;}
+    const box=wrap.getBoundingClientRect();layer.setAttribute('width',String(box.width));layer.setAttribute('height',String(box.height));
+    const centre=(r,c)=>{const td=table.querySelector(`td[data-cell-row="${r}"][data-cell-col="${c}"]`).getBoundingClientRect();return {x:td.left+td.width/2-box.left,y:td.top+td.height/2-box.top,size:td.width,circled:view.cells[r*view.cols+c].circled};};
+    for(const {g,p,lines} of groups){
+      const a=centre(p.row,p.col),b=centre(p.row2,p.col2),length=Math.hypot(b.x-a.x,b.y-a.y),dx=(b.x-a.x)/length,dy=(b.y-a.y)/length;
+      const cut=end=>end.circled?end.size*.4:0,x1=a.x+dx*cut(a),y1=a.y+dy*cut(a),x2=b.x-dx*cut(b),y2=b.y-dy*cut(b),gap=a.size*.1;
+      const children=[svg('line',{class:'hit',x1,y1,x2,y2,'stroke-width':a.size*.36}),svg('line',{class:'guide',x1,y1,x2,y2})];
+      for(let i=0;i<lines;i++){const o=(i-(lines-1)/2)*gap*2;children.push(svg('line',{class:'bridge',x1:x1-dy*o,y1:y1+dx*o,x2:x2-dy*o,y2:y2+dx*o}));}
+      g.replaceChildren(...children);
+    }
+  };
+  const observer=new ResizeObserver(draw);observer.observe(table);
+  return wrap;
 }
 function directory(catalogue,current) {
   const nav=$('#directory');
@@ -102,12 +140,18 @@ function player(game){
 <dl id="keys" class="keys"></dl>
 </div></fieldset></section>
 <details id="rules-box"><summary>Rules</summary><p id="rules"></p></details><details><summary>Load puzzle</summary><label for="load-input">ID, text, or JSON</label><textarea id="load-input" maxlength="1000000" spellcheck="false" placeholder="${escape(game.example)}"></textarea><button id="load" type="button">Load</button></details>`);
-  const key='pencil-game:'+id;let current=null;let history=null;let busy=false;let entry=false;let selected=-1;let notesMode=false;let drag=null;let solvedTime=null;let checkTimer=0;let checkSeq=0;
+  const key='pencil-game:'+id;let current=null;let history=null;let busy=false;let entry=false;let selected=-1;let notesMode=false;let drag=null;let solvedTime=null;let checkTimer=0;let checkSeq=0;let ends=new Map();
   const clock={elapsed:0,since:null};const boardBox=$('#board');
   const blank=()=>current.view.marks[0].value;
+  // Values are the cells in row-major order, then the links (I4).
+  const cellCount=()=>current.view.cells.length,linkMarks=()=>current.view.link_marks||[];
+  const linkEditable=k=>!!current.view.links?.[k]?.editable;
+  function cycleLink(k,step){if(!linkEditable(k))return;const marks=linkMarks(),i=cellCount()+k,at=marks.findIndex(m=>m.value===history.values[i]);apply(i,marks[(at+step+marks.length)%marks.length].value);}
+  // On boards with links, only cells at the ends of links can be selected.
+  const selectable=i=>!ends.size||ends.has(i);
   // Shading genres have one shaded mark and one dot mark; marking a cell with the mark it already has clears it.
   const shadeMark=()=>current.view.marks.find(m=>m.shaded)?.value,dotMark=()=>current.view.marks.find((m,i)=>i>0&&!m.shaded)?.value;
-  const toggled=(i,value)=>history.values[i]===value?blank():value;const editable=i=>i>=0&&current.view.cells[i].editable;
+  const toggled=(i,value)=>history.values[i]===value?blank():value;const editable=i=>i>=0&&(i<cellCount()?current.view.cells[i].editable:linkEditable(i-cellCount()));
   const elapsed=()=>clock.elapsed+(clock.since===null?0:performance.now()-clock.since);
   function startClock(){if(current&&clock.since===null&&solvedTime===null&&!document.hidden)clock.since=performance.now();}
   function pauseClock(){if(clock.since!==null){clock.elapsed+=performance.now()-clock.since;clock.since=null;}}
@@ -116,10 +160,11 @@ function player(game){
   function sync(){const ready=!!current&&!busy;$('#undo').disabled=!ready||!history?.past.length;$('#redo').disabled=!ready||!history?.future.length;for(const b of ['check','clear','share'])$('#'+b).disabled=!ready;$('#load').disabled=busy;$('#load-input').disabled=busy;}
   function persist(){if(current)save(key,{id:current.id,marks:history.values,notes:history.notes,elapsed:elapsed(),solved:solvedTime,params:$('#params').value,difficulty:$('#difficulty').value});}
   function draw(values=history.values,focus=boardBox.contains(document.activeElement)){
-    const view={...current.view,cells:current.view.cells.map((cell,i)=>({...cell,value:values[i]}))};
+    const n=cellCount(),view={...current.view,cells:current.view.cells.map((cell,i)=>({...cell,value:values[i]})),links:(current.view.links||[]).map((link,k)=>({...link,value:values[n+k]}))};
     const table=board(view,{interactive:true,notes:history.notes,selected});table.classList.add(entry?'entry':'paint');boardBox.replaceChildren(table);
     if(focus&&selected>=0)boardBox.querySelector(`[data-index="${selected}"]`)?.focus({preventScroll:true});
-    $('#progress').textContent=`${values.filter((v,i)=>view.cells[i].editable&&v!==current.view.cells[i].value).length} / ${view.cells.filter(c=>c.editable).length} cells`;
+    const linkBlank=linkMarks()[0]?.value;
+    $('#progress').textContent=view.links.length?`${view.links.filter(l=>l.editable&&l.value!==linkBlank).length} drawn`:`${values.filter((v,i)=>i<n&&view.cells[i].editable&&v!==current.view.cells[i].value).length} / ${view.cells.filter(c=>c.editable).length} cells`;
     sync();
   }
   function changed(){draw();persist();status('');scheduleCheck();}
@@ -137,9 +182,11 @@ function player(game){
   function solved(){if(solvedTime===null){pauseClock();solvedTime=elapsed();tick();persist();}status(`Solved in ${formatTime(solvedTime)}.`,'success');}
   function scheduleCheck(){clearTimeout(checkTimer);checkTimer=setTimeout(async()=>{const seq=++checkSeq,marks=history.values;if(entry&&marks.some((v,i)=>editable(i)&&v===blank()))return;try{const result=await engine.call({operation:'check',genre:id,puzzle:current.id,marks,finished:true});if(seq===checkSeq&&result.solved)solved();}catch{/* The Check button reports errors. */}},200);}
   function setNotes(on){notesMode=on;$('#notes')?.setAttribute('aria-pressed',String(on));}
-  boardBox.addEventListener('contextmenu',e=>{if(e.target.closest('.cell'))e.preventDefault();});
+  boardBox.addEventListener('contextmenu',e=>{if(e.target.closest('.cell,.link'))e.preventDefault();});
   boardBox.addEventListener('pointerdown',e=>{
-    const cell=e.target.closest('.cell');if(!cell||busy||!current||(e.button!==0&&e.button!==2))return;
+    const link=e.target.closest('.link.editable');
+    if(link&&!busy&&current&&(e.button===0||e.button===2)){e.preventDefault();cycleLink(Number(link.dataset.link),e.button===2?-1:1);return;}
+    const cell=e.target.closest('.cell');if(!cell||busy||!current||(e.button!==0&&e.button!==2)||!selectable(Number(cell.dataset.index)))return;
     e.preventDefault();selected=Number(cell.dataset.index);
     if(entry||!editable(selected)){draw(undefined,true);return;}
     const target=e.button===2?dotMark():shadeMark();if(target===undefined){draw(undefined,true);return;}
@@ -157,6 +204,14 @@ function player(game){
     if(inBoard&&e.target.dataset.index)selected=Number(e.target.dataset.index);
     const moves={ArrowLeft:[0,-1],ArrowRight:[0,1],ArrowUp:[-1,0],ArrowDown:[1,0],a:[0,-1],d:[0,1],w:[-1,0],s:[1,0]};
     const move=moves[e.key.length===1?k:e.key];
+    if(move&&ends.size){
+      // Boards with links: Shift changes the link leaving the selected cell that way; otherwise move to the next cell at a link's end.
+      e.preventDefault();if(selected<0){selected=Math.min(...ends.keys());draw(undefined,true);return;}
+      const r0=Math.floor(selected/view.cols),c0=selected%view.cols,ahead=i=>Math.sign(Math.floor(i/view.cols)-r0)===move[0]&&Math.sign(i%view.cols-c0)===move[1];
+      if(e.shiftKey){const out=ends.get(selected)?.find(({other})=>ahead(other));if(out)cycleLink(out.k,1);return;}
+      for(let r=r0+move[0],c=c0+move[1];r>=0&&r<view.rows&&c>=0&&c<view.cols;r+=move[0],c+=move[1])if(ends.has(r*view.cols+c)){selected=r*view.cols+c;break;}
+      draw(undefined,true);return;
+    }
     if(move){e.preventDefault();const r=Math.floor(selected/view.cols)+move[0],c=selected%view.cols+move[1];if(r>=0&&r<view.rows&&c>=0&&c<view.cols)selected=r*view.cols+c;draw(undefined,true);return;}
     const digit=/^(?:Digit|Numpad)(\d)$/.exec(e.code)?.[1];
     if(digit!==undefined||e.key==='Backspace'||e.key==='Delete'){const mark=view.marks[digit===undefined?0:Number(digit)];if(!mark)return;e.preventDefault();entry?enter(mark.value,notesMode||e.shiftKey):apply(selected,mark.value);return;}
@@ -165,21 +220,25 @@ function player(game){
   });
   async function action(message,task){if(busy)return;busy=true;$('#controls').disabled=true;sync();status(message);try{await task();}catch(e){status(errorMessage(e),'error');}finally{busy=false;$('#controls').disabled=false;sync();}}
   function accept(value,restore){
-    pauseClock();checkSeq++;current=value;entry=value.view.marks.length>3;selected=-1;drag=null;
-    const initial=value.view.cells.map(c=>c.value);const allowed=new Set(value.view.marks.map(m=>m.value));
-    const saved=restore&&readSaved(key);const valid=saved?.id===value.id&&Array.isArray(saved.marks)&&saved.marks.length===initial.length&&saved.marks.every((m,i)=>value.view.cells[i].editable?allowed.has(m):m===initial[i]);
+    pauseClock();checkSeq++;current=value;entry=value.view.marks.length>3;selected=-1;drag=null;ends=linkEnds(value.view);
+    const items=[...value.view.cells,...(value.view.links||[])],cells=value.view.cells.length;
+    const initial=items.map(c=>c.value);const allowed=new Set(value.view.marks.map(m=>m.value)),allowedLinks=new Set((value.view.link_marks||[]).map(m=>m.value));
+    const saved=restore&&readSaved(key);const valid=saved?.id===value.id&&Array.isArray(saved.marks)&&saved.marks.length===initial.length&&saved.marks.every((m,i)=>items[i].editable?(i<cells?allowed:allowedLinks).has(m):m===initial[i]);
     const notes=valid&&Array.isArray(saved.notes)&&saved.notes.length===initial.length&&saved.notes.every(n=>typeof n==='string')?saved.notes:initial.map(()=>'');
-    history=new History((valid?saved.marks:initial).map((v,i)=>value.view.cells[i].editable?v:initial[i]),notes);
+    history=new History((valid?saved.marks:initial).map((v,i)=>items[i].editable?v:initial[i]),notes);
     clock.elapsed=valid&&Number.isFinite(saved.elapsed)?saved.elapsed:0;clock.since=null;solvedTime=valid&&Number.isFinite(saved.solved)?saved.solved:null;
     if(value.params)$('#params').value=value.params;$('#rules').textContent=value.view.instructions;
     $('#finish-note').textContent=value.view.finish_note||'';
-    const marks=value.view.marks;
-    $('#keys').replaceChildren(...keyList(entry
+    const marks=value.view.marks,links=value.view.link_marks||[],linking=(value.view.links||[]).some(l=>l.editable);
+    $('#keys').replaceChildren(...keyList(linking
+      ?[['Click','next mark'],['Right-click','previous mark'],['Arrows / WASD','move'],['Shift+Arrows / WASD','next mark that way'],['Ctrl+Z / Ctrl+Y','undo / redo']]
+      :entry
       ?[[`${marks[1].symbol}–${marks.at(-1).symbol}`,'enter'],['Shift+digit','note'],['N','notes mode'],['Del','erase'],['Arrows / WASD','move'],['Ctrl+Z / Ctrl+Y','undo / redo']]
       :[['Click / Q',marks.find(m=>m.shaded)?.name.toLowerCase()],['Right-click / E',marks.find((m,i)=>i>0&&!m.shaded)?.name.toLowerCase()],['R / Del','clear'],['Drag','mark several'],['Arrows / WASD','move'],['Ctrl+Z / Ctrl+Y','undo / redo']]));
     const legendButton=(text,label,click)=>{const button=element('button',text);button.type='button';button.setAttribute('aria-label',label);button.onclick=click;button.onmousedown=e=>e.preventDefault();return button;};
     $('#legend').className='legend'+(entry?' digits':'');
-    if(entry){
+    if(linking)$('#legend').replaceChildren(...links.map(m=>{const label=element('span');const swatch=element('span',['','─','═'][m.lines]??'','swatch line');swatch.setAttribute('aria-hidden','true');label.append(swatch,document.createTextNode(m.name));return label;}));
+    else if(entry){
       const notesButton=legendButton('Notes','Notes mode',()=>setNotes(!notesMode));notesButton.id='notes';
       const pad=element('div',undefined,'keypad');pad.style.setProperty('--keypad-cols',String(Math.ceil(Math.sqrt(marks.length-1))));pad.append(...marks.slice(1).map(m=>legendButton(m.symbol,`Enter ${m.name}`,()=>enter(m.value,notesMode))));
       const tools=element('div',undefined,'keypad-tools');tools.append(notesButton,legendButton('Erase','Erase cell',()=>enter(blank(),false)));
@@ -194,8 +253,8 @@ function player(game){
   $('#new-game').onclick=newGame;
   $('#params').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();newGame();}});
   $('#undo').onclick=undo;$('#redo').onclick=redo;
-  $('#clear').onclick=()=>{commit(current.view.cells.map(c=>c.value),current.view.cells.map(()=>''));status('Cleared. Undo restores it.');};
-  $('#check').onclick=()=>action('Checking…',async()=>{const result=await engine.call({operation:'check',genre:id,puzzle:current.id,marks:history.values,finished:true});$('#board').querySelectorAll('.invalid').forEach(c=>c.classList.remove('invalid'));for(const v of result.violations){const p=v.place;let selector=p==='board'?'td':'';if(p&&typeof p==='object'){if('row'in p)selector=`[data-row="${p.row}"],[data-cell-row="${p.row}"]`;else if('col'in p)selector=`[data-col="${p.col}"],[data-cell-col="${p.col}"]`;else if('region'in p)selector=`[data-region="${p.region}"]`;else if('cell'in p)selector=`[data-index="${p.cell.row*current.view.cols+p.cell.col}"]`;}if(selector)$('#board').querySelectorAll(selector).forEach(c=>c.classList.add('invalid'));}if(result.solved)solved();else status('Not solved. Check the marked cells or clues.','error');});
+  $('#clear').onclick=()=>{const items=[...current.view.cells,...(current.view.links||[])];commit(items.map(c=>c.value),items.map(()=>''));status('Cleared. Undo restores it.');};
+  $('#check').onclick=()=>action('Checking…',async()=>{const result=await engine.call({operation:'check',genre:id,puzzle:current.id,marks:history.values,finished:true});$('#board').querySelectorAll('.invalid').forEach(c=>c.classList.remove('invalid'));for(const v of result.violations){const p=v.place;let selector=p==='board'?'td':'';if(p&&typeof p==='object'){if('row'in p)selector=`[data-row="${p.row}"],[data-cell-row="${p.row}"]`;else if('col'in p)selector=`[data-col="${p.col}"],[data-cell-col="${p.col}"]`;else if('region'in p)selector=`[data-region="${p.region}"]`;else if('cell'in p)selector=`[data-index="${p.cell.row*current.view.cols+p.cell.col}"]`;else if('link'in p)selector=`[data-link-place="${linkKey(p.link)}"]`;}if(selector)$('#board').querySelectorAll(selector).forEach(c=>c.classList.add('invalid'));}if(result.solved)solved();else status('Not solved. Check the marked cells or clues.','error');});
   $('#load').onclick=()=>action('Loading…',async()=>accept(await engine.call({operation:'load',genre:id,puzzle:$('#load-input').value}),false));
   let shareTimer=0;
   $('#share').onclick=async()=>{const button=$('#share');try{await navigator.clipboard.writeText(location.href);button.textContent='Copied';clearTimeout(shareTimer);shareTimer=setTimeout(()=>{button.textContent='Copy link';},1500);}catch{status('Copy the URL from the address bar.');}};

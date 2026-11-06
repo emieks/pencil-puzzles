@@ -59,6 +59,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo install wasm-bindgen-cli --version 0.2.105 --locked
       - run: cargo test -p pencil-puzzles-fillomino --target wasm32-unknown-unknown --test wasm --all-features --locked
+      - run: cargo test -p pencil-puzzles-hashi --target wasm32-unknown-unknown --test wasm --all-features --locked
       - run: cargo test -p pencil-puzzles-kakurasu --target wasm32-unknown-unknown --test wasm --all-features --locked
       - run: cargo test -p pencil-puzzles-nurikabe --target wasm32-unknown-unknown --test wasm --all-features --locked
       - run: cargo test -p pencil-puzzles-sudoku --target wasm32-unknown-unknown --test wasm --all-features --locked

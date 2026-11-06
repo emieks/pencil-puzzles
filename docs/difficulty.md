@@ -33,6 +33,7 @@ need not take the same time.
 | [Sudoku](genres/sudoku.md) | singles | pointing, claiming, pairs | triples, quads, X-wing, swordfish, short chains, wings, simple coloring | jellyfish, extended coloring, X- and XY-chains |
 | [Nurikabe](genres/nurikabe.md) | separating numbers, pools, single exits | unreachable cells, immediate rule breaks | contradiction chains of up to 6 steps | up to 20 steps |
 | [Fillomino](genres/fillomino.md) | wall-offs, single exits, room counting, enclosed pairs | cells a region needs, ways to finish a region, small pockets, immediate rule breaks | contradiction chains of up to 6 steps | up to 20 steps |
+| [Hashi](genres/hashi.md) | island bounds, isolated pairs | only connections, immediate rule breaks | contradiction chains of up to 6 steps | up to 20 steps |
 | [Kakurasu](genres/kakurasu.md) | weight bounds | short lists of combinations | long lists, contradiction chains of up to 6 steps | up to 20 steps |
 
 ## Rating procedure

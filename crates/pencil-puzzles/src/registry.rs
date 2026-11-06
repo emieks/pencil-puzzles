@@ -117,6 +117,7 @@ pub struct Input {
 // genre features here as they join the registry.
 #[cfg(any(
     feature = "fillomino",
+    feature = "hashi",
     feature = "kakurasu",
     feature = "sudoku",
     feature = "nurikabe"
@@ -401,6 +402,8 @@ mod typed {
     }
     #[cfg(feature = "fillomino")]
     pub(super) static FILLOMINO: Adapter<crate::fillomino::Fillomino> = Adapter(PhantomData);
+    #[cfg(feature = "hashi")]
+    pub(super) static HASHI: Adapter<crate::hashi::Hashi> = Adapter(PhantomData);
     #[cfg(feature = "kakurasu")]
     pub(super) static KAKURASU: Adapter<crate::kakurasu::Kakurasu> = Adapter(PhantomData);
     #[cfg(feature = "nurikabe")]
@@ -412,6 +415,8 @@ mod typed {
 static GENRES: &[&dyn DynGenre] = &[
     #[cfg(feature = "fillomino")]
     &typed::FILLOMINO,
+    #[cfg(feature = "hashi")]
+    &typed::HASHI,
     #[cfg(feature = "kakurasu")]
     &typed::KAKURASU,
     #[cfg(feature = "nurikabe")]

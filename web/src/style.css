@@ -191,6 +191,27 @@ button.cell:hover:not(:disabled) { background: var(--subtle); border: 0; }
 .board.entry .cell.selected, .board.entry button.cell.selected:hover:not(:disabled) { background: var(--select); }
 .board .invalid { color: var(--error); text-decoration: underline; font-weight: 600; }
 .board td.invalid { outline: 1px solid var(--error); outline-offset: -1px; }
+/* Boards with links (Hashi): no inner grid lines, circled cells, lines drawn over the table. */
+.board-wrap { position: relative; width: fit-content; }
+.board.linked td:not(.invalid) { border-color: transparent; }
+.board.linked .cell, .board.linked button.cell:hover:not(:disabled) { background: transparent; }
+.board.linked .cell.end { cursor: pointer; }
+.board.linked .cell:focus-visible { outline: none; }
+.board.linked .cell.selected .circle { background: var(--select); }
+.board.linked .cell:focus-visible .circle { outline: 2px solid var(--text); outline-offset: 2px; }
+.board.linked .cell.invalid { box-shadow: inset 0 0 0 2px var(--error); }
+.cell .circle { display: flex; align-items: center; justify-content: center; width: 80%; height: 80%; border: 2px solid var(--text); border-radius: 50%; background: var(--cell); font-size: calc(var(--size) * .45); }
+.links { position: absolute; top: 0; left: 0; overflow: visible; pointer-events: none; }
+.links .hit { stroke: transparent; }
+.links .guide { stroke: transparent; stroke-width: 1.5; stroke-dasharray: 3 4; pointer-events: none; }
+.links .editable { cursor: pointer; }
+.links .editable .hit { pointer-events: stroke; }
+.links .editable.empty:hover .guide { stroke: var(--muted); }
+.links .bridge { stroke: var(--text); stroke-width: 2; stroke-linecap: round; pointer-events: none; }
+.links .editable:hover .bridge { stroke-width: 3; }
+.links .invalid .bridge { stroke: var(--error); }
+.links .invalid .hit { stroke: var(--error); stroke-opacity: .15; }
+.swatch.line { border: 0; width: 16px; font-size: 14px; }
 .notes { display: grid; grid-template-columns: repeat(var(--note-cols), 1fr); width: 100%; height: 100%; padding: 2px; font-size: calc(var(--size) * .26); line-height: 1; color: var(--muted); font-weight: normal; }
 .notes span { display: flex; align-items: center; justify-content: center; }
 
