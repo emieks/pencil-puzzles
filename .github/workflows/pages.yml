@@ -2,12 +2,14 @@ name: Web app on GitHub Pages
 
 # Builds the static web app and publishes it to this repository's GitHub
 # Pages site, https://<owner>.github.io/<repository>/. It runs only when the
-# web app or the Rust code it is built from changes.
+# web app, the Rust code it is built from or the benchmark tables that set its
+# size presets change.
 on:
   push:
     branches: [main]
     paths:
       - "web/**"
+      - "docs/benchmarks/**"
       - "crates/**"
       - "Cargo.toml"
       - "Cargo.lock"

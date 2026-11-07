@@ -15,6 +15,14 @@ export class History {
   }
   undo() { if (!this.past.length) return false; this.future.push([this.values, this.notes]); [this.values, this.notes] = this.past.pop(); return true; }
   redo() { if (!this.future.length) return false; this.past.push([this.values, this.notes]); [this.values, this.notes] = this.future.pop(); return true; }
+  /** The most recent `limit` undo and redo steps, for saving. */
+  steps(limit = 200) { return {past: this.past.slice(-limit), future: this.future.slice(-limit)}; }
+  /** Restore saved steps; steps that fail `valid([values, notes])` drop the whole history. */
+  restore({past, future}, valid) {
+    const ok = list => Array.isArray(list) && list.every(step => Array.isArray(step) && step.length === 2 && valid(step));
+    if (ok(past) && ok(future)) { this.past = past.map(([v, n]) => [[...v], [...n]]); this.future = future.map(([v, n]) => [[...v], [...n]]); }
+    return this;
+  }
 }
 /** Notes are comma-separated mark values kept in mark order. */
 export function toggleNote(notes, value, marks) {
@@ -22,7 +30,24 @@ export function toggleNote(notes, value, marks) {
   set.has(value) ? set.delete(value) : set.add(value);
   return marks.map(m => m.value).filter(v => set.has(v)).join(',');
 }
+/** Notes without `value`. */
+export function removeNote(notes, value) { return notes ? notes.split(',').filter(v => v !== value).join(',') : notes; }
 export function formatTime(ms) {
   const s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60, pad = n => String(n).padStart(2, '0');
   return h ? `${h}:${pad(m)}:${pad(s % 60)}` : `${m}:${pad(s % 60)}`;
+}
+/** Sets of `length` distinct digits from 1 to `max` that add up to `sum` and contain every digit in `required`, smallest first. */
+export function combinations(sum, length, max, required = []) {
+  const out = [], pick = [];
+  const walk = (from, left) => {
+    if (pick.length === length) { if (left === 0 && required.every(d => pick.includes(d))) out.push([...pick]); return; }
+    for (let d = from; d <= max && d <= left; d++) { pick.push(d); walk(d + 1, left - d); pick.pop(); }
+  };
+  walk(1, sum);
+  return out;
+}
+/** Keep `id` first in a list of recent puzzle IDs; returns the new list and the IDs that fell off the end. */
+export function remember(list, id, limit) {
+  const next = [id, ...(Array.isArray(list) ? list : []).filter(x => x !== id && typeof x === 'string')];
+  return {list: next.slice(0, limit), dropped: next.slice(limit)};
 }

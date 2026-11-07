@@ -34,6 +34,10 @@ enum Request {
         genre: String,
         puzzle: String,
     },
+    Rate {
+        genre: String,
+        puzzle: String,
+    },
     Check {
         genre: String,
         puzzle: String,
@@ -126,6 +130,10 @@ fn execute(request: Request) -> Result<Value, RegistryError> {
                 .collect::<Result<Vec<_>, _>>()?;
             Ok(json!({"puzzle":loaded(&input)?,"status":status,"answers":answers,"views":views}))
         }
+        Request::Rate { genre, puzzle } => {
+            let input = input(&genre, &puzzle)?;
+            Ok(json!(input.genre.rate(&input.text, &budget)?))
+        }
         Request::Check {
             genre,
             puzzle,
@@ -196,6 +204,11 @@ mod tests {
                 json!({"operation":"check","genre":genre,"puzzle":puzzle,"marks":marks,"finished":true}),
             );
             assert_eq!(checked["value"]["solved"], true);
+            let rated = call(json!({"operation":"rate","genre":genre,"puzzle":puzzle}));
+            assert_eq!(
+                rated["value"]["level"],
+                generated["value"]["rating"]["level"]
+            );
         }
     }
     #[test]

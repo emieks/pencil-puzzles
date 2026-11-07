@@ -1,4 +1,4 @@
-import {route,History,toggleNote,formatTime} from './model.js';
+import {route,History,toggleNote,removeNote,formatTime,combinations,remember} from './model.js';
 const $ = (selector,root=document) => root.querySelector(selector);
 const main = $('#main');
 const escape = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -6,6 +6,7 @@ const element = (tag,text,className) => {const e=document.createElement(tag); if
 const link = (text,href,current) => {const a=element('a',text);a.href=href;if(current)a.setAttribute('aria-current','page');return a;};
 const readSaved = key => {try{return JSON.parse(localStorage.getItem(key));}catch{return null;}};
 const save = (key,value) => {try{localStorage.setItem(key,JSON.stringify(value));}catch{/* Playing remains available without browser storage. */}};
+const forget = key => {try{localStorage.removeItem(key);}catch{/* Nothing to remove without browser storage. */}};
 const icons = {
   undo:'<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 7h6a3 3 0 0 1 0 6H8M6.5 4.5 4 7l2.5 2.5"/></svg>',
   redo:'<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M12 7H6a3 3 0 0 0 0 6h2M9.5 4.5 12 7l-2.5 2.5"/></svg>',
@@ -29,20 +30,69 @@ class Engine {
 }
 const engine=new Engine();
 function errorMessage(error){return /budget/i.test(error.message)?'This puzzle needs more work than the site allows. Try a smaller size, a lower difficulty or another puzzle.':error.message;}
-function board(view,{interactive=false,notes,selected=-1}={}){
+
+/** How selecting a cell highlights others, read from the view: boards with blocks (Kakuro) use runs, boards with regions (Sudoku) use rows, columns and regions, labelled boards (Hitori) use rows and columns, other number boards (Fillomino) use the connected group of equal numbers. */
+function highlightMode(view){
+  if(view.cells.some(c=>c.block))return 'runs';
+  if(view.cells.some(c=>c.region!==null&&c.region!==undefined))return 'regions';
+  if(view.cells.some(c=>c.label))return 'lines';
+  return view.marks.length>3?'group':'none';
+}
+/** The cells of the run through `index` in direction (dr, dc), up to the nearest blocks. */
+function run(view,index,dr,dc){
+  const cells=[index],r0=Math.floor(index/view.cols),c0=index%view.cols;
+  for(const s of [-1,1])for(let r=r0+s*dr,c=c0+s*dc;r>=0&&r<view.rows&&c>=0&&c<view.cols&&!view.cells[r*view.cols+c].block;r+=s*dr,c+=s*dc)cells.push(r*view.cols+c);
+  return cells;
+}
+/** The other cells in either run through `index`. */
+function runCells(view,index){const cells=new Set([...run(view,index,0,1),...run(view,index,1,0)]);cells.delete(index);return cells;}
+/** The block holding the clue for the run through `index` in direction (dr, dc), or -1. */
+function clueBlock(view,index,dr,dc){let r=Math.floor(index/view.cols)-dr,c=index%view.cols-dc;while(r>=0&&c>=0&&!view.cells[r*view.cols+c].block){r-=dr;c-=dc;}return r>=0&&c>=0?r*view.cols+c:-1;}
+/** Cells whose digit must differ from the digit at `index`. */
+function peerCells(view,index,mode){
+  if(mode==='runs')return runCells(view,index);
+  const peers=new Set();if(mode!=='regions')return peers;
+  const r0=Math.floor(index/view.cols),c0=index%view.cols,region=view.cells[index].region;
+  view.cells.forEach((cell,j)=>{if(j!==index&&(Math.floor(j/view.cols)===r0||j%view.cols===c0||cell.region===region))peers.add(j);});
+  return peers;
+}
+/** The cells joined to `index` by sides through cells with the same value. */
+function groupCells(view,index){
+  const value=view.cells[index].value,group=new Set([index]),todo=[index];
+  while(todo.length){const j=todo.pop(),r=Math.floor(j/view.cols),c=j%view.cols;for(const [dr,dc] of [[0,1],[0,-1],[1,0],[-1,0]]){const rr=r+dr,cc=c+dc,k=rr*view.cols+cc;if(rr>=0&&rr<view.rows&&cc>=0&&cc<view.cols&&!group.has(k)&&view.cells[k].value===value){group.add(k);todo.push(k);}}}
+  return group;
+}
+/** A mark's symbol as an element: dots and crosses are drawn shapes, other symbols are text. */
+function swatch(mark){
+  const shape=mark.symbol==='·'?' dot':mark.symbol==='×'?' cross':'';
+  const s=element('span',shape||mark.shaded?'':mark.symbol,'swatch'+(mark.shaded?' shaded':'')+shape);s.setAttribute('aria-hidden','true');return s;
+}
+function board(view,{interactive=false,notes,selected=-1,selection,wrong}={}){
   const table=element('table',undefined,'board');table.setAttribute('aria-label',interactive?'Puzzle board':'Puzzle solution');
-  const left=view.left.length>0, right=view.right.length>0, blank=view.marks[0]?.value, ends=linkEnds(view);
+  const left=view.left.length>0, right=view.right.length>0, blank=view.marks[0]?.value, ends=linkEnds(view), mode=highlightMode(view);
   const first=view.cells.findIndex(cell=>cell.editable), focus=selected>=0?selected:first>=0||!ends.size?first:Math.min(...ends.keys());
   table.style.setProperty('--cols',String(view.cols+(left?1:0)+(right?1:0)));
-  // Number entry highlights equal values; a labelled board (Hitori) highlights equal labels.
-  const entry=view.marks.length>3, from=selected>=0&&(entry||view.cells[selected].label)?view.cells[selected]:null;
-  const same=from?.label||(from&&from.value!==blank?from.value:null);
-  const sr=Math.floor(selected/view.cols), sc=selected%view.cols;
-  // On boards with blocks (Kakuro), the peers are the cells of the selected cell's two runs.
-  const runs=from&&view.cells.some(c=>c.block)?runCells(view,selected):null;
-  if(view.top.length){const row=document.createElement('tr');if(left)row.append(element('th',''));for(let c=0;c<view.cols;c++){const th=element('th',view.top[c]||'');th.scope='col';row.append(th);}if(right)row.append(element('th',''));table.append(row);}
+  const chosen=selection??new Set(selected>=0?[selected]:[]);
+  const from=chosen.size<=1&&selected>=0&&!view.cells[selected].block?view.cells[selected]:null;
+  const sr=from?Math.floor(selected/view.cols):-1, sc=from?selected%view.cols:-1;
+  let peers=new Set(),same=new Set(),across=-1,down=-1;
+  if(from&&interactive){
+    peers=peerCells(view,selected,mode);
+    const value=from.label||(from.value!==blank?from.value:null);
+    if(value!==null&&mode==='group')same=groupCells(view,selected);
+    else if(value!==null&&mode!=='none')view.cells.forEach((cell,i)=>{
+      if(cell.block||(mode==='lines'?cell.label:cell.value)!==value)return;
+      if(mode==='regions'||i===selected||(mode==='runs'&&peers.has(i))||(mode==='lines'&&(Math.floor(i/view.cols)===sr||i%view.cols===sc)))same.add(i);
+    });
+    if(mode==='runs'){across=clueBlock(view,selected,0,1);down=clueBlock(view,selected,1,0);}
+  }
+  // Bridges at each island, so islands can show when they have their number.
+  const bridges=new Map();
+  if(interactive)(view.links||[]).forEach(l=>{const lines=view.link_marks?.find(m=>m.value===l.value)?.lines??0,p=l.place.link;if(lines)for(const j of [p.row*view.cols+p.col,p.row2*view.cols+p.col2])bridges.set(j,(bridges.get(j)||0)+lines);});
+  const header=(text,on,className='')=>{const th=element('th',text,(className+(on?' hl':'')).trim()||undefined);return th;};
+  if(view.top.length){const row=document.createElement('tr');if(left)row.append(element('th',''));for(let c=0;c<view.cols;c++){const th=header(view.top[c]||'',c===sc);th.scope='col';row.append(th);}if(right)row.append(element('th',''));table.append(row);}
   for(let r=0;r<view.rows;r++){
-    const row=document.createElement('tr');if(left){const th=element('th',view.left[r]||'');th.scope='row';row.append(th);}
+    const row=document.createElement('tr');if(left){const th=header(view.left[r]||'',r===sr);th.scope='row';row.append(th);}
     for(let c=0;c<view.cols;c++){
       const i=r*view.cols+c,cell=view.cells[i],choice=view.marks.find(m=>m.value===cell.value),noted=!!notes?.[i]&&cell.value===blank;
       const td=document.createElement('td');td.dataset.cellRow=String(r);td.dataset.cellCol=String(c);if(cell.region!==null&&cell.region!==undefined)td.dataset.region=String(cell.region);
@@ -50,13 +100,14 @@ function board(view,{interactive=false,notes,selected=-1}={}){
       if(r===0)td.classList.add('edge-top');if(r===view.rows-1)td.classList.add('edge-bottom');if(c===0)td.classList.add('edge-left');if(c===view.cols-1)td.classList.add('edge-right');
       if(cell.block){
         // A block: shaded, and split by a diagonal when it holds labels.
-        const block=element('span','','cell block'+(i===selected?' selected':''));block.dataset.index=String(i);block.setAttribute('aria-label',`Row ${r+1}, column ${c+1}: ${cell.block.name}`);
-        if(cell.block.upper||cell.block.lower){block.classList.add('split');block.append(element('span',cell.block.upper,'upper'),element('span',cell.block.lower,'lower'));}
+        const block=element('span','','cell block'+(chosen.has(i)?' selected':''));block.dataset.index=String(i);block.setAttribute('aria-label',`Row ${r+1}, column ${c+1}: ${cell.block.name}`);
+        if(cell.block.upper||cell.block.lower){block.classList.add('split');block.append(element('span',cell.block.upper,'upper'+(i===across?' hl':'')),element('span',cell.block.lower,'lower'+(i===down?' hl':'')));}
         td.append(block);row.append(td);continue;
       }
-      const peer=from&&i!==selected&&(runs?runs.has(i):r===sr||c===sc||(cell.region!=null&&cell.region===from.region));
-      const label=cell.label||'',dot=choice?.symbol==='·',matches=same!==null&&(label?label===same:cell.value===same);
-      const button=element(interactive?'button':'span',cell.circled?undefined:label||(choice?.symbol??cell.value),'cell'+(choice?.shaded?' shaded':'')+(dot?(label?' circled':' dot'):'')+(label?' labelled':'')+(!cell.editable?' given':'')+(i===selected?' selected':'')+(matches?' same':'')+(peer?' peer':'')+(ends.has(i)?' end':''));button.dataset.index=String(i);
+      const label=cell.label||'',symbol=choice?.symbol??cell.value,dot=!!choice&&symbol==='·',cross=!!choice&&symbol==='×';
+      let className='cell'+(choice?.shaded?' shaded':'')+(dot?(label?' circled':' dot'):'')+(cross?' cross':'')+(label?' labelled':'')+(!cell.editable?' given':'')+(chosen.has(i)?' selected':'')+(same.has(i)?' same':'')+(peers.has(i)?' peer':'')+(ends.has(i)?' end':'')+(wrong?.has(i)?' wrong':'');
+      if(cell.circled&&interactive&&/^\d+$/.test(cell.value)&&ends.size){const n=bridges.get(i)||0,want=Number(cell.value);className+=n===want?' complete':n>want?' over':'';}
+      const button=element(interactive?'button':'span',cell.circled?undefined:label||(dot||cross?'':symbol),className);button.dataset.index=String(i);
       if(cell.circled)button.append(element('span',cell.value,'circle'));
       if(noted){const set=new Set(notes[i].split(',')),grid=element('span',undefined,'notes');grid.style.setProperty('--note-cols',String(Math.ceil(Math.sqrt(view.marks.length-1))));for(const m of view.marks.slice(1))grid.append(element('span',set.has(m.value)?m.symbol:''));button.replaceChildren(grid);}
       const state=noted?'notes '+notes[i]:choice?.name??cell.value;
@@ -64,34 +115,28 @@ function board(view,{interactive=false,notes,selected=-1}={}){
       if(interactive){button.type='button';button.tabIndex=i===focus?0:-1;}
       td.append(button);row.append(td);
     }
-    if(right){const clue=element('th',view.right[r]||'','clue');clue.dataset.row=String(r);row.append(clue);}table.append(row);
+    if(right){const clue=header(view.right[r]||'',r===sr,'clue');clue.dataset.row=String(r);row.append(clue);}table.append(row);
   }
-  if(view.bottom.length){const row=document.createElement('tr');if(left)row.append(element('th',''));for(let c=0;c<view.cols;c++){const clue=element('th',view.bottom[c]||'','clue');clue.dataset.col=String(c);row.append(clue);}if(right)row.append(element('th',''));table.append(row);}
-  return view.links?.length?linked(table,view,interactive):table;
+  if(view.bottom.length){const row=document.createElement('tr');if(left)row.append(element('th',''));for(let c=0;c<view.cols;c++){const clue=header(view.bottom[c]||'',c===sc,'clue');clue.dataset.col=String(c);row.append(clue);}if(right)row.append(element('th',''));table.append(row);}
+  return view.links?.length?linked(table,view,interactive,wrong):table;
 }
 // Links between cell centres (I4), drawn as lines over the table once it has a size.
 const svgNS='http://www.w3.org/2000/svg';
 const svg=(tag,attrs={})=>{const e=document.createElementNS(svgNS,tag);for(const [k,v] of Object.entries(attrs))e.setAttribute(k,String(v));return e;};
 const linkKey=p=>`${p.row},${p.col},${p.row2},${p.col2}`;
 /** Each cell at the end of a link, with the links leaving it: link index and the cell at the other end. */
-/** The cells in line with `index` up to the nearest block in each direction. */
-function runCells(view,index){
-  const cells=new Set(),r0=Math.floor(index/view.cols),c0=index%view.cols;
-  for(const [dr,dc] of [[0,-1],[0,1],[-1,0],[1,0]])for(let r=r0+dr,c=c0+dc;r>=0&&r<view.rows&&c>=0&&c<view.cols&&!view.cells[r*view.cols+c].block;r+=dr,c+=dc)cells.add(r*view.cols+c);
-  return cells;
-}
 function linkEnds(view){
   const ends=new Map(),add=(i,k,other)=>{if(!ends.has(i))ends.set(i,[]);ends.get(i).push({k,other});};
   (view.links||[]).forEach((link,k)=>{const p=link.place.link,a=p.row*view.cols+p.col,b=p.row2*view.cols+p.col2;add(a,k,b);add(b,k,a);});
   return ends;
 }
 // Players reach links with the mouse, or from the cells at their ends with the keyboard.
-function linked(table,view,interactive){
+function linked(table,view,interactive,wrong){
   table.classList.add('linked');
   const wrap=element('div',undefined,'board-wrap'),layer=svg('svg',{class:'links','aria-hidden':'true'});
   const groups=view.links.map((link,k)=>{
     const p=link.place.link,mark=view.link_marks.find(m=>m.value===link.value),lines=mark?.lines??0;
-    const g=svg('g',{class:'link'+(link.editable&&interactive?' editable':'')+(lines?'':' empty')});
+    const g=svg('g',{class:'link'+(link.editable&&interactive?' editable':'')+(lines?'':' empty')+(wrong?.has(view.cells.length+k)?' wrong':'')});
     g.dataset.link=String(k);g.dataset.linkPlace=linkKey(p);
     layer.append(g);return {g,p,lines};
   });
@@ -142,143 +187,253 @@ function home(catalogue){
 function heading(game,page){const id=game.metadata.id;main.innerHTML=`<div class="title-row"><h1>${escape(game.metadata.name)}</h1><nav class="mode-links" aria-label="Game mode"><a id="tab-player" href="${id}/player/" ${page==='player'?'aria-current="page"':''}>Player</a><a id="tab-solver" href="${id}/solver/" ${page==='solver'?'aria-current="page"':''}>Solver</a></nav></div>`;document.title=`${game.metadata.name} ${page} · pencil-puzzles`;}
 function status(message,kind=''){const box=$('#status');box.className='status'+(kind?' '+kind:'');box.textContent=message;}
 function keyList(rows){return rows.flatMap(([keys,action])=>{const dt=element('dt');keys.split(' / ').forEach((k,i)=>{if(i)dt.append(' ');dt.append(element('kbd',k));});return [dt,element('dd',action)];});}
+const capitalize=s=>s.charAt(0).toUpperCase()+s.slice(1);
 function player(game){
   heading(game,'player');
-  const id=game.metadata.id;
+  const id=game.metadata.id,sizes=game.sizes?.length?game.sizes:[game.params];
   main.insertAdjacentHTML('beforeend',`<section aria-label="Puzzle player"><fieldset id="controls" class="player-layout">
-<div class="toolbar"><div class="field"><label for="params">Size</label><input id="params" value="${escape(game.params)}" spellcheck="false" autocomplete="off"></div><div class="field"><label for="difficulty">Difficulty</label><select id="difficulty"><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option><option value="expert">Expert</option></select></div><button id="new-game" type="button">New puzzle</button></div>
-<div class="board-block"><div class="board-area"><div id="board"></div></div>
-<div class="board-caption"><span class="stats"><span id="timer">0:00</span> · <span id="progress"></span></span><button id="share" class="link-button" type="button">Copy link</button></div></div>
+<div class="toolbar"><div class="field"><label for="size">Size</label><select id="size">${sizes.map(s=>`<option value="${escape(s)}">${escape(s)}</option>`).join('')}<option value="">Custom…</option></select><input id="params" value="${escape(game.params)}" spellcheck="false" autocomplete="off" aria-label="Custom size" hidden></div><div class="field"><label for="difficulty">Difficulty</label><select id="difficulty"><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option><option value="expert">Expert</option></select></div><button id="new-game" type="button">New puzzle</button></div>
+<div class="board-block"><div class="board-area"><div id="board"></div><button id="resume" type="button" hidden>Resume</button></div>
+<div class="board-caption"><span class="stats"><span id="timer">0:00</span> · <span id="progress"></span><span id="rating"></span></span><span class="caption-tools"><button id="pause" class="link-button" type="button">Pause</button><button id="share" class="link-button" type="button">Copy link</button></span></div></div>
 <div class="side">
 <div id="legend" class="legend"></div>
+<p id="combos" class="combos" aria-live="polite" hidden></p>
 <p id="finish-note" class="finish-note"></p>
 <div class="board-tools"><span class="group"><button id="undo" class="square" type="button" aria-label="Undo" title="Undo (Ctrl+Z)">${icons.undo}</button><button id="redo" class="square" type="button" aria-label="Redo" title="Redo (Ctrl+Y)">${icons.redo}</button></span><button id="clear" type="button" title="Clear all marks (undo restores them)">Clear</button><button id="check" class="primary push" type="button">Check</button></div>
+<div class="assist"><label class="check"><input id="mistakes" type="checkbox">Show mistakes</label><button id="reveal" class="link-button" type="button" title="Undo returns to your marks">Show solution</button></div>
 <p id="status" class="status" role="status" aria-live="polite">Loading…</p>
 <dl id="keys" class="keys"></dl>
 </div></fieldset></section>
-<details id="rules-box"><summary>Rules</summary><p id="rules"></p></details><details><summary>Load puzzle</summary><label for="load-input">ID, text, or JSON</label><textarea id="load-input" maxlength="1000000" spellcheck="false" placeholder="${escape(game.example)}"></textarea><button id="load" type="button">Load</button></details>`);
-  const key='pencil-game:'+id;let current=null;let history=null;let busy=false;let entry=false;let selected=-1;let notesMode=false;let drag=null;let solvedTime=null;let checkTimer=0;let checkSeq=0;let ends=new Map();
+<details id="rules-box"><summary>Rules</summary><ul id="rules" class="rules"></ul></details><details><summary>Load puzzle</summary><label for="load-input">ID, text, or JSON</label><textarea id="load-input" maxlength="1000000" spellcheck="false" placeholder="${escape(game.example)}"></textarea><button id="load" type="button">Load</button></details>`);
+  const key='pencil-game:'+id,saveKey=puzzle=>`pencil-save:${id}:${puzzle}`,listKey='pencil-saves:'+id,stepsKey='pencil-history:'+id;
+  let current=null,history=null,busy=false,entry=false,mode='none',selected=-1,selection=new Set(),notesMode=false,drag=null,linkDrag=null,solvedTime=null,checkTimer=0,checkSeq=0,ends=new Map();
+  let tool=null,paused=false,revealed=false,rating=null,solution=null,showMistakes=readSaved('pencil-mistakes')===true;
   const clock={elapsed:0,since:null};const boardBox=$('#board');
   const blank=()=>current.view.marks[0].value;
   // Values are the cells in row-major order, then the links (I4).
   const cellCount=()=>current.view.cells.length,linkMarks=()=>current.view.link_marks||[];
   const linkEditable=k=>!!current.view.links?.[k]?.editable;
   function cycleLink(k,step){if(!linkEditable(k))return;const marks=linkMarks(),i=cellCount()+k,at=marks.findIndex(m=>m.value===history.values[i]);apply(i,marks[(at+step+marks.length)%marks.length].value);}
+  const ahead=(i,j,[dr,dc])=>{const cols=current.view.cols;return Math.sign(Math.floor(j/cols)-Math.floor(i/cols))===dr&&Math.sign(j%cols-i%cols)===dc;};
+  function linkToward(i,move,step){const out=ends.get(i)?.find(({other})=>ahead(i,other,move));if(out)cycleLink(out.k,step);}
   // On boards with links, only cells at the ends of links can be selected.
   const selectable=i=>!ends.size||ends.has(i);
+  function select(i,add=false){if(!add){selected=i;selection=new Set([i]);return;}if(selection.has(i)&&selection.size>1){selection.delete(i);if(selected===i)selected=[...selection].at(-1);}else{selection.add(i);selected=i;}}
   // Shading genres have one shaded mark and one dot mark; marking a cell with the mark it already has clears it.
   const shadeMark=()=>current.view.marks.find(m=>m.shaded)?.value,dotMark=()=>current.view.marks.find((m,i)=>i>0&&!m.shaded)?.value;
+  // A click places the chosen mark (shaded until another is picked in the legend); a right-click places the other one.
+  const primary=()=>tool??shadeMark(),secondary=()=>primary()===dotMark()?shadeMark():dotMark();
   const toggled=(i,value)=>history.values[i]===value?blank():value;const editable=i=>i>=0&&(i<cellCount()?current.view.cells[i].editable:linkEditable(i-cellCount()));
   const elapsed=()=>clock.elapsed+(clock.since===null?0:performance.now()-clock.since);
-  function startClock(){if(current&&clock.since===null&&solvedTime===null&&!document.hidden)clock.since=performance.now();}
+  function startClock(){if(current&&clock.since===null&&solvedTime===null&&!paused&&!document.hidden)clock.since=performance.now();}
   function pauseClock(){if(clock.since!==null){clock.elapsed+=performance.now()-clock.since;clock.since=null;}}
-  const tick=()=>{const t=$('#timer');t.textContent=(solvedTime===null?'':'Solved · ')+formatTime(solvedTime??elapsed());t.classList.toggle('solved',solvedTime!==null);};setInterval(tick,1000);
+  const tick=()=>{const t=$('#timer');t.textContent=(solvedTime===null?'':revealed?'Shown · ':'Solved · ')+formatTime(solvedTime??elapsed());t.classList.toggle('solved',solvedTime!==null);};setInterval(tick,1000);
   document.addEventListener('visibilitychange',()=>{if(document.hidden){pauseClock();persist();}else startClock();});addEventListener('pagehide',()=>persist());
-  function sync(){const ready=!!current&&!busy;$('#undo').disabled=!ready||!history?.past.length;$('#redo').disabled=!ready||!history?.future.length;for(const b of ['check','clear','share'])$('#'+b).disabled=!ready;$('#load').disabled=busy;$('#load-input').disabled=busy;}
-  function persist(){if(current)save(key,{id:current.id,marks:history.values,notes:history.notes,elapsed:elapsed(),solved:solvedTime,params:$('#params').value,difficulty:$('#difficulty').value});}
+  function sync(){
+    const ready=!!current&&!busy&&!paused;
+    $('#undo').disabled=!ready||!history?.past.length;$('#redo').disabled=!ready||!history?.future.length;
+    for(const b of ['check','clear','reveal'])$('#'+b).disabled=!ready;
+    $('#share').disabled=!current||busy;$('#mistakes').disabled=!current||busy;
+    $('#pause').disabled=!current||busy||solvedTime!==null;$('#pause').textContent=paused?'Resume':'Pause';
+    $('#load').disabled=busy;$('#load-input').disabled=busy;
+  }
+  // Each puzzle keeps its own save; the undo history is kept for the latest puzzle of each game.
+  function persist(){
+    if(!current)return;
+    save(key,{id:current.id,params:$('#params').value,difficulty:$('#difficulty').value});
+    save(saveKey(current.id),{marks:history.values,notes:history.notes,elapsed:elapsed(),solved:solvedTime,revealed,rating});
+    save(stepsKey,{id:current.id,...history.steps(100)});
+    const {list,dropped}=remember(readSaved(listKey),current.id,30);save(listKey,list);for(const d of dropped)forget(saveKey(d));
+  }
+  function showSize(value){const preset=[...$('#size').options].some(o=>o.value&&o.value===value);$('#params').value=value;$('#size').value=preset?value:'';$('#params').hidden=preset;}
+  /** Cells whose marks contradict the solution; blanks are never mistakes. */
+  function mistakes(values){
+    const wrong=new Set();if(!showMistakes||!solution?.unique||solution.id!==current.id)return wrong;
+    const n=cellCount(),b=blank(),dot=dotMark(),lines=v=>linkMarks().find(m=>m.value===v)?.lines??0;
+    values.forEach((v,i)=>{if(!editable(i))return;const s=solution.values[i];if(i<n){if(v!==b&&v!==(!entry&&s===b&&dot!==undefined?dot:s))wrong.add(i);}else if(lines(v)>lines(s))wrong.add(i);});
+    return wrong;
+  }
+  function showCombos(values){
+    const box=$('#combos'),view=current.view;
+    if(mode!=='runs'||selection.size!==1||selected<0||view.cells[selected].block){box.hidden=true;return;}
+    const max=Number(view.marks.at(-1).value),lines=[];
+    for(const [name,dr,dc,part] of [['Across',0,1,'upper'],['Down',1,0,'lower']]){
+      const b=clueBlock(view,selected,dr,dc),sum=b>=0?Number(view.cells[b].block[part]):0;if(!sum)continue;
+      const cells=run(view,selected,dr,dc),placed=cells.map(i=>Number(values[i])).filter(Boolean),sets=combinations(sum,cells.length,max,placed);
+      lines.push(`${name} ${sum} in ${cells.length}: ${sets.length?sets.map(s=>s.join('')).join(' '):'none'}`);
+    }
+    box.hidden=!lines.length;box.replaceChildren(...lines.flatMap((l,i)=>i?[element('br'),l]:[l]));
+  }
   function draw(values=history.values,focus=boardBox.contains(document.activeElement)){
     const n=cellCount(),view={...current.view,cells:current.view.cells.map((cell,i)=>({...cell,value:values[i]})),links:(current.view.links||[]).map((link,k)=>({...link,value:values[n+k]}))};
-    const table=board(view,{interactive:true,notes:history.notes,selected});table.classList.add(entry?'entry':'paint');boardBox.replaceChildren(table);
+    const table=board(view,{interactive:true,notes:history.notes,selected,selection,wrong:mistakes(values)});table.classList.add(entry?'entry':'paint');boardBox.replaceChildren(table);
     if(focus&&selected>=0)boardBox.querySelector(`[data-index="${selected}"]`)?.focus({preventScroll:true});
     const linkBlank=linkMarks()[0]?.value;
     $('#progress').textContent=view.links.length?`${view.links.filter(l=>l.editable&&l.value!==linkBlank).length} drawn`:`${values.filter((v,i)=>i<n&&view.cells[i].editable&&v!==current.view.cells[i].value).length} / ${view.cells.filter(c=>c.editable).length} cells`;
-    sync();
+    // With regions (Sudoku), a digit placed once in every row is complete.
+    if(mode==='regions'){const counts=new Map();for(let i=0;i<n;i++)counts.set(values[i],(counts.get(values[i])||0)+1);for(const b of $('#legend').querySelectorAll('[data-value]'))b.classList.toggle('done',(counts.get(b.dataset.value)||0)>=view.rows);}
+    for(const b of $('#legend').querySelectorAll('[data-tool]'))b.setAttribute('aria-pressed',String(b.dataset.tool===primary()));
+    showCombos(values);sync();
   }
   function changed(){draw();persist();status('');scheduleCheck();}
-  function commit(values,notes=history.notes){if(history.set(values,notes))changed();}
+  function commit(values,notes=history.notes){if(!paused&&history.set(values,notes))changed();}
   function apply(i,value){if(!editable(i))return;const values=[...history.values];values[i]=value;commit(values);}
+  // Number entry goes to every selected cell. A digit every selected cell already has erases it, and placing a digit removes it from the notes of cells that can't hold it.
   function enter(value,asNote){
-    if(!editable(selected))return;const values=[...history.values],notes=[...history.notes];
-    if(value===blank()){if(values[selected]!==blank())values[selected]=blank();else notes[selected]='';}
-    else if(asNote){if(values[selected]!==blank())return;notes[selected]=toggleNote(notes[selected],value,current.view.marks);}
-    else values[selected]=value;
+    const targets=[...selection].filter(editable);if(!targets.length)return;
+    const values=[...history.values],notes=[...history.notes],b=blank(),has=i=>notes[i].split(',').includes(value);
+    if(value===b){if(targets.some(i=>values[i]!==b))for(const i of targets)values[i]=b;else for(const i of targets)notes[i]='';}
+    else if(asNote){const open=targets.filter(i=>values[i]===b);if(!open.length)return;const all=open.every(has);for(const i of open)if(has(i)===all)notes[i]=toggleNote(notes[i],value,current.view.marks);}
+    else{const erase=targets.every(i=>values[i]===value);for(const i of targets){values[i]=erase?b:value;if(!erase)for(const j of peerCells(current.view,i,mode))notes[j]=removeNote(notes[j],value);}}
     commit(values,notes);
   }
-  function undo(){if(history.undo())changed();}
-  function redo(){if(history.redo())changed();}
-  function solved(){if(solvedTime===null){pauseClock();solvedTime=elapsed();tick();persist();}status(`Solved in ${formatTime(solvedTime)}.`,'success');}
+  function undo(){if(!paused&&history.undo())changed();}
+  function redo(){if(!paused&&history.redo())changed();}
+  function solved(){if(solvedTime===null){pauseClock();solvedTime=elapsed();tick();persist();}status(revealed?'Solution shown.':`Solved in ${formatTime(solvedTime)}.`,'success');sync();}
   function scheduleCheck(){clearTimeout(checkTimer);checkTimer=setTimeout(async()=>{const seq=++checkSeq,marks=history.values;if(entry&&marks.some((v,i)=>editable(i)&&v===blank()))return;try{const result=await engine.call({operation:'check',genre:id,puzzle:current.id,marks,finished:true});if(seq===checkSeq&&result.solved)solved();}catch{/* The Check button reports errors. */}},200);}
   function setNotes(on){notesMode=on;$('#notes')?.setAttribute('aria-pressed',String(on));}
+  function setPaused(on){
+    if(on===paused||!current||(on&&solvedTime!==null))return;
+    paused=on;if(on)pauseClock();else startClock();
+    boardBox.classList.toggle('paused',on);$('#resume').hidden=!on;tick();sync();
+    if(on)$('#resume').focus();else boardBox.querySelector(`[data-index="${selected}"]`)?.focus({preventScroll:true});
+  }
+  async function ensureSolution(){
+    if(solution?.id===current.id)return solution;
+    const puzzle=current.id,result=await engine.call({operation:'solve',genre:id,puzzle}),v=result.views[0];
+    const found={id:puzzle,unique:result.status==='unique',values:v?[...v.cells,...(v.links||[])].map(c=>c.value):null};
+    if(current?.id===puzzle)solution=found;return found;
+  }
+  async function loadSolution(){try{const s=await ensureSolution();if(!s.unique)status('This puzzle does not have exactly one solution, so mistakes cannot be shown.','error');else if(current?.id===s.id)draw();}catch(e){status(errorMessage(e),'error');}}
   boardBox.addEventListener('contextmenu',e=>{if(e.target.closest('.cell,.link'))e.preventDefault();});
   boardBox.addEventListener('pointerdown',e=>{
+    if(busy||!current||paused||(e.button!==0&&e.button!==2))return;
     const link=e.target.closest('.link.editable');
-    if(link&&!busy&&current&&(e.button===0||e.button===2)){e.preventDefault();cycleLink(Number(link.dataset.link),e.button===2?-1:1);return;}
-    const cell=e.target.closest('.cell');if(!cell||busy||!current||(e.button!==0&&e.button!==2)||!selectable(Number(cell.dataset.index)))return;
-    e.preventDefault();selected=Number(cell.dataset.index);
-    if(entry||!editable(selected)){draw(undefined,true);return;}
-    const target=e.button===2?dotMark():shadeMark();if(target===undefined){draw(undefined,true);return;}
-    drag={value:toggled(selected,target),values:[...history.values]};drag.values[selected]=drag.value;draw(drag.values,true);
+    if(link){e.preventDefault();cycleLink(Number(link.dataset.link),e.button===2?-1:1);return;}
+    const cell=e.target.closest('.cell');if(!cell)return;const i=Number(cell.dataset.index);if(!selectable(i))return;
+    e.preventDefault();
+    // Islands: dragging from one toward another changes the link between them.
+    if(ends.size){select(i);linkDrag={from:i,x:e.clientX,y:e.clientY,step:e.button===2?-1:1,size:cell.getBoundingClientRect().width};draw(undefined,true);return;}
+    if(entry){if(e.shiftKey||e.ctrlKey||e.metaKey)select(i,true);else{select(i);drag={select:true};}draw(undefined,true);return;}
+    select(i);
+    const target=e.button===2?secondary():primary();if(!editable(i)||target===undefined){draw(undefined,true);return;}
+    drag={value:target===blank()?target:toggled(i,target),values:[...history.values]};drag.values[i]=drag.value;draw(drag.values,true);
   });
-  addEventListener('pointermove',e=>{if(!drag)return;const cell=document.elementFromPoint(e.clientX,e.clientY)?.closest?.('#board .cell');if(!cell)return;const i=Number(cell.dataset.index);if(editable(i)&&drag.values[i]!==drag.value){drag.values[i]=drag.value;draw(drag.values);}});
-  const endDrag=()=>{if(!drag)return;const values=drag.values;drag=null;commit(values);};addEventListener('pointerup',endDrag);addEventListener('pointercancel',endDrag);
+  addEventListener('pointermove',e=>{
+    if(!drag)return;const cell=document.elementFromPoint(e.clientX,e.clientY)?.closest?.('#board .cell');if(!cell)return;const i=Number(cell.dataset.index);
+    if(drag.select){if(!selection.has(i)&&!current.view.cells[i].block){selection.add(i);selected=i;draw();}return;}
+    if(editable(i)&&drag.values[i]!==drag.value){drag.values[i]=drag.value;draw(drag.values);}
+  });
+  const endDrag=e=>{
+    if(linkDrag){const d=linkDrag;linkDrag=null;const dx=e.clientX-d.x,dy=e.clientY-d.y;if(e.type==='pointerup'&&Math.hypot(dx,dy)>d.size*.5)linkToward(d.from,Math.abs(dx)>Math.abs(dy)?[0,Math.sign(dx)]:[Math.sign(dy),0],d.step);}
+    if(!drag)return;const done=drag;drag=null;if(!done.select)commit(done.values);
+  };
+  addEventListener('pointerup',endDrag);addEventListener('pointercancel',endDrag);
   document.addEventListener('keydown',e=>{
     if(!current||busy||e.target.closest?.('input,textarea,select'))return;
     const mod=e.ctrlKey||e.metaKey,k=e.key.toLowerCase(),view=current.view,inBoard=boardBox.contains(e.target);
     if(mod&&(k==='z'||k==='y')){e.preventDefault();k==='y'||e.shiftKey?redo():undo();return;}
-    if(mod||e.altKey)return;
+    if(mod||e.altKey||paused)return;
     if(entry&&k==='n'){setNotes(!notesMode);return;}
     if(!inBoard&&!(selected>=0&&(e.target===document.body||e.target.closest?.('#legend'))))return;
-    if(inBoard&&e.target.dataset.index)selected=Number(e.target.dataset.index);
+    if(inBoard&&e.target.dataset.index&&Number(e.target.dataset.index)!==selected)select(Number(e.target.dataset.index));
+    if(e.key==='Escape'&&selection.size>1){select(selected);draw(undefined,true);return;}
     const moves={ArrowLeft:[0,-1],ArrowRight:[0,1],ArrowUp:[-1,0],ArrowDown:[1,0],a:[0,-1],d:[0,1],w:[-1,0],s:[1,0]};
     const move=moves[e.key.length===1?k:e.key];
     if(move&&ends.size){
       // Boards with links: Shift changes the link leaving the selected cell that way; otherwise move to the next cell at a link's end.
-      e.preventDefault();if(selected<0){selected=Math.min(...ends.keys());draw(undefined,true);return;}
-      const r0=Math.floor(selected/view.cols),c0=selected%view.cols,ahead=i=>Math.sign(Math.floor(i/view.cols)-r0)===move[0]&&Math.sign(i%view.cols-c0)===move[1];
-      if(e.shiftKey){const out=ends.get(selected)?.find(({other})=>ahead(other));if(out)cycleLink(out.k,1);return;}
-      for(let r=r0+move[0],c=c0+move[1];r>=0&&r<view.rows&&c>=0&&c<view.cols;r+=move[0],c+=move[1])if(ends.has(r*view.cols+c)){selected=r*view.cols+c;break;}
+      e.preventDefault();if(selected<0){select(Math.min(...ends.keys()));draw(undefined,true);return;}
+      if(e.shiftKey){linkToward(selected,move,1);return;}
+      const r0=Math.floor(selected/view.cols),c0=selected%view.cols;
+      for(let r=r0+move[0],c=c0+move[1];r>=0&&r<view.rows&&c>=0&&c<view.cols;r+=move[0],c+=move[1])if(ends.has(r*view.cols+c)){select(r*view.cols+c);break;}
       draw(undefined,true);return;
     }
-    if(move){e.preventDefault();const r=Math.floor(selected/view.cols)+move[0],c=selected%view.cols+move[1];if(r>=0&&r<view.rows&&c>=0&&c<view.cols)selected=r*view.cols+c;draw(undefined,true);return;}
+    if(move){
+      e.preventDefault();const r=Math.floor(selected/view.cols)+move[0],c=selected%view.cols+move[1];
+      // Shift extends the selection on number boards.
+      if(r>=0&&r<view.rows&&c>=0&&c<view.cols){const i=r*view.cols+c;if(entry&&e.shiftKey){selection.add(i);selected=i;}else select(i);}
+      draw(undefined,true);return;
+    }
     const digit=/^(?:Digit|Numpad)(\d)$/.exec(e.code)?.[1];
     if(digit!==undefined||e.key==='Backspace'||e.key==='Delete'){const mark=view.marks[digit===undefined?0:Number(digit)];if(!mark)return;e.preventDefault();entry?enter(mark.value,notesMode||e.shiftKey):apply(selected,mark.value);return;}
     const keyMark=entry?undefined:{q:shadeMark(),e:dotMark(),r:blank()}[k];
     if(keyMark!==undefined&&selected>=0){e.preventDefault();apply(selected,k==='r'?keyMark:toggled(selected,keyMark));}
   });
   async function action(message,task){if(busy)return;busy=true;$('#controls').disabled=true;sync();status(message);try{await task();}catch(e){status(errorMessage(e),'error');}finally{busy=false;$('#controls').disabled=false;sync();}}
-  function accept(value,restore){
-    pauseClock();checkSeq++;current=value;entry=value.view.marks.length>3;selected=-1;drag=null;ends=linkEnds(value.view);
+  function showPuzzle(value,push){const url=location.pathname+`?puzzle=${encodeURIComponent(value.id)}`;if(push&&new URLSearchParams(location.search).get('puzzle')!==value.id)window.history.pushState(null,'',url);else window.history.replaceState(null,'',url);}
+  function accept(value,{push=false}={}){
+    const active=document.activeElement,focus=!active||active===document.body||active.matches('#new-game,#load,#board *');
+    pauseClock();if(current)persist();
+    checkSeq++;current=value;entry=value.view.marks.length>3;mode=highlightMode(value.view);drag=null;linkDrag=null;ends=linkEnds(value.view);solution=null;tool=null;paused=false;
+    boardBox.classList.remove('paused');$('#resume').hidden=true;
     const items=[...value.view.cells,...(value.view.links||[])],cells=value.view.cells.length;
     const initial=items.map(c=>c.value);const allowed=new Set(value.view.marks.map(m=>m.value)),allowedLinks=new Set((value.view.link_marks||[]).map(m=>m.value));
-    const saved=restore&&readSaved(key);const valid=saved?.id===value.id&&Array.isArray(saved.marks)&&saved.marks.length===initial.length&&saved.marks.every((m,i)=>items[i].editable?(i<cells?allowed:allowedLinks).has(m):m===initial[i]);
-    const notes=valid&&Array.isArray(saved.notes)&&saved.notes.length===initial.length&&saved.notes.every(n=>typeof n==='string')?saved.notes:initial.map(()=>'');
-    history=new History((valid?saved.marks:initial).map((v,i)=>items[i].editable?v:initial[i]),notes);
-    clock.elapsed=valid&&Number.isFinite(saved.elapsed)?saved.elapsed:0;clock.since=null;solvedTime=valid&&Number.isFinite(saved.solved)?saved.solved:null;
-    if(value.params)$('#params').value=value.params;$('#rules').textContent=value.view.instructions;
+    const validMarks=m=>Array.isArray(m)&&m.length===initial.length&&m.every((v,i)=>items[i].editable?(i<cells?allowed:allowedLinks).has(v):v===initial[i]);
+    const validNotes=n=>Array.isArray(n)&&n.length===initial.length&&n.every(x=>typeof x==='string');
+    // Saves from before per-puzzle saves held the marks next to the puzzle ID.
+    const legacy=readSaved(key),saved=readSaved(saveKey(value.id))??(legacy?.id===value.id&&legacy.marks?legacy:null);
+    const valid=validMarks(saved?.marks);
+    history=new History(valid?saved.marks:initial,valid&&validNotes(saved.notes)?saved.notes:initial.map(()=>''));
+    const steps=readSaved(stepsKey);if(valid&&steps?.id===value.id)history.restore(steps,([m,n])=>validMarks(m)&&validNotes(n));
+    clock.elapsed=valid&&Number.isFinite(saved.elapsed)?saved.elapsed:0;clock.since=null;solvedTime=valid&&Number.isFinite(saved.solved)?saved.solved:null;revealed=valid&&saved.revealed===true;
+    rating=value.rating?.level??(valid&&typeof saved.rating==='string'?saved.rating:null);
+    if(value.params)showSize(value.params);
+    $('#rules').replaceChildren(...value.view.instructions.split('\n').filter(Boolean).map(t=>element('li',t)));
     $('#finish-note').textContent=value.view.finish_note||'';
     const marks=value.view.marks,links=value.view.link_marks||[],linking=(value.view.links||[]).some(l=>l.editable);
+    const shadeName=marks.find(m=>m.shaded)?.name.toLowerCase(),dotName=marks.find((m,i)=>i>0&&!m.shaded)?.name.toLowerCase();
     $('#keys').replaceChildren(...keyList(linking
-      ?[['Click','next mark'],['Right-click','previous mark'],['Arrows / WASD','move'],['Shift+Arrows / WASD','next mark that way'],['Ctrl+Z / Ctrl+Y','undo / redo']]
+      ?[['Click','next mark'],['Right-click','previous mark'],['Drag','from an island toward another'],['Arrows / WASD','move'],['Shift+Arrows / WASD','next mark that way'],['Ctrl+Z / Ctrl+Y','undo / redo']]
       :entry
-      ?[[`${marks[1].symbol}–${marks.at(-1).symbol}`,'enter'],['Shift+digit','note'],['N','notes mode'],['Del','erase'],['Arrows / WASD','move'],['Ctrl+Z / Ctrl+Y','undo / redo']]
-      :[['Click / Q',marks.find(m=>m.shaded)?.name.toLowerCase()],['Right-click / E',marks.find((m,i)=>i>0&&!m.shaded)?.name.toLowerCase()],['R / Del','clear'],['Drag','mark several'],['Arrows / WASD','move'],['Ctrl+Z / Ctrl+Y','undo / redo']]));
+      ?[[`${marks[1].symbol}–${marks.at(-1).symbol}`,'enter or erase'],['Shift+digit','note'],['N','notes mode'],['Del','erase'],['Arrows / WASD','move'],['Drag / Shift+click','select several'],['Esc','select one'],['Ctrl+Z / Ctrl+Y','undo / redo']]
+      :[['Click','chosen mark'],['Right-click','other mark'],['Q',shadeName],['E',dotName],['R / Del','clear'],['Drag','mark several'],['Arrows / WASD','move'],['Ctrl+Z / Ctrl+Y','undo / redo']]));
     const legendButton=(text,label,click)=>{const button=element('button',text);button.type='button';button.setAttribute('aria-label',label);button.onclick=click;button.onmousedown=e=>e.preventDefault();return button;};
-    $('#legend').className='legend'+(entry?' digits':'');
-    if(linking)$('#legend').replaceChildren(...links.map(m=>{const label=element('span');const swatch=element('span',['','─','═'][m.lines]??'','swatch line');swatch.setAttribute('aria-hidden','true');label.append(swatch,document.createTextNode(m.name));return label;}));
+    $('#legend').className='legend'+(entry?' digits':linking?'':' tools');
+    if(linking)$('#legend').replaceChildren(...links.map(m=>{const label=element('span');const line=element('span','','swatch line lines-'+m.lines);line.setAttribute('aria-hidden','true');label.append(line,document.createTextNode(m.name));return label;}));
     else if(entry){
       const notesButton=legendButton('Notes','Notes mode',()=>setNotes(!notesMode));notesButton.id='notes';
-      const pad=element('div',undefined,'keypad');pad.style.setProperty('--keypad-cols',String(Math.ceil(Math.sqrt(marks.length-1))));pad.append(...marks.slice(1).map(m=>legendButton(m.symbol,`Enter ${m.name}`,()=>enter(m.value,notesMode))));
+      const pad=element('div',undefined,'keypad');pad.style.setProperty('--keypad-cols',String(Math.ceil(Math.sqrt(marks.length-1))));pad.append(...marks.slice(1).map(m=>{const b=legendButton(m.symbol,`Enter ${m.name}`,()=>enter(m.value,notesMode));b.dataset.value=m.value;return b;}));
       const tools=element('div',undefined,'keypad-tools');tools.append(notesButton,legendButton('Erase','Erase cell',()=>enter(blank(),false)));
       $('#legend').replaceChildren(pad,tools);
     }
-    else $('#legend').replaceChildren(...marks.map(m=>{const label=element('span');const swatch=element('span',m.symbol,'swatch'+(m.shaded?' shaded':''));swatch.setAttribute('aria-hidden','true');label.append(swatch,document.createTextNode(m.name));return label;}));
+    else{
+      const group=element('div',undefined,'mark-tools');group.setAttribute('role','group');group.setAttribute('aria-label','Mark placed by a click');
+      group.append(...marks.map(m=>{const b=legendButton('',m.name,()=>{tool=m.value;draw();});b.dataset.tool=m.value;b.append(swatch(m),document.createTextNode(m.name));return b;}));
+      $('#legend').replaceChildren(group);
+    }
     setNotes(false);
-    $('#tab-solver').href=`${id}/solver/?puzzle=${encodeURIComponent(value.id)}`;    window.history.replaceState(null,'',location.pathname+`?puzzle=${encodeURIComponent(value.id)}`);
-    draw();startClock();tick();persist();if(solvedTime===null)status('');else solved();
+    const first=value.view.cells.findIndex(c=>c.editable);select(ends.size?Math.min(...ends.keys()):first>=0?first:0);
+    $('#tab-solver').href=`${id}/solver/?puzzle=${encodeURIComponent(value.id)}`;showPuzzle(value,push);
+    $('#rating').textContent=rating?` · ${capitalize(rating)}`:'';
+    draw(undefined,focus);startClock();tick();persist();if(solvedTime===null)status('');else solved();
+    if(!rating){const puzzle=value.id;engine.call({operation:'rate',genre:id,puzzle}).then(r=>{if(current?.id===puzzle&&r?.level){rating=r.level;$('#rating').textContent=` · ${capitalize(rating)}`;persist();}}).catch(()=>{/* Puzzles without one solution have no rating. */});}
+    if(showMistakes)loadSolution();
   }
-  async function newGame(){await action('Loading…',async()=>{const bytes=new Uint32Array(2);crypto.getRandomValues(bytes);const seed=((BigInt(bytes[0])<<32n)|BigInt(bytes[1])).toString();accept(await engine.call({operation:'generate',genre:id,params:$('#params').value,difficulty:$('#difficulty').value,seed}),false);});}
+  const load=(puzzle,push)=>action('Loading…',async()=>accept(await engine.call({operation:'load',genre:id,puzzle}),{push}));
+  async function newGame(){await action('Loading…',async()=>{const bytes=new Uint32Array(2);crypto.getRandomValues(bytes);const seed=((BigInt(bytes[0])<<32n)|BigInt(bytes[1])).toString();accept(await engine.call({operation:'generate',genre:id,params:$('#params').value,difficulty:$('#difficulty').value,seed}),{push:true});});}
   $('#new-game').onclick=newGame;
+  $('#size').onchange=()=>{const size=$('#size').value;$('#params').hidden=!!size;if(size)$('#params').value=size;else{$('#params').focus();$('#params').select();}};
   $('#params').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();newGame();}});
   $('#undo').onclick=undo;$('#redo').onclick=redo;
+  $('#pause').onclick=()=>setPaused(!paused);$('#resume').onclick=()=>setPaused(false);
   $('#clear').onclick=()=>{const items=[...current.view.cells,...(current.view.links||[])];commit(items.map(c=>c.value),items.map(()=>''));status('Cleared. Undo restores it.');};
   $('#check').onclick=()=>action('Checking…',async()=>{const result=await engine.call({operation:'check',genre:id,puzzle:current.id,marks:history.values,finished:true});$('#board').querySelectorAll('.invalid').forEach(c=>c.classList.remove('invalid'));for(const v of result.violations){const p=v.place;let selector=p==='board'?'td':'';if(p&&typeof p==='object'){if('row'in p)selector=`[data-row="${p.row}"],[data-cell-row="${p.row}"]`;else if('col'in p)selector=`[data-col="${p.col}"],[data-cell-col="${p.col}"]`;else if('region'in p)selector=`[data-region="${p.region}"]`;else if('cell'in p)selector=`[data-index="${p.cell.row*current.view.cols+p.cell.col}"]`;else if('link'in p)selector=`[data-link-place="${linkKey(p.link)}"]`;}if(selector)$('#board').querySelectorAll(selector).forEach(c=>c.classList.add('invalid'));}if(result.solved)solved();else status('Not solved. Check the marked cells or clues.','error');});
-  $('#load').onclick=()=>action('Loading…',async()=>accept(await engine.call({operation:'load',genre:id,puzzle:$('#load-input').value}),false));
+  $('#mistakes').checked=showMistakes;
+  $('#mistakes').onchange=()=>{showMistakes=$('#mistakes').checked;save('pencil-mistakes',showMistakes);if(showMistakes)loadSolution();else draw();};
+  $('#reveal').onclick=()=>action('Solving…',async()=>{
+    const s=await ensureSolution();if(!s.values){status('This puzzle has no solution.','error');return;}
+    const b=blank(),dot=dotMark(),n=cellCount();revealed=true;
+    commit(history.values.map((v,i)=>!editable(i)?v:i<n&&!entry&&s.values[i]===b&&dot!==undefined?dot:s.values[i]),history.notes.map(()=>''));
+    status(s.unique?'Solution shown. Undo returns to your marks.':'One of several solutions shown. Undo returns to your marks.');
+  });
+  $('#load').onclick=()=>load($('#load-input').value,true);
+  addEventListener('popstate',()=>{const puzzle=new URLSearchParams(location.search).get('puzzle');if(puzzle&&puzzle!==current?.id)load(puzzle,false);});
   let shareTimer=0;
   $('#share').onclick=async()=>{const button=$('#share');try{await navigator.clipboard.writeText(location.href);button.textContent='Copied';clearTimeout(shareTimer);shareTimer=setTimeout(()=>{button.textContent='Copy link';},1500);}catch{status('Copy the URL from the address bar.');}};
   const rulesBox=$('#rules-box'),rulesKey='pencil-rules:'+id,rulesOpen=readSaved(rulesKey);rulesBox.open=rulesOpen===null?true:!!rulesOpen;rulesBox.ontoggle=()=>save(rulesKey,rulesBox.open);
-  const saved=readSaved(key);if(saved?.params)$('#params').value=saved.params;if(saved?.difficulty&&[...$('#difficulty').options].some(o=>o.value===saved.difficulty))$('#difficulty').value=saved.difficulty;
+  const saved=readSaved(key);showSize(saved?.params||game.params);if(saved?.difficulty&&[...$('#difficulty').options].some(o=>o.value===saved.difficulty))$('#difficulty').value=saved.difficulty;
   const supplied=new URLSearchParams(location.search).get('puzzle')||saved?.id;
-  if(supplied)action('Loading…',async()=>accept(await engine.call({operation:'load',genre:id,puzzle:supplied}),true));else newGame();
+  if(supplied)load(supplied,false);else newGame();
   sync();
 }
 function solver(game){
@@ -298,9 +453,18 @@ function solver(game){
   const showResult=on=>{$('#solver-controls').classList.toggle('has-result',on);if(!on)$('#tab-player').href=`${id}/player/`;};
   function invalidate(){showResult(false);status('');}
   function label(place){if('row'in place)return `Row ${place.row+1} clue`;if('col'in place)return `Column ${place.col+1} clue`;return `Row ${place.cell.row+1}, column ${place.cell.col+1}`;}
+  // Arrow keys move to the nearest clue input that way; in text inputs, Left and Right first move through the text.
+  function moveBetweenFields(e){
+    const dir={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]}[e.key],input=e.target.closest?.('.clue-input');
+    if(!dir||!input||e.altKey||e.ctrlKey||e.metaKey||e.shiftKey)return;
+    if(input.type==='text'&&dir[0]!==0){const at=dir[0]<0?0:input.value.length;if(input.selectionStart!==at||input.selectionEnd!==at)return;}
+    const box=input.getBoundingClientRect(),x=box.left+box.width/2,y=box.top+box.height/2;let best=null,score=Infinity;
+    for(const other of fields){if(other===input)continue;const r=other.getBoundingClientRect(),dx=r.left+r.width/2-x,dy=r.top+r.height/2-y,along=dx*dir[0]+dy*dir[1],across=Math.abs(dx*dir[1]+dy*dir[0]);if(along<=1||across>along)continue;const s=along+across*3;if(s<score){score=s;best=other;}}
+    e.preventDefault();if(best){best.focus();try{best.select();}catch{/* Not every input type supports select(). */}}
+  }
   function drawEditor(value){
     editor=value;$('#editor-shape').value=value.shape;
-    const table=board(value.view);table.setAttribute('aria-label','Puzzle clues');
+    const table=board(value.view);table.setAttribute('aria-label','Puzzle clues');table.addEventListener('keydown',moveBetweenFields);
     fields=value.fields.map((field,i)=>{
       const input=document.createElement('input');if(field.pattern){input.type='text';input.pattern=field.pattern;input.maxLength=5;input.spellcheck=false;input.autocomplete='off';}else{input.type='number';input.inputMode='numeric';input.min=String(field.min);input.max=String(field.max);input.step='1';}input.required=!field.optional;input.value=field.value;input.className='clue-input';input.setAttribute('aria-label',label(field.place));input.dataset.field=String(i);input.oninput=invalidate;
       let target;
