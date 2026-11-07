@@ -1,6 +1,6 @@
 # Sudoku
 
-Fill each empty cell with a digit so every row, column and box contains each digit once.
+Fill rows, columns and boxes with each digit exactly once.
 
 ## Rules
 

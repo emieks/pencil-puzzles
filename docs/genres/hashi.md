@@ -1,7 +1,7 @@
 # Hashi
 
-Join the islands with bridges so that each island has as many bridges as
-its number and every island is connected.
+Connect all islands with straight bridges that never cross, giving each
+island as many bridges as its number.
 
 ## Rules
 

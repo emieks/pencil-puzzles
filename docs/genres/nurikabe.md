@@ -1,6 +1,7 @@
 # Nurikabe
 
-Shade a connected sea around numbered islands.
+Shade a connected sea, leaving islands the size of their numbers and no
+shaded 2×2 block.
 
 ## Rules
 

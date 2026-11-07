@@ -12,7 +12,7 @@ static METADATA: Metadata = {
     let mut m = Metadata::new(
         "nurikabe",
         "Nurikabe",
-        "Shade a connected sea around numbered islands, without shaded 2x2 blocks.",
+        "Shade a connected sea, leaving islands the size of their numbers and no shaded 2×2 block.",
         GENERATOR_VERSION,
         RATER_VERSION,
     );
@@ -146,7 +146,7 @@ impl Genre for Nurikabe {
             })
             .collect();
         v.finish_note = "Blanks count as island cells.".into();
-        v.instructions="Each island contains one number and exactly that many cells. Shade one connected sea. No shaded 2x2 blocks. Islands can touch at corners.".into();
+        v.instructions="Shade cells to form the sea and leave islands of unshaded cells.\nAn island is a group of unshaded cells joined by their sides. It contains exactly one number and has that many cells. Islands can touch at corners.\nThe shaded cells must form one group joined by their sides.\nNo 2×2 block may be fully shaded.".into();
         v
     }
     fn answer_from_values(p: &Puzzle, values: &[String]) -> Result<Answer, ParseError> {

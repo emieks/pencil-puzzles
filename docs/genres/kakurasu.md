@@ -1,6 +1,7 @@
 # Kakurasu
 
-Shade cells so that the weighted totals match every row and column clue.
+Shade cells so each row and column clue is the sum of its shaded cells'
+positions.
 
 ## Rules
 

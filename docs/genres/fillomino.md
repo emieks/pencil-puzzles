@@ -1,6 +1,7 @@
 # Fillomino
 
-Divide the grid into regions and write each region's size in its cells.
+Divide the grid into regions whose cells hold the region's size; same-size
+regions never share a side.
 
 ## Rules
 

@@ -1,7 +1,7 @@
 # Kakuro
 
-Write a digit in every white cell so that each run of white cells adds up
-to the sum in the block before it.
+Fill the white cells with digits 1–9 so each run adds up to its clue without
+repeating a digit.
 
 ## Rules
 

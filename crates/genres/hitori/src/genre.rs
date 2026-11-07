@@ -14,7 +14,7 @@ static METADATA: Metadata = {
     let mut m = Metadata::new(
         "hitori",
         "Hitori",
-        "Shade cells so that no number repeats among the unshaded cells of a row or column; shaded cells never touch and the unshaded cells stay connected.",
+        "Shade cells so no unshaded number repeats in a row or column; shaded cells never share a side and unshaded cells stay connected.",
         GENERATOR_VERSION,
         RATER_VERSION,
     );
@@ -130,7 +130,7 @@ impl Genre for Hitori {
             })
             .collect();
         v.finish_note = "Blanks count as unshaded cells.".into();
-        v.instructions = "Shade cells so that no number appears twice among the unshaded cells of a row or column. Shaded cells may not share a side, and the unshaded cells must form one connected group.".into();
+        v.instructions = "Shade cells so that no number appears twice among the unshaded cells of a row or column.\nShaded cells may not share a side.\nThe unshaded cells must form one group joined by their sides.".into();
         v
     }
     fn answer_from_values(p: &Puzzle, values: &[String]) -> Result<Answer, ParseError> {
