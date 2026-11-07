@@ -86,3 +86,10 @@ test('Sudoku givens can be entered visually and empty answers do not pass',()=>{
    marks[0]='#';assert.equal(call({operation:'check',genre,puzzle:puzzle.id,marks,finished:true}).ok,false);
    assert.equal(call({operation:'check',genre,puzzle:puzzle.id,marks:puzzle.view.cells.map(c=>c.value),finished:true}).value.solved,false);
  });
+
+test('rating a loaded puzzle matches the rating it was generated with',()=>{
+  const generated=call({operation:'generate',genre:'kakurasu',params:'6x6',difficulty:'medium',seed:'5'}).value;
+  const rated=call({operation:'rate',genre:'kakurasu',puzzle:generated.id});
+  assert.equal(rated.ok,true);assert.equal(rated.value.level,generated.rating.level);
+  assert.equal(call({operation:'rate',genre:'kakurasu',puzzle:'kakurasu:4x4:5.5.5.5/5.5.5.5'}).ok,false);
+});

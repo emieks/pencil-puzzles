@@ -21,12 +21,20 @@ const call = (data) => {
   return result.value;
 };
 const catalogue = call({ operation: 'list' });
+// Size presets are the shapes in the genre's benchmark table, plus its default size.
+async function sizes(id, params) {
+  let shapes = [];
+  try { shapes = (await readFile(path.join(root, 'docs/benchmarks', `${id}.csv`), 'utf8')).trim().split(/\r?\n/).slice(1).map((row) => row.split(',')[0]); } catch { /* A genre without benchmarks gets its default size only. */ }
+  const dims = (s) => s.split('x').map(Number);
+  return [...new Set([...shapes, params])].filter((s) => /^\d+x\d+$/.test(s)).sort((a, b) => dims(a)[0] - dims(b)[0] || dims(a)[1] - dims(b)[1]);
+}
 const html = (await readFile(path.join(web, 'src/index.html'), 'utf8')).replace('<base href="/">', `<base href="${base}">`);
 for (const game of catalogue) {
   const id = game.metadata.id;
   if (!/^[a-z][a-z0-9-]*$/.test(id)) throw new Error('Invalid genre route');
   const example = call({ operation: 'generate', genre: id, params: game.params, difficulty: 'easy', seed: '0' });
   game.example = example.id;
+  game.sizes = await sizes(id, game.params);
   for (const page of ['player', 'solver']) {
     const directory = path.join(dist, id, page);
     await mkdir(directory, { recursive: true });
