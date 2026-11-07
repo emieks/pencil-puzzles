@@ -1,10 +1,38 @@
 //! Sudoku's human techniques, plugged into the shared solve loop
 //! (`pencil_puzzles_core::human`). Each technique is deterministic and never
 //! consults the completed answer.
+//!
+//! Cell sets are `u128` bitboards in row-major order; the positions of each
+//! candidate digit and the peers of each cell are masks, so a technique's
+//! scans are a few bit operations per pattern examined.
 use crate::board::Topology;
-use crate::{Budget, BudgetExceeded, Difficulty, Puzzle};
+use crate::{Budget, BudgetExceeded, Difficulty, MAX_SIZE, Puzzle, Shape};
 use pencil_puzzles_core::human::{Candidates, Find, HumanStep, Kind, Profile, Technique, Trace};
-use std::collections::BTreeSet;
+use std::sync::OnceLock;
+
+/// A set of cells, one bit per cell in row-major order.
+type Cells = u128;
+
+const fn cell(i: usize) -> Cells {
+    1 << i
+}
+
+/// The cells of a set in ascending order.
+fn cells(mut set: Cells) -> impl Iterator<Item = usize> {
+    std::iter::from_fn(move || {
+        if set == 0 {
+            None
+        } else {
+            let i = set.trailing_zeros() as usize;
+            set &= set - 1;
+            Some(i)
+        }
+    })
+}
+
+fn count(set: Cells) -> usize {
+    set.count_ones() as usize
+}
 
 pub(crate) fn initial_masks(puzzle: &Puzzle) -> Vec<u16> {
     let all = (1u16 << puzzle.shape().size()) - 1;
@@ -22,15 +50,58 @@ pub(crate) fn given_cells(puzzle: &Puzzle) -> Vec<bool> {
 
 /// What Sudoku techniques read besides candidates.
 pub(crate) struct Grid {
-    box_size: usize,
-    topology: Topology,
+    n: usize,
+    /// Rows, columns and boxes, as cell lists and as masks.
+    units: Vec<Vec<usize>>,
+    unit_bits: Vec<Cells>,
+    /// Line and box pairs that share at least two cells.
+    pairs: Vec<(usize, usize)>,
+    /// The cells sharing a unit with each cell, excluding the cell itself.
+    peers: Vec<Cells>,
+    /// Digit subsets of each size from 2 to 4, in ascending numeric order.
+    selections: [Vec<u16>; 5],
 }
 
 impl Grid {
+    /// The grid of a puzzle's shape, built once per shape.
+    pub(crate) fn of(shape: Shape) -> &'static Grid {
+        static GRIDS: [OnceLock<Grid>; 3] = [OnceLock::new(), OnceLock::new(), OnceLock::new()];
+        GRIDS[shape.box_size() - 1].get_or_init(|| Grid::new_for(shape))
+    }
+
+    #[cfg(test)]
     pub(crate) fn new(puzzle: &Puzzle) -> Self {
+        Self::new_for(puzzle.shape())
+    }
+
+    fn new_for(shape: Shape) -> Self {
+        let topology = Topology::new(shape);
+        let n = topology.n;
+        let unit_bits: Vec<Cells> = topology
+            .units
+            .iter()
+            .map(|u| u.iter().fold(0, |m, &i| m | cell(i)))
+            .collect();
+        let peers = (0..n * n)
+            .map(|i| {
+                unit_bits
+                    .iter()
+                    .filter(|&&u| u & cell(i) != 0)
+                    .fold(0, |m, &u| m | u)
+                    & !cell(i)
+            })
+            .collect();
+        let mut selections: [Vec<u16>; 5] = Default::default();
+        for (size, list) in selections.iter_mut().enumerate().skip(2) {
+            list.extend((1u16..1u16 << n).filter(|s| s.count_ones() as usize == size));
+        }
         Self {
-            box_size: puzzle.shape().box_size(),
-            topology: Topology::new(puzzle.shape()),
+            n,
+            units: topology.units,
+            unit_bits,
+            pairs: topology.pairs,
+            peers,
+            selections,
         }
     }
 }
@@ -43,28 +114,60 @@ struct Engine<'a> {
     /// Shorthand for `view.placed`: written-in digits (givens, player marks,
     /// found singles), whose peers are cleared as bookkeeping.
     placed: &'a [bool],
-    topology: &'a Topology,
-    box_size: usize,
+    g: &'a Grid,
+    /// Cells where each digit is still a candidate.
+    digits: [Cells; MAX_SIZE],
 }
 
 impl<'a> Engine<'a> {
     fn new(view: &'a Candidates<'a, Grid>) -> Self {
+        let mut digits = [0; MAX_SIZE];
+        for (i, &mask) in view.masks.iter().enumerate() {
+            let mut m = mask;
+            while m != 0 {
+                digits[m.trailing_zeros() as usize] |= cell(i);
+                m &= m - 1;
+            }
+        }
         Self {
             view,
             masks: view.masks,
             placed: view.placed,
-            topology: &view.context.topology,
-            box_size: view.context.box_size,
+            g: view.context,
+            digits,
         }
     }
 
+    fn n(&self) -> usize {
+        self.g.n
+    }
+
     fn sees(&self, a: usize, b: usize) -> bool {
-        let n = self.topology.n;
-        let k = self.box_size;
-        a != b
-            && (a / n == b / n
-                || a % n == b % n
-                || (a / n / k == b / n / k && a % n / k == b % n / k))
+        self.g.peers[a] & cell(b) != 0
+    }
+
+    /// Cells of the set that hold the digit `bit`.
+    fn holding(&self, set: Cells, bit: u16) -> Cells {
+        set & self.digits[bit.trailing_zeros() as usize]
+    }
+
+    /// Remove the digit `bit` from every cell of the set that holds it.
+    fn removal(&self, set: Cells, bit: u16) -> Vec<(usize, u16)> {
+        cells(self.holding(set, bit))
+            .map(|i| (i, self.masks[i] & !bit))
+            .collect()
+    }
+
+    fn charge(&self) -> Result<(), BudgetExceeded> {
+        self.view.charge()
+    }
+
+    fn charge_many(&self, operations: u64) -> Result<(), BudgetExceeded> {
+        if self.view.budget.spend(operations) {
+            Ok(())
+        } else {
+            Err(BudgetExceeded)
+        }
     }
 
     fn step(
@@ -77,6 +180,19 @@ impl<'a> Engine<'a> {
         self.view.step(technique, support, units, changes)
     }
 
+    /// Record a step; true when the technique can stop because the caller
+    /// applies only the first step found.
+    fn push(&self, steps: &mut Vec<HumanStep>, step: HumanStep) -> bool {
+        steps.push(step);
+        self.view.first_only
+    }
+
+    /// Whether a chain search can stop: the caller applies only the first
+    /// step found, and one was.
+    fn done(&self, steps: &[HumanStep]) -> bool {
+        self.view.first_only && !steps.is_empty()
+    }
+
     /// Write in a single-candidate cell and remove its digit from its peers.
     fn clear_peers(
         &self,
@@ -86,10 +202,7 @@ impl<'a> Engine<'a> {
         units: Vec<usize>,
     ) -> Option<HumanStep> {
         let mask = self.masks[cell];
-        let changes = (0..self.masks.len())
-            .filter(|&j| self.sees(cell, j))
-            .map(|j| (j, self.masks[j] & !mask))
-            .collect();
+        let changes = self.removal(self.g.peers[cell], mask);
         support.push(cell);
         let mut step = self.step(technique, support, units, changes)?;
         step.places = Some((cell, mask));
@@ -100,13 +213,14 @@ impl<'a> Engine<'a> {
     fn bookkeeping(&self) -> Result<Vec<HumanStep>, BudgetExceeded> {
         let mut steps = Vec::new();
         for cell in 0..self.masks.len() {
-            self.view.charge()?;
+            self.charge()?;
             if self.placed[cell]
                 && self.masks[cell].count_ones() == 1
                 && let Some(step) =
                     self.clear_peers("peer_elimination", cell, Vec::new(), Vec::new())
+                && self.push(&mut steps, step)
             {
-                steps.push(step);
+                return Ok(steps);
             }
         }
         Ok(steps)
@@ -116,12 +230,13 @@ impl<'a> Engine<'a> {
     fn naked_singles(&self) -> Result<Vec<HumanStep>, BudgetExceeded> {
         let mut steps = Vec::new();
         for cell in 0..self.masks.len() {
-            self.view.charge()?;
+            self.charge()?;
             if !self.placed[cell]
                 && self.masks[cell].count_ones() == 1
                 && let Some(step) = self.clear_peers("naked_single", cell, Vec::new(), Vec::new())
+                && self.push(&mut steps, step)
             {
-                steps.push(step);
+                return Ok(steps);
             }
         }
         Ok(steps)
@@ -129,18 +244,15 @@ impl<'a> Engine<'a> {
 
     fn hidden_singles(&self) -> Result<Vec<HumanStep>, BudgetExceeded> {
         let mut steps = Vec::new();
-        for (unit, cells) in self.topology.units.iter().enumerate() {
-            for digit in 0..self.topology.n {
-                self.view.charge()?;
+        for (unit, cells) in self.g.units.iter().enumerate() {
+            for digit in 0..self.n() {
+                self.charge()?;
                 let bit = 1 << digit;
-                let possible: Vec<_> = cells
-                    .iter()
-                    .copied()
-                    .filter(|&i| self.masks[i] & bit != 0)
-                    .collect();
-                let [cell] = possible[..] else {
+                let possible = self.g.unit_bits[unit] & self.digits[digit];
+                if count(possible) != 1 {
                     continue;
-                };
+                }
+                let cell = possible.trailing_zeros() as usize;
                 let step = if self.masks[cell] != bit {
                     self.step(
                         "hidden_single",
@@ -160,7 +272,11 @@ impl<'a> Engine<'a> {
                 } else {
                     None
                 };
-                steps.extend(step);
+                if let Some(step) = step
+                    && self.push(&mut steps, step)
+                {
+                    return Ok(steps);
+                }
             }
         }
         Ok(steps)
@@ -168,40 +284,29 @@ impl<'a> Engine<'a> {
 
     fn locked(&self) -> Result<Vec<HumanStep>, BudgetExceeded> {
         let mut steps = Vec::new();
-        for &(a, b) in &self.topology.pairs {
+        for &(a, b) in &self.g.pairs {
             for (source, target) in [(a, b), (b, a)] {
-                for digit in 0..self.topology.n {
-                    self.view.charge()?;
+                for digit in 0..self.n() {
+                    self.charge()?;
                     let bit = 1 << digit;
-                    let possible: Vec<_> = self.topology.units[source]
-                        .iter()
-                        .copied()
-                        .filter(|&i| self.masks[i] & bit != 0)
-                        .collect();
-                    if possible.len() < 2
-                        || !possible
-                            .iter()
-                            .all(|i| self.topology.units[target].contains(i))
-                    {
+                    let possible = self.g.unit_bits[source] & self.digits[digit];
+                    if count(possible) < 2 || possible & !self.g.unit_bits[target] != 0 {
                         continue;
                     }
-                    let changes = self.topology.units[target]
-                        .iter()
-                        .copied()
-                        .filter(|i| !self.topology.units[source].contains(i))
-                        .map(|i| (i, self.masks[i] & !bit))
-                        .collect();
+                    let changes =
+                        self.removal(self.g.unit_bits[target] & !self.g.unit_bits[source], bit);
                     if let Some(step) = self.step(
-                        if source >= self.topology.n * 2 {
+                        if source >= self.n() * 2 {
                             "pointing"
                         } else {
                             "claiming"
                         },
-                        self.topology.units[source].clone(),
+                        self.g.units[source].clone(),
                         vec![source, target],
                         changes,
-                    ) {
-                        steps.push(step);
+                    ) && self.push(&mut steps, step)
+                    {
+                        return Ok(steps);
                     }
                 }
             }
@@ -219,59 +324,66 @@ impl<'a> Engine<'a> {
             (true, 3) => "hidden_triple",
             (true, _) => "hidden_quad",
         };
-        for (unit, cells) in self.topology.units.iter().enumerate() {
-            for selection in 1u16..1u16 << self.topology.n {
-                if selection.count_ones() != size {
-                    continue;
+        let n = self.n();
+        for (unit, cells) in self.g.units.iter().enumerate() {
+            let mut local = [0u16; MAX_SIZE];
+            for (j, &i) in cells.iter().enumerate() {
+                local[j] = self.masks[i];
+            }
+            let local = &local[..n];
+            // Which digits occur in the unit at all.
+            let present = local.iter().fold(0u16, |m, &x| m | x);
+            // Unit positions with at least two candidates.
+            let wide = local
+                .iter()
+                .enumerate()
+                .filter(|&(_, &m)| m.count_ones() >= 2)
+                .fold(0u16, |p, (j, _)| p | 1 << j);
+            // Unit positions of each digit.
+            let mut pos = [0u16; MAX_SIZE];
+            for (j, &m) in local.iter().enumerate() {
+                for (d, p) in pos.iter_mut().enumerate() {
+                    if m & (1 << d) != 0 {
+                        *p |= 1 << j;
+                    }
                 }
-                self.view.charge()?;
+            }
+            let chosen = |selection: u16| (0..n).filter(move |&j| selection & (1 << j) != 0);
+            for &selection in &self.g.selections[size as usize] {
+                self.charge()?;
                 let (support, changes) = if hidden {
                     // Every selected digit must occur; a unit with no such digit is contradictory.
-                    if (0..self.topology.n).any(|d| {
-                        selection & (1 << d) != 0
-                            && !cells.iter().any(|&i| self.masks[i] & (1 << d) != 0)
-                    }) {
+                    if selection & !present != 0 {
                         continue;
                     }
-                    let positions: Vec<_> = cells
-                        .iter()
-                        .copied()
-                        .filter(|&i| self.masks[i] & selection != 0)
-                        .collect();
-                    if positions.len() != size as usize {
+                    let positions = chosen(selection).fold(0u16, |p, d| p | pos[d]);
+                    if positions.count_ones() != size {
                         continue;
                     }
                     (
                         cells.clone(),
-                        positions
-                            .into_iter()
-                            .map(|i| (i, self.masks[i] & selection))
+                        chosen(positions)
+                            .map(|j| (cells[j], local[j] & selection))
                             .collect(),
                     )
                 } else {
-                    let chosen: Vec<_> = cells
-                        .iter()
-                        .enumerate()
-                        .filter(|&(j, _)| selection & (1 << j) != 0)
-                        .map(|(_, &i)| i)
-                        .collect();
-                    if chosen.iter().any(|&i| self.masks[i].count_ones() < 2) {
+                    if selection & !wide != 0 {
                         continue;
                     }
-                    let digits = chosen.iter().fold(0u16, |mask, &i| mask | self.masks[i]);
+                    let digits = chosen(selection).fold(0u16, |mask, j| mask | local[j]);
                     if digits.count_ones() != size {
                         continue;
                     }
-                    let changes = cells
-                        .iter()
-                        .copied()
-                        .filter(|i| !chosen.contains(i))
-                        .map(|i| (i, self.masks[i] & !digits))
+                    let changes = (0..n)
+                        .filter(|&j| selection & (1 << j) == 0)
+                        .map(|j| (cells[j], local[j] & !digits))
                         .collect();
-                    (chosen, changes)
+                    (chosen(selection).map(|j| cells[j]).collect(), changes)
                 };
-                if let Some(step) = self.step(technique, support, vec![unit], changes) {
-                    steps.push(step);
+                if let Some(step) = self.step(technique, support, vec![unit], changes)
+                    && self.push(&mut steps, step)
+                {
+                    return Ok(steps);
                 }
             }
         }
@@ -279,40 +391,40 @@ impl<'a> Engine<'a> {
     }
 
     fn fish(&self, size: u32) -> Result<Vec<HumanStep>, BudgetExceeded> {
-        let n = self.topology.n;
+        let n = self.n();
+        let full = ((1u32 << n) - 1) as u16;
         let mut steps = Vec::new();
         for orientation in 0..2 {
             for digit in 0..n {
                 let bit = 1 << digit;
-                for bases in 1u16..1u16 << n {
-                    if bases.count_ones() != size {
-                        continue;
+                // Where the digit can go in each base line, as a mask over
+                // cover lines.
+                let mut lines = [0u16; MAX_SIZE];
+                if orientation == 0 {
+                    for (r, line) in lines.iter_mut().enumerate().take(n) {
+                        *line = (self.digits[digit] >> (r * n)) as u16 & full;
                     }
-                    self.view.charge()?;
-                    let units: Vec<_> = (0..n)
-                        .filter(|&u| bases & (1 << u) != 0)
-                        .map(|u| orientation * n + u)
-                        .collect();
+                } else {
+                    for i in cells(self.digits[digit]) {
+                        lines[i % n] |= 1 << (i / n);
+                    }
+                }
+                for &bases in &self.g.selections[size as usize] {
+                    self.charge()?;
                     let mut covers = 0u16;
                     let mut valid = true;
-                    for &unit in &units {
-                        let positions: Vec<_> = self.topology.units[unit]
-                            .iter()
-                            .copied()
-                            .filter(|&i| self.masks[i] & bit != 0)
-                            .collect();
-                        if positions.len() < 2 || positions.len() > size as usize {
+                    for u in (0..n).filter(|&u| bases & (1 << u) != 0) {
+                        let positions = lines[u];
+                        if positions.count_ones() < 2 || positions.count_ones() > size {
                             valid = false;
                             break;
                         }
-                        for i in positions {
-                            covers |= 1 << if orientation == 0 { i % n } else { i / n };
-                        }
+                        covers |= positions;
                     }
                     if !valid || covers.count_ones() != size {
                         continue;
                     }
-                    let changes = (0..n * n)
+                    let changes = cells(self.digits[digit])
                         .filter(|&i| {
                             let (base, cover) = if orientation == 0 {
                                 (i / n, i % n)
@@ -323,9 +435,13 @@ impl<'a> Engine<'a> {
                         })
                         .map(|i| (i, self.masks[i] & !bit))
                         .collect();
+                    let units: Vec<_> = (0..n)
+                        .filter(|&u| bases & (1 << u) != 0)
+                        .map(|u| orientation * n + u)
+                        .collect();
                     let support = units
                         .iter()
-                        .flat_map(|&u| self.topology.units[u].iter().copied())
+                        .flat_map(|&u| self.g.units[u].iter().copied())
                         .collect();
                     if let Some(step) = self.step(
                         match size {
@@ -336,8 +452,9 @@ impl<'a> Engine<'a> {
                         support,
                         units,
                         changes,
-                    ) {
-                        steps.push(step);
+                    ) && self.push(&mut steps, step)
+                    {
+                        return Ok(steps);
                     }
                 }
             }
@@ -348,14 +465,12 @@ impl<'a> Engine<'a> {
     /// Conjugate pairs of one digit: units where it has exactly two places.
     fn strong_links(&self, bit: u16) -> Result<Vec<(usize, usize, usize)>, BudgetExceeded> {
         let mut links = Vec::new();
-        for (unit, cells) in self.topology.units.iter().enumerate() {
-            self.view.charge()?;
-            let positions: Vec<_> = cells
-                .iter()
-                .copied()
-                .filter(|&i| self.masks[i] & bit != 0)
-                .collect();
-            if let [a, b] = positions[..] {
+        for (unit, &set) in self.g.unit_bits.iter().enumerate() {
+            self.charge()?;
+            let positions = self.holding(set, bit);
+            if count(positions) == 2 {
+                let a = positions.trailing_zeros() as usize;
+                let b = (positions & (positions - 1)).trailing_zeros() as usize;
                 links.push((a, b, unit));
             }
         }
@@ -365,7 +480,7 @@ impl<'a> Engine<'a> {
     /// Skyscraper, two-string kite and turbot fish: A=B-C=D on one digit, so
     /// A or D holds it, and cells seeing both lose it.
     fn turbot(&self) -> Result<Vec<HumanStep>, BudgetExceeded> {
-        let n = self.topology.n;
+        let n = self.n();
         let mut steps = Vec::new();
         for digit in 0..n {
             let bit = 1 << digit;
@@ -374,19 +489,16 @@ impl<'a> Engine<'a> {
                 for &(c0, d0, v) in &links[x + 1..] {
                     for (a, b) in [(a0, b0), (b0, a0)] {
                         for (c, d) in [(c0, d0), (d0, c0)] {
-                            self.view.charge()?;
-                            let cells = [a, b, c, d];
-                            if (0..4).any(|i| (i + 1..4).any(|j| cells[i] == cells[j]))
+                            self.charge()?;
+                            let four = [a, b, c, d];
+                            if (0..4).any(|i| (i + 1..4).any(|j| four[i] == four[j]))
                                 || !self.sees(b, c)
                             {
                                 continue;
                             }
-                            let changes = (0..n * n)
-                                .filter(|&i| {
-                                    !cells.contains(&i) && self.sees(i, a) && self.sees(i, d)
-                                })
-                                .map(|i| (i, self.masks[i] & !bit))
-                                .collect();
+                            let used = cell(a) | cell(b) | cell(c) | cell(d);
+                            let changes =
+                                self.removal(self.g.peers[a] & self.g.peers[d] & !used, bit);
                             let kind = |w: usize| w / n;
                             let technique = if kind(u) == kind(v) && kind(u) < 2 {
                                 "skyscraper"
@@ -396,9 +508,10 @@ impl<'a> Engine<'a> {
                                 "turbot_fish"
                             };
                             if let Some(step) =
-                                self.step(technique, cells.to_vec(), vec![u, v], changes)
+                                self.step(technique, four.to_vec(), vec![u, v], changes)
+                                && self.push(&mut steps, step)
                             {
-                                steps.push(step);
+                                return Ok(steps);
                             }
                         }
                     }
@@ -411,25 +524,25 @@ impl<'a> Engine<'a> {
     /// W-wing: two unconnected {x,y} cells joined by a strong link on x through
     /// cells they see, so one of them is y.
     fn w_wing(&self) -> Result<Vec<HumanStep>, BudgetExceeded> {
-        let cells = self.masks.len();
+        let total = self.masks.len();
         let mut steps = Vec::new();
         let mut links = Vec::new();
-        for digit in 0..self.topology.n {
+        for digit in 0..self.n() {
             links.push(self.strong_links(1 << digit)?);
         }
-        for p in 0..cells {
+        for p in 0..total {
             let mask = self.masks[p];
             if mask.count_ones() != 2 {
                 continue;
             }
-            for q in p + 1..cells {
+            for q in p + 1..total {
                 if self.masks[q] != mask || self.sees(p, q) {
                     continue;
                 }
-                for x in (0..self.topology.n).filter(|&d| mask & (1 << d) != 0) {
+                for x in (0..self.n()).filter(|&d| mask & (1 << d) != 0) {
                     let y = mask & !(1 << x);
                     for &(a0, b0, unit) in &links[x] {
-                        self.view.charge()?;
+                        self.charge()?;
                         let joined = [(a0, b0), (b0, a0)].into_iter().find(|&(a, b)| {
                             ![p, q].contains(&a)
                                 && ![p, q].contains(&b)
@@ -439,14 +552,12 @@ impl<'a> Engine<'a> {
                         let Some((a, b)) = joined else {
                             continue;
                         };
-                        let changes = (0..cells)
-                            .filter(|&i| i != p && i != q && self.sees(i, p) && self.sees(i, q))
-                            .map(|i| (i, self.masks[i] & !y))
-                            .collect();
+                        let changes = self.removal(self.g.peers[p] & self.g.peers[q], y);
                         if let Some(step) =
                             self.step("w_wing", vec![p, q, a, b], vec![unit], changes)
+                            && self.push(&mut steps, step)
                         {
-                            steps.push(step);
+                            return Ok(steps);
                         }
                     }
                 }
@@ -459,22 +570,25 @@ impl<'a> Engine<'a> {
     /// starts and ends with a strong link, with at most `max_links` strong links.
     /// One end holds the digit, so cells seeing both ends lose it.
     fn x_chain(&self, max_links: usize) -> Result<Vec<HumanStep>, BudgetExceeded> {
-        let cells = self.masks.len();
+        let total = self.masks.len();
         let mut steps = Vec::new();
-        for digit in 0..self.topology.n {
+        for digit in 0..self.n() {
             let bit = 1 << digit;
-            let mut strong = vec![Vec::new(); cells];
+            let mut strong = vec![Vec::new(); total];
             for (a, b, _) in self.strong_links(bit)? {
                 strong[a].push(b);
                 strong[b].push(a);
             }
             // A weak link must lead on to a strong link, so only linked cells matter.
-            let holders: Vec<_> = (0..cells).filter(|&i| !strong[i].is_empty()).collect();
+            let holders: Vec<_> = (0..total).filter(|&i| !strong[i].is_empty()).collect();
             let mut path = Vec::new();
             for &start in &holders {
                 path.clear();
                 path.push(start);
                 self.x_chain_from(bit, max_links, &strong, &holders, &mut path, &mut steps)?;
+                if self.done(&steps) {
+                    return Ok(steps);
+                }
             }
         }
         Ok(steps)
@@ -490,9 +604,10 @@ impl<'a> Engine<'a> {
         steps: &mut Vec<HumanStep>,
     ) -> Result<(), BudgetExceeded> {
         let last = *path.last().unwrap();
+        let on_path = path.iter().fold(0, |m, &i| m | cell(i));
         for &next in &strong[last] {
-            self.view.charge()?;
-            if path.contains(&next) {
+            self.charge()?;
+            if on_path & cell(next) != 0 {
                 continue;
             }
             path.push(next);
@@ -500,23 +615,31 @@ impl<'a> Engine<'a> {
             // Chains of two strong links are turbot fish, found at Hard.
             if links >= 3 && path[0] < next {
                 let (a, d) = (path[0], next);
-                let changes = (0..self.masks.len())
-                    .filter(|&i| !path.contains(&i) && self.sees(i, a) && self.sees(i, d))
-                    .map(|i| (i, self.masks[i] & !bit))
-                    .collect();
-                if let Some(step) = self.step("x_chain", path.clone(), Vec::new(), changes) {
-                    steps.push(step);
+                let changes = self.removal(
+                    self.g.peers[a] & self.g.peers[d] & !(on_path | cell(next)),
+                    bit,
+                );
+                if let Some(step) = self.step("x_chain", path.clone(), Vec::new(), changes)
+                    && self.push(steps, step)
+                {
+                    path.pop();
+                    return Ok(());
                 }
             }
             if links < max_links {
+                let reach = self.g.peers[next] & !(on_path | cell(next));
                 for &weak in holders {
-                    if path.contains(&weak) || !self.sees(next, weak) {
+                    if reach & cell(weak) == 0 {
                         continue;
                     }
-                    self.view.charge()?;
+                    self.charge()?;
                     path.push(weak);
                     self.x_chain_from(bit, max_links, strong, holders, path, steps)?;
                     path.pop();
+                    if self.done(steps) {
+                        path.pop();
+                        return Ok(());
+                    }
                 }
             }
             path.pop();
@@ -528,19 +651,22 @@ impl<'a> Engine<'a> {
     /// passed along, whose free digits at both ends are the same z. One end is
     /// z, so cells seeing both ends lose it.
     fn xy_chain(&self, max_cells: usize) -> Result<Vec<HumanStep>, BudgetExceeded> {
-        let cells = self.masks.len();
-        let bivalue: Vec<_> = (0..cells)
+        let total = self.masks.len();
+        let bivalue: Vec<_> = (0..total)
             .filter(|&i| self.masks[i].count_ones() == 2)
             .collect();
         let mut steps = Vec::new();
         let mut path = Vec::new();
         for &start in &bivalue {
-            for z in (0..self.topology.n).filter(|&d| self.masks[start] & (1 << d) != 0) {
+            for z in (0..self.n()).filter(|&d| self.masks[start] & (1 << d) != 0) {
                 let z = 1u16 << z;
                 path.clear();
                 path.push(start);
                 let carried = self.masks[start] & !z;
                 self.xy_chain_from(z, carried, max_cells, &bivalue, &mut path, &mut steps)?;
+                if self.done(&steps) {
+                    return Ok(steps);
+                }
             }
         }
         Ok(steps)
@@ -556,26 +682,35 @@ impl<'a> Engine<'a> {
         steps: &mut Vec<HumanStep>,
     ) -> Result<(), BudgetExceeded> {
         let last = *path.last().unwrap();
+        let on_path = path.iter().fold(0, |m, &i| m | cell(i));
+        let reach = self.g.peers[last] & !on_path;
         for &next in bivalue {
-            if path.contains(&next) || self.masks[next] & carried == 0 || !self.sees(last, next) {
+            if reach & cell(next) == 0 || self.masks[next] & carried == 0 {
                 continue;
             }
-            self.view.charge()?;
+            self.charge()?;
             path.push(next);
             let free = self.masks[next] & !carried;
             // Three-cell chains are XY-wings, found at Hard.
             if free == z && path.len() >= 4 && path[0] < next {
                 let (a, d) = (path[0], next);
-                let changes = (0..self.masks.len())
-                    .filter(|&i| !path.contains(&i) && self.sees(i, a) && self.sees(i, d))
-                    .map(|i| (i, self.masks[i] & !z))
-                    .collect();
-                if let Some(step) = self.step("xy_chain", path.clone(), Vec::new(), changes) {
-                    steps.push(step);
+                let changes = self.removal(
+                    self.g.peers[a] & self.g.peers[d] & !(on_path | cell(next)),
+                    z,
+                );
+                if let Some(step) = self.step("xy_chain", path.clone(), Vec::new(), changes)
+                    && self.push(steps, step)
+                {
+                    path.pop();
+                    return Ok(());
                 }
             }
             if path.len() < max_cells {
                 self.xy_chain_from(z, free, max_cells, bivalue, path, steps)?;
+                if self.done(steps) {
+                    path.pop();
+                    return Ok(());
+                }
             }
             path.pop();
         }
@@ -588,12 +723,12 @@ impl<'a> Engine<'a> {
             if self.masks[pivot].count_ones() != if xyz { 3 } else { 2 } {
                 continue;
             }
-            let wings: Vec<_> = (0..self.masks.len())
-                .filter(|&i| self.sees(pivot, i) && self.masks[i].count_ones() == 2)
+            let wings: Vec<_> = cells(self.g.peers[pivot])
+                .filter(|&i| self.masks[i].count_ones() == 2)
                 .collect();
             for (offset, &a) in wings.iter().enumerate() {
                 for &b in &wings[offset + 1..] {
-                    self.view.charge()?;
+                    self.charge()?;
                     let (p, x, y) = (self.masks[pivot], self.masks[a], self.masks[b]);
                     let common = x & y;
                     if common.count_ones() != 1 || (p | x | y).count_ones() != 3 {
@@ -610,24 +745,19 @@ impl<'a> Engine<'a> {
                     {
                         continue;
                     }
-                    let changes = (0..self.masks.len())
-                        .filter(|&i| {
-                            i != pivot
-                                && i != a
-                                && i != b
-                                && self.sees(i, a)
-                                && self.sees(i, b)
-                                && (!xyz || self.sees(i, pivot))
-                        })
-                        .map(|i| (i, self.masks[i] & !common))
-                        .collect();
+                    let mut seen = self.g.peers[a] & self.g.peers[b];
+                    if xyz {
+                        seen &= self.g.peers[pivot];
+                    }
+                    let changes = self.removal(seen & !(cell(pivot) | cell(a) | cell(b)), common);
                     if let Some(step) = self.step(
                         if xyz { "xyz_wing" } else { "xy_wing" },
                         vec![pivot, a, b],
                         Vec::new(),
                         changes,
-                    ) {
-                        steps.push(step);
+                    ) && self.push(&mut steps, step)
+                    {
+                        return Ok(steps);
                     }
                 }
             }
@@ -636,97 +766,105 @@ impl<'a> Engine<'a> {
     }
 
     fn coloring(&self, max_nodes: usize, extended: bool) -> Result<Vec<HumanStep>, BudgetExceeded> {
+        let total = self.masks.len();
         let mut steps = Vec::new();
-        for digit in 0..self.topology.n {
+        // 0 = uncolored, 1 = false, 2 = true.
+        let mut colors = vec![0u8; total];
+        for digit in 0..self.n() {
             let bit = 1 << digit;
-            let mut edges = vec![Vec::<(usize, usize)>::new(); self.masks.len()];
-            for (unit, cells) in self.topology.units.iter().enumerate() {
-                self.view.charge()?;
-                let positions: Vec<_> = cells
-                    .iter()
-                    .copied()
-                    .filter(|&i| self.masks[i] & bit != 0)
-                    .collect();
-                if let [a, b] = positions[..] {
+            let mut edges = vec![Vec::<(usize, usize)>::new(); total];
+            for (unit, &set) in self.g.unit_bits.iter().enumerate() {
+                self.charge()?;
+                let positions = self.holding(set, bit);
+                if count(positions) == 2 {
+                    let a = positions.trailing_zeros() as usize;
+                    let b = (positions & (positions - 1)).trailing_zeros() as usize;
                     edges[a].push((b, unit));
                     edges[b].push((a, unit));
                 }
             }
-            for start in 0..self.masks.len() {
-                self.view.charge()?;
+            for start in 0..total {
+                self.charge()?;
                 if edges[start].is_empty() {
                     continue;
                 }
-                let mut colors = vec![None; self.masks.len()];
-                colors[start] = Some(false);
+                colors[start] = 1;
                 let mut component = vec![start];
-                let mut units = BTreeSet::new();
+                let mut units = 0u32;
                 let mut at = 0;
                 let mut contradiction = false;
                 while at < component.len() && component.len() <= max_nodes {
                     let cell = component[at];
                     for &(other, unit) in &edges[cell] {
-                        self.view.charge()?;
-                        let color = !colors[cell].unwrap();
-                        if let Some(existing) = colors[other] {
-                            if existing != color {
+                        self.charge()?;
+                        let color = 3 - colors[cell];
+                        if colors[other] != 0 {
+                            if colors[other] != color {
                                 contradiction = true;
                             }
                         } else {
-                            colors[other] = Some(color);
+                            colors[other] = color;
                             component.push(other);
-                            units.insert(unit);
+                            units |= 1 << unit;
                         }
                     }
                     at += 1;
                 }
-                if contradiction
+                let colored = [
+                    component
+                        .iter()
+                        .filter(|&&c| colors[c] == 1)
+                        .fold(0, |m, &c| m | cell(c)),
+                    component
+                        .iter()
+                        .filter(|&&c| colors[c] == 2)
+                        .fold(0, |m, &c| m | cell(c)),
+                ];
+                let skip = contradiction
                     || component.len() > max_nodes
-                    || component.iter().min() != Some(&start)
-                {
-                    continue;
-                }
-                let mut invalid = [false; 2];
-                for (offset, &a) in component.iter().enumerate() {
-                    for &b in &component[offset + 1..] {
-                        self.view.charge()?;
-                        if colors[a] == colors[b] && self.sees(a, b) {
-                            invalid[usize::from(colors[a].unwrap())] = true;
+                    || component.iter().min() != Some(&start);
+                if !skip {
+                    let len = component.len() as u64;
+                    self.charge_many(len * (len - 1) / 2)?;
+                    let invalid = [0, 1]
+                        .map(|c| cells(colored[c]).any(|a| self.g.peers[a] & colored[c] != 0));
+                    self.charge_many(total as u64)?;
+                    let mut changes = Vec::new();
+                    for i in cells(self.digits[digit]) {
+                        let eliminate = match colors[i] {
+                            0 => {
+                                self.g.peers[i] & colored[0] != 0
+                                    && self.g.peers[i] & colored[1] != 0
+                            }
+                            color => invalid[usize::from(color) - 1],
+                        };
+                        if eliminate {
+                            changes.push((i, self.masks[i] & !bit));
                         }
                     }
-                }
-                let mut changes = Vec::new();
-                for i in 0..self.masks.len() {
-                    self.view.charge()?;
-                    let eliminate = if let Some(color) = colors[i] {
-                        invalid[usize::from(color)]
-                    } else {
-                        [false, true].into_iter().all(|color| {
-                            component
-                                .iter()
-                                .any(|&c| colors[c] == Some(color) && self.sees(i, c))
-                        })
-                    };
-                    if eliminate {
-                        changes.push((i, self.masks[i] & !bit));
+                    let units: Vec<_> = (0..self.g.units.len())
+                        .filter(|&u| units & (1 << u) != 0)
+                        .collect();
+                    let support = units
+                        .iter()
+                        .flat_map(|&u| self.g.units[u].iter().copied())
+                        .collect();
+                    if let Some(step) = self.step(
+                        if extended {
+                            "extended_coloring"
+                        } else {
+                            "simple_coloring"
+                        },
+                        support,
+                        units,
+                        changes,
+                    ) && self.push(&mut steps, step)
+                    {
+                        return Ok(steps);
                     }
                 }
-                let units: Vec<_> = units.into_iter().collect();
-                let support = units
-                    .iter()
-                    .flat_map(|&u| self.topology.units[u].iter().copied())
-                    .collect();
-                if let Some(step) = self.step(
-                    if extended {
-                        "extended_coloring"
-                    } else {
-                        "simple_coloring"
-                    },
-                    support,
-                    units,
-                    changes,
-                ) {
-                    steps.push(step);
+                for &c in &component {
+                    colors[c] = 0;
                 }
             }
         }
@@ -804,10 +942,9 @@ static TECHNIQUES: [Technique<Grid>; 21] = [
 
 /// Some cell has no candidate, or some row, column or box cannot hold every digit.
 fn broken(grid: &Grid, masks: &[u16]) -> bool {
-    let all = (1u16 << grid.topology.n) - 1;
+    let all = (1u16 << grid.n) - 1;
     masks.contains(&0)
         || grid
-            .topology
             .units
             .iter()
             .any(|unit| unit.iter().fold(0u16, |bits, &i| bits | masks[i]) != all)
@@ -828,8 +965,8 @@ pub(crate) fn next_steps(
     budget: &Budget,
     cap: Difficulty,
 ) -> Result<Vec<HumanStep>, BudgetExceeded> {
-    let grid = Grid::new(puzzle);
-    PROFILE.next(&Candidates::new(&grid, masks, placed, budget), cap)
+    let grid = Grid::of(puzzle.shape());
+    PROFILE.next(&Candidates::new(grid, masks, placed, budget), cap)
 }
 
 /// Solve from the printed puzzle; `metrics` also records placements.
@@ -858,13 +995,21 @@ pub(crate) fn analyze_state(
     cap: Difficulty,
     metrics: bool,
 ) -> Result<Trace, BudgetExceeded> {
-    PROFILE.analyze(&Grid::new(puzzle), masks, placed, budget, cap, metrics)
+    PROFILE.analyze(
+        Grid::of(puzzle.shape()),
+        masks,
+        placed,
+        budget,
+        cap,
+        metrics,
+    )
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::Shape;
+    use pencil_puzzles_core::SplitMix64;
+    use std::collections::BTreeSet;
 
     static UNPLACED: [bool; 81] = [false; 81];
 
@@ -872,10 +1017,91 @@ mod tests {
         Puzzle::new(Shape::new(n).unwrap(), vec![0; n * n]).unwrap()
     }
 
+    /// A random valid grid of side n = k*k: a pattern grid with digits, rows
+    /// within bands, columns within stacks, bands and stacks all shuffled.
+    fn random_grid(k: usize, rng: &mut SplitMix64) -> Vec<u8> {
+        let n = k * k;
+        let mut perm: Vec<u8> = (1..=n as u8).collect();
+        rng.shuffle(&mut perm);
+        let shuffle_lines = |rng: &mut SplitMix64| {
+            let mut bands: Vec<usize> = (0..k).collect();
+            rng.shuffle(&mut bands);
+            let mut lines = Vec::new();
+            for b in bands {
+                let mut within: Vec<usize> = (0..k).map(|j| b * k + j).collect();
+                rng.shuffle(&mut within);
+                lines.extend(within);
+            }
+            lines
+        };
+        let rows = shuffle_lines(rng);
+        let cols = shuffle_lines(rng);
+        (0..n * n)
+            .map(|i| {
+                let (r, c) = (rows[i / n], cols[i % n]);
+                perm[(r * k + r / k + c) % n]
+            })
+            .collect()
+    }
+
+    fn random_puzzle(k: usize, rng: &mut SplitMix64) -> (Puzzle, Vec<u8>) {
+        let n = k * k;
+        let grid = random_grid(k, rng);
+        let clues = if k == 2 {
+            4 + rng.below(8) as usize
+        } else {
+            17 + rng.below(24) as usize
+        };
+        let mut order: Vec<usize> = (0..n * n).collect();
+        rng.shuffle(&mut order);
+        let mut givens = grid.clone();
+        for &i in &order[clues..] {
+            givens[i] = 0;
+        }
+        (Puzzle::new(Shape::new(n).unwrap(), givens).unwrap(), grid)
+    }
+
     fn first_step(masks: &[u16], placed: &[bool]) -> HumanStep {
         let puzzle = empty(4);
         let budget = Budget::unlimited();
         next_steps(&puzzle, masks, placed, &budget, Easy).unwrap()[0].clone()
+    }
+
+    /// Screening stops each technique at its first step; the applied steps
+    /// are the same as when every step is listed for the metrics.
+    #[test]
+    fn screening_applies_the_same_steps_as_rating() {
+        let mut rng = SplitMix64::new(99);
+        for trial in 0..200 {
+            let k = if trial % 5 == 0 { 2 } else { 3 };
+            let (puzzle, _) = random_puzzle(k, &mut rng);
+            for cap in Difficulty::ALL.iter().copied().take(4) {
+                let budget = Budget::unlimited();
+                let full = analyze(&puzzle, &budget, cap, true).unwrap();
+                let quick = analyze(&puzzle, &budget, cap, false).unwrap();
+                assert_eq!(full.steps, quick.steps, "{} {cap:?}", puzzle.id());
+                assert_eq!(full.masks, quick.masks);
+                assert_eq!(full.solved, quick.solved);
+                assert!(quick.choices.is_empty());
+            }
+        }
+    }
+
+    #[test]
+    fn peers_and_selections_follow_the_grid() {
+        let g = Grid::new(&empty(9));
+        // r2c5 (cell 13) sees its row, column and box: 20 cells.
+        assert_eq!(count(g.peers[13]), 20);
+        assert_eq!(g.peers[13] & cell(13), 0);
+        assert_ne!(g.peers[13] & cell(9), 0);
+        assert_ne!(g.peers[13] & cell(76), 0);
+        assert_ne!(g.peers[13] & cell(21), 0);
+        assert_eq!(g.peers[13] & cell(27), 0);
+        assert_eq!(g.selections[2].len(), 36);
+        assert_eq!(g.selections[3].len(), 84);
+        assert_eq!(g.selections[4].len(), 126);
+        assert_eq!(g.selections[2][0], 0b11);
+        assert_eq!(cells(cell(3) | cell(80)).collect::<Vec<_>>(), [3, 80]);
     }
 
     #[test]
