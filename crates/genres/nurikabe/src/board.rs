@@ -1,44 +1,54 @@
-//! Bounded iterative reachability, rule instances and complete binary search.
+//! Rule instances, bounded propagation and complete binary search, on
+//! bitboards (`bits`).
+//!
+//! Propagation narrows each rule instance: a cell loses a value when
+//! writing that value in would break the instance. The instances are
+//! narrowed until none changes anything, so the result is the unique
+//! fixpoint and does not depend on the order in which cells are tested.
+//! That lets the tests skip cells whose value cannot affect the instance.
+use crate::bits::{self, Bits, bit, count, first};
 use crate::*;
-use pencil_puzzles_core::grid::{self, flood};
 use std::rc::Rc;
+
 pub(crate) const LAND: u16 = 1;
 pub(crate) const SEA: u16 = 2;
+
 #[derive(Clone, Debug)]
 pub(crate) enum Kind {
+    /// A numbered cell and its number.
     Island(usize, u32),
     Numbers,
     Sea,
     Pool,
 }
+
 #[derive(Clone, Debug)]
 pub(crate) struct Instance {
     pub kind: Kind,
-    pub scope: Vec<usize>,
+    /// The cells the instance can involve.
+    pub scope: Bits,
     pub place: Place,
     pub rule: u32,
 }
-#[derive(Clone)]
+
 pub(crate) struct Topology {
-    pub neighbours: Vec<Vec<usize>>,
+    pub grid: bits::Grid,
+    /// Numbered cells.
+    pub clues: Bits,
     pub instances: Vec<Instance>,
 }
+
 impl Topology {
     pub fn new(p: &Puzzle) -> Self {
-        let sh = p.shape();
-        let (rows, cols) = (sh.rows(), sh.cols());
-        let v = sh.cells();
-        let neighbours = grid::neighbours(rows, cols);
+        let grid = bits::Grid::new(p.shape());
+        let cols = grid.cols;
+        let mut clues = 0;
         let mut instances = Vec::new();
         for (i, &n) in p.clues().iter().enumerate().filter(|(_, n)| **n > 0) {
-            let scope = (0..v)
-                .filter(|&j| {
-                    (i / cols).abs_diff(j / cols) + (i % cols).abs_diff(j % cols) <= n as usize
-                })
-                .collect();
+            clues |= bit(i);
             instances.push(Instance {
                 kind: Kind::Island(i, n),
-                scope,
+                scope: grid.ball(i, n as usize),
                 place: cell(i, cols),
                 rule: 1,
             });
@@ -46,54 +56,107 @@ impl Topology {
         for (kind, rule) in [(Kind::Numbers, 2), (Kind::Sea, 3)] {
             instances.push(Instance {
                 kind,
-                scope: (0..v).collect(),
+                scope: grid.all,
                 place: Place::Board,
                 rule,
             });
         }
-        for r in 0..rows.saturating_sub(1) {
-            for c in 0..cols.saturating_sub(1) {
-                let i = r * cols + c;
-                instances.push(Instance {
-                    kind: Kind::Pool,
-                    scope: vec![i, i + 1, i + cols, i + cols + 1],
-                    place: cell(i, cols),
-                    rule: 4,
-                });
-            }
+        for i in bits::cells(grid.pools(grid.all)) {
+            instances.push(Instance {
+                kind: Kind::Pool,
+                scope: grid.block(i),
+                place: cell(i, cols),
+                rule: 4,
+            });
         }
         Self {
-            neighbours,
+            grid,
+            clues,
             instances,
         }
     }
 }
+
 pub(crate) fn cell(i: usize, cols: usize) -> Place {
     Place::Cell {
         row: (i / cols) as u32,
         col: (i % cols) as u32,
     }
 }
+
+/// The candidates of every cell: `land` holds the cells that cannot be sea,
+/// `sea` the cells that cannot be land. A cell in both has no value left.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct State {
+    pub land: Bits,
+    pub sea: Bits,
+}
+
+impl State {
+    /// The state of candidate masks (`LAND`, `SEA`, both or neither).
+    pub fn from_masks(masks: &[u16]) -> Self {
+        let mut s = Self { land: 0, sea: 0 };
+        for (i, &m) in masks.iter().enumerate() {
+            if m & SEA == 0 {
+                s.land |= bit(i);
+            }
+            if m & LAND == 0 {
+                s.sea |= bit(i);
+            }
+        }
+        s
+    }
+
+    /// Whether some cell has no value left.
+    pub fn dead(self) -> bool {
+        self.land & self.sea != 0
+    }
+
+    /// Cells with both values.
+    pub fn open(self, all: Bits) -> Bits {
+        all & !self.land & !self.sea
+    }
+
+    /// Cells that may still be land.
+    pub fn possible_land(self, all: Bits) -> Bits {
+        all & !self.sea
+    }
+
+    /// Cells that may still be sea.
+    pub fn possible_sea(self, all: Bits) -> Bits {
+        all & !self.land
+    }
+
+    /// The mask of one cell.
+    pub fn mask(self, i: usize) -> u16 {
+        let b = bit(i);
+        (if self.sea & b == 0 { LAND } else { 0 }) | (if self.land & b == 0 { SEA } else { 0 })
+    }
+}
+
 #[derive(Clone)]
 pub(crate) struct Board<'a> {
     pub puzzle: &'a Puzzle,
     pub budget: &'a Budget,
     pub topology: Rc<Topology>,
-    pub masks: Vec<u16>,
+    pub state: State,
 }
+
 impl<'a> Board<'a> {
     pub fn new(puzzle: &'a Puzzle, budget: &'a Budget) -> Self {
+        let topology = Topology::new(puzzle);
+        let state = State {
+            land: topology.clues,
+            sea: 0,
+        };
         Self {
             puzzle,
             budget,
-            topology: Rc::new(Topology::new(puzzle)),
-            masks: puzzle
-                .clues()
-                .iter()
-                .map(|&n| if n > 0 { LAND } else { LAND | SEA })
-                .collect(),
+            topology: Rc::new(topology),
+            state,
         }
     }
+
     pub fn spend(&self) -> Result<(), BudgetExceeded> {
         if self.budget.spend(1) {
             Ok(())
@@ -101,123 +164,218 @@ impl<'a> Board<'a> {
             Err(BudgetExceeded)
         }
     }
-    fn island_bounds(&self, k: usize, m: &[u16]) -> (usize, usize) {
+
+    fn grid(&self) -> &bits::Grid {
+        &self.topology.grid
+    }
+
+    /// Set one cell's candidates.
+    #[cfg(test)]
+    pub fn set_mask(&mut self, i: usize, mask: u16) {
+        let b = bit(i);
+        self.state.land &= !b;
+        self.state.sea &= !b;
+        if mask & SEA == 0 {
+            self.state.land |= b;
+        }
+        if mask & LAND == 0 {
+            self.state.sea |= b;
+        }
+    }
+
+    /// The smallest and largest size an island's land can still have.
+    fn island_bounds(&self, k: usize, s: State) -> (usize, usize) {
         let instance = &self.topology.instances[k];
         let Kind::Island(origin, _) = instance.kind else {
             unreachable!()
         };
-        let mut fixed = vec![false; m.len()];
-        let mut possible = fixed.clone();
-        for &i in &instance.scope {
-            fixed[i] = m[i] == LAND;
-            possible[i] = m[i] & LAND != 0;
-        }
+        let g = self.grid();
+        let fixed = s.land & !s.sea & instance.scope;
+        let possible = s.possible_land(instance.scope);
         (
-            flood(origin, |j| fixed[j], &self.topology.neighbours).len(),
-            flood(origin, |j| possible[j], &self.topology.neighbours).len(),
+            count(g.flood(bit(origin), fixed)),
+            count(g.flood(bit(origin), possible)),
         )
     }
-    pub fn broken(&self, k: usize, m: &[u16], tier: u8) -> Result<bool, BudgetExceeded> {
-        self.spend()?;
+
+    /// Whether instance `k` is broken: some cell of its scope has no value,
+    /// or no completion of the candidates can satisfy it.
+    pub fn broken(&self, k: usize, s: State) -> bool {
         let instance = &self.topology.instances[k];
-        if instance.scope.iter().any(|&i| m[i] == 0) {
-            return Ok(true);
+        if s.land & s.sea & instance.scope != 0 {
+            return true;
         }
-        Ok(match instance.kind {
+        let g = self.grid();
+        match instance.kind {
             Kind::Island(_, n) => {
-                let (min, max) = self.island_bounds(k, m);
-                min > n as usize || max < (n as usize)
+                let (min, max) = self.island_bounds(k, s);
+                min > n as usize || max < n as usize
             }
-            Kind::Pool => instance.scope.iter().all(|&i| m[i] == SEA),
+            Kind::Pool => instance.scope & s.sea == instance.scope,
             Kind::Sea => {
-                let possible: Vec<_> = m.iter().map(|v| v & SEA != 0).collect();
-                let Some(start) = possible.iter().position(|&v| v) else {
-                    return Ok(true);
-                };
-                if tier == 1 {
-                    false
-                } else {
-                    let required: Vec<_> = m
-                        .iter()
-                        .enumerate()
-                        .filter_map(|(i, &v)| (v == SEA).then_some(i))
-                        .collect();
-                    let reached = flood(
-                        required.first().copied().unwrap_or(start),
-                        |j| possible[j],
-                        &self.topology.neighbours,
-                    );
-                    required.iter().any(|i| !reached.contains(i))
+                let possible = s.possible_sea(g.all);
+                if possible == 0 {
+                    return true;
                 }
+                let required = s.sea;
+                required != 0 && g.flood(bit(first(required)), possible) & required != required
             }
             Kind::Numbers => {
-                if tier == 1 {
-                    return Ok(false);
-                }
-                let fixed: Vec<_> = m.iter().map(|&v| v == LAND).collect();
-                let possible: Vec<_> = m.iter().map(|v| v & LAND != 0).collect();
-                let mut visited = vec![false; m.len()];
-                for i in 0..m.len() {
-                    if fixed[i] && !visited[i] {
-                        let component = flood(i, |j| fixed[j], &self.topology.neighbours);
-                        for &j in &component {
-                            visited[j] = true;
-                        }
-                        if component
-                            .iter()
-                            .filter(|&&j| self.puzzle.clues()[j] > 0)
-                            .count()
-                            > 1
-                        {
-                            return Ok(true);
-                        }
-                        let reachable = flood(i, |j| possible[j], &self.topology.neighbours);
-                        if !reachable.iter().any(|&j| self.puzzle.clues()[j] > 0) {
-                            return Ok(true);
-                        }
+                let fixed = s.land;
+                let possible = s.possible_land(g.all);
+                let mut remaining = fixed;
+                while remaining != 0 {
+                    let component = g.flood(bit(first(remaining)), fixed);
+                    remaining &= !component;
+                    if count(component & self.topology.clues) > 1
+                        || g.flood(component, possible) & self.topology.clues == 0
+                    {
+                        return true;
                     }
                 }
                 false
             }
-        })
+        }
     }
-    pub fn unit(&self, k: usize, tier: u8) -> Result<Vec<(usize, u16)>, BudgetExceeded> {
-        let inst = &self.topology.instances[k];
-        if tier == 1 && matches!(inst.kind, Kind::Numbers) {
-            return Ok(Vec::new());
+
+    /// Narrow instance `k`: remove every value whose writing in would break
+    /// it. Only cells whose value can affect the instance are tested.
+    fn narrow(&mut self, k: usize) {
+        let s = self.state;
+        let instance = &self.topology.instances[k];
+        let scope = instance.scope;
+        if self.broken(k, s) {
+            self.state.land |= scope;
+            self.state.sea |= scope;
+            return;
         }
-        if self.broken(k, &self.masks, tier)? {
-            return Ok(inst.scope.iter().map(|&i| (i, 0)).collect());
-        }
-        let mut changes = Vec::new();
-        let mut m = self.masks.clone();
-        for &i in &inst.scope {
-            if self.masks[i].count_ones() < 2 {
-                continue;
-            }
-            let mut keep = self.masks[i];
-            for bit in [LAND, SEA] {
-                if keep & bit != 0 {
-                    m[i] = bit;
-                    if self.broken(k, &m, tier)? {
-                        keep &= !bit;
+        let g = self.grid();
+        let clues = self.topology.clues;
+        let open = s.open(scope);
+        // Values that go: cells that cannot be land, cells that cannot be sea.
+        let mut no_land = 0;
+        let mut no_sea = 0;
+        match instance.kind {
+            Kind::Island(origin, n) => {
+                let n = n as usize;
+                let fixed = s.land & scope;
+                let possible = s.possible_land(scope);
+                let fixed_component = g.flood(bit(origin), fixed);
+                let reach = g.flood(bit(origin), possible);
+                // Land next to the fixed island may make it too large.
+                for i in bits::cells(open & g.adjacent(fixed_component)) {
+                    if count(g.flood(bit(origin), fixed | bit(i))) > n {
+                        no_land |= bit(i);
+                    }
+                }
+                // Sea within reach may leave the island too little room. A
+                // cell with one neighbour in the reach cannot cut it.
+                let size = count(reach);
+                for i in bits::cells(open & reach) {
+                    let broken = if size - 1 < n {
+                        true
+                    } else if count(g.adjacent(bit(i)) & reach) == 1 {
+                        false
+                    } else {
+                        count(g.flood(bit(origin), reach & !bit(i))) < n
+                    };
+                    if broken {
+                        no_sea |= bit(i);
                     }
                 }
             }
-            m[i] = self.masks[i];
-            if keep != self.masks[i] {
-                changes.push((i, keep));
+            Kind::Pool => {
+                for i in bits::cells(open) {
+                    if scope & !bit(i) & !s.sea == 0 {
+                        no_sea |= bit(i);
+                    }
+                }
+            }
+            Kind::Sea => {
+                let possible = s.possible_sea(g.all);
+                let required = s.sea;
+                if count(possible) == 1 {
+                    // The only cell that can be sea must be.
+                    no_land |= possible & open;
+                }
+                if required != 0 {
+                    let reach = g.flood(bit(first(required)), possible);
+                    // Sea outside the connected area could never join it.
+                    no_sea |= open & !reach;
+                    // Land inside it may cut it. A cell with one neighbour
+                    // in the area cannot.
+                    for i in bits::cells(open & reach) {
+                        if count(g.adjacent(bit(i)) & reach) > 1
+                            && g.flood(bit(first(required)), reach & !bit(i)) & required != required
+                        {
+                            no_land |= bit(i);
+                        }
+                    }
+                }
+            }
+            Kind::Numbers => {
+                let fixed = s.land;
+                let possible = s.possible_land(g.all);
+                // Fixed land components with their number of clues, and the
+                // areas of possible land, each with whether it holds a clue.
+                let mut components = Vec::new();
+                let mut remaining = fixed;
+                while remaining != 0 {
+                    let component = g.flood(bit(first(remaining)), fixed);
+                    remaining &= !component;
+                    components.push((component, count(component & clues)));
+                }
+                let mut clueless_areas = 0;
+                let mut remaining = possible;
+                while remaining != 0 {
+                    let area = g.flood(bit(first(remaining)), possible);
+                    remaining &= !area;
+                    if area & clues == 0 {
+                        clueless_areas |= area;
+                    }
+                }
+                for i in bits::cells(open) {
+                    // Land here joins the fixed components around it; the
+                    // result may hold two clues or be unable to reach one.
+                    let around = g.adjacent(bit(i));
+                    let numbers: usize = components
+                        .iter()
+                        .filter(|(component, _)| component & around != 0)
+                        .map(|&(_, n)| n)
+                        .sum();
+                    if numbers > 1 || clueless_areas & bit(i) != 0 {
+                        no_land |= bit(i);
+                    }
+                }
+                // Sea here may cut unnumbered land off from every clue. A
+                // cell with one neighbour among the possible land cannot.
+                for &(component, numbers) in &components {
+                    if numbers > 0 {
+                        continue;
+                    }
+                    let area = g.flood(component, possible);
+                    for i in bits::cells(open & area) {
+                        if count(g.adjacent(bit(i)) & possible) > 1
+                            && g.flood(component, possible & !bit(i)) & clues == 0
+                        {
+                            no_sea |= bit(i);
+                        }
+                    }
+                }
             }
         }
-        Ok(changes)
+        self.state.sea |= no_land;
+        self.state.land |= no_sea;
     }
+
     pub fn answer(&self) -> Answer {
         let mut a = Answer::new(self.puzzle.shape());
-        for (i, &m) in self.masks.iter().enumerate() {
+        let cols = self.puzzle.shape().cols();
+        for i in 0..self.puzzle.shape().cells() {
             a.set(
-                i / self.puzzle.shape().cols(),
-                i % self.puzzle.shape().cols(),
-                if m == SEA {
+                i / cols,
+                i % cols,
+                if self.state.mask(i) == SEA {
                     Mark::Shaded
                 } else {
                     Mark::Unshaded
@@ -226,33 +384,34 @@ impl<'a> Board<'a> {
         }
         a
     }
+
     /// Whether some cell has no candidate left.
     pub fn contradictory(&self) -> bool {
-        self.masks.contains(&0)
+        self.state.dead()
     }
+
+    /// Narrow every instance until nothing changes. Returns whether the
+    /// candidates are still consistent.
     pub fn propagate(&mut self) -> Result<bool, BudgetExceeded> {
         loop {
             if self.contradictory() {
                 return Ok(false);
             }
-            let mut changed = false;
-            for tier in 1..=2 {
-                for k in 0..self.topology.instances.len() {
-                    let changes = self.unit(k, tier)?;
-                    for (i, keep) in changes {
-                        if self.masks[i] != keep {
-                            self.masks[i] &= keep;
-                            changed = true;
-                        }
-                    }
+            let before = self.state;
+            for k in 0..self.topology.instances.len() {
+                self.spend()?;
+                self.narrow(k);
+                if self.contradictory() {
+                    return Ok(false);
                 }
             }
-            if !changed {
-                return Ok(!self.contradictory());
+            if self.state == before {
+                return Ok(true);
             }
         }
     }
 }
+
 fn search(
     mut b: Board<'_>,
     limit: usize,
@@ -273,15 +432,19 @@ fn search(
         if !b.propagate()? {
             return Ok(());
         }
-        if let Some(i) = b.masks.iter().position(|m| m.count_ones() > 1) {
-            for bit in [LAND, SEA] {
-                if b.masks[i] & bit != 0 {
-                    let mut next = b.clone();
-                    next.masks[i] = bit;
-                    dfs(&mut next, limit, found, visit)?;
-                    if *found >= limit {
-                        break;
-                    }
+        let open = b.state.open(b.topology.grid.all);
+        if open != 0 {
+            let i = bit(first(open));
+            for value in [LAND, SEA] {
+                let mut next = b.clone();
+                if value == LAND {
+                    next.state.land |= i;
+                } else {
+                    next.state.sea |= i;
+                }
+                dfs(&mut next, limit, found, visit)?;
+                if *found >= limit {
+                    break;
                 }
             }
         } else {
@@ -292,6 +455,7 @@ fn search(
     }
     dfs(&mut b, limit, found, &mut visit)
 }
+
 /// Prove zero, one or multiple solutions; budget exhaustion is an error.
 pub fn solve(p: &Puzzle, budget: &Budget) -> Result<Solutions<Answer>, BudgetExceeded> {
     let mut answers = Vec::new();
@@ -302,12 +466,14 @@ pub fn solve(p: &Puzzle, budget: &Budget) -> Result<Solutions<Answer>, BudgetExc
         _ => Solutions::Multiple(answers.remove(0), answers.remove(0)),
     })
 }
+
 /// Count solutions up to a caller-supplied limit without retaining witnesses.
 pub fn count_solutions(p: &Puzzle, limit: usize, budget: &Budget) -> Result<usize, BudgetExceeded> {
     let mut n = 0;
     search(Board::new(p, budget), limit, &mut n, |_| {})?;
     Ok(n)
 }
+
 /// Report broken instances under complete or partial marks, using a deterministic budget.
 pub fn check(
     p: &Puzzle,
@@ -318,29 +484,31 @@ pub fn check(
         return Err(ParseError::new("the answer has the wrong shape").into());
     }
     let mut b = Board::new(p, budget);
+    let cols = p.shape().cols();
     let mut violations = Vec::new();
-    for i in 0..b.masks.len() {
-        let mark = a.get(i / p.shape().cols(), i % p.shape().cols());
+    for i in 0..p.shape().cells() {
+        let mark = a.get(i / cols, i % cols);
         if p.clues()[i] > 0 && mark == Mark::Shaded {
             violations.push(Violation::new(
                 5,
-                cell(i, p.shape().cols()),
+                cell(i, cols),
                 vec![("clue", p.clues()[i] as i64)],
             ));
         }
         if p.clues()[i] == 0 {
-            b.masks[i] = match mark {
-                Mark::Unmarked => LAND | SEA,
-                Mark::Unshaded => LAND,
-                Mark::Shaded => SEA,
-            };
+            match mark {
+                Mark::Unmarked => {}
+                Mark::Unshaded => b.state.land |= bit(i),
+                Mark::Shaded => b.state.sea |= bit(i),
+            }
         }
     }
     for (k, inst) in b.topology.instances.iter().enumerate() {
-        if b.broken(k, &b.masks, 2)? {
+        b.spend()?;
+        if b.broken(k, b.state) {
             let values = match inst.kind {
                 Kind::Island(_, n) => {
-                    let (min, max) = b.island_bounds(k, &b.masks);
+                    let (min, max) = b.island_bounds(k, b.state);
                     vec![
                         ("minimum", min as i64),
                         ("maximum", max as i64),
@@ -348,16 +516,13 @@ pub fn check(
                     ]
                 }
                 Kind::Pool => vec![("shaded", 4)],
-                _ => vec![(
+                Kind::Sea => vec![(
                     "components",
-                    component_count(
-                        &b,
-                        if matches!(inst.kind, Kind::Sea) {
-                            SEA
-                        } else {
-                            LAND
-                        },
-                    ) as i64,
+                    component_count(&b, b.state.sea & !b.state.land) as i64,
+                )],
+                Kind::Numbers => vec![(
+                    "components",
+                    component_count(&b, b.state.land & !b.state.sea) as i64,
                 )],
             };
             violations.push(Violation::new(inst.rule, inst.place, values));
@@ -365,17 +530,13 @@ pub fn check(
     }
     Ok(violations)
 }
-fn component_count(b: &Board<'_>, bit: u16) -> usize {
-    let allowed: Vec<_> = b.masks.iter().map(|&m| m == bit).collect();
-    let mut seen = vec![false; allowed.len()];
+
+/// The number of connected groups in a set of cells.
+fn component_count(b: &Board<'_>, mut cells: Bits) -> usize {
     let mut n = 0;
-    for i in 0..allowed.len() {
-        if allowed[i] && !seen[i] {
-            n += 1;
-            for j in flood(i, |j| allowed[j], &b.topology.neighbours) {
-                seen[j] = true;
-            }
-        }
+    while cells != 0 {
+        cells &= !b.topology.grid.flood(bit(first(cells)), cells);
+        n += 1;
     }
     n
 }

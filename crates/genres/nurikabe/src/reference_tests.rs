@@ -117,9 +117,9 @@ fn propagation_is_sound() {
         .unwrap();
         let budget = Budget::unlimited();
         let mut b = Board::new(&p, &budget);
-        for (i, m) in b.masks.iter_mut().enumerate() {
+        for i in 0..6 {
             if p.clues()[i] == 0 {
-                *m = 1 + rng.below(3) as u16;
+                b.set_mask(i, 1 + rng.below(3) as u16);
             }
         }
         let truth: Vec<_> = oracle::solutions(&p)
@@ -127,7 +127,7 @@ fn propagation_is_sound() {
             .filter(|a| {
                 a.iter()
                     .enumerate()
-                    .all(|(i, &land)| b.masks[i] & (if land { LAND } else { SEA }) != 0)
+                    .all(|(i, &land)| b.state.mask(i) & (if land { LAND } else { SEA }) != 0)
             })
             .collect();
         let consistent = b.propagate().unwrap();
@@ -138,7 +138,7 @@ fn propagation_is_sound() {
         if consistent {
             for a in &truth {
                 for (i, &land) in a.iter().enumerate() {
-                    assert_ne!(b.masks[i] & (if land { LAND } else { SEA }), 0);
+                    assert_ne!(b.state.mask(i) & (if land { LAND } else { SEA }), 0);
                 }
             }
         }

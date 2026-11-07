@@ -1,9 +1,8 @@
 //! Reproducible connected-sea construction with uniqueness and exact ratings.
-use crate::board::Topology;
 use crate::human::{analyze_state, initial_masks};
 use crate::*;
 use pencil_puzzles_core::SplitMix64;
-use pencil_puzzles_core::grid::flood;
+use pencil_puzzles_core::grid::{flood, neighbours};
 use pencil_puzzles_core::search::{Construct, Move, Outcome, SearchError, search};
 use std::{error::Error, fmt};
 /// Generator version (V3).
@@ -93,7 +92,7 @@ struct Candidate {
 
 struct Grower {
     params: Params,
-    topology: Topology,
+    neighbours: Vec<Vec<usize>>,
 }
 
 /// Tries to find a valid flip before starting over.
@@ -121,7 +120,7 @@ impl Grower {
             })
         });
         !pool
-            && flood(first, |j| sea[j], &self.topology.neighbours).len()
+            && flood(first, |j| sea[j], &self.neighbours).len()
                 == sea.iter().filter(|&&s| s).count()
     }
 
@@ -139,7 +138,7 @@ impl Grower {
             if !land[i] || seen[i] {
                 continue;
             }
-            let island = flood(i, |j| land[j], &self.topology.neighbours);
+            let island = flood(i, |j| land[j], &self.neighbours);
             for &j in &island {
                 seen[j] = true;
             }
@@ -174,7 +173,7 @@ impl Construct for Grower {
             }
             let options: Vec<_> = (0..cells)
                 .filter(|&i| {
-                    !sea[i] && self.topology.neighbours[i].iter().any(|&j| sea[j]) && {
+                    !sea[i] && self.neighbours[i].iter().any(|&j| sea[j]) && {
                         sea[i] = true;
                         let valid = self.valid(&sea);
                         sea[i] = false;
@@ -200,7 +199,7 @@ impl Construct for Grower {
         let clues = (0..land.len())
             .map(|i| {
                 if c.numbered[i] {
-                    flood(i, |j| land[j], &self.topology.neighbours).len() as u32
+                    flood(i, |j| land[j], &self.neighbours).len() as u32
                 } else {
                     0
                 }
@@ -272,10 +271,9 @@ pub fn generate(options: &GenerateOptions, budget: &Budget) -> Result<Generated,
         ));
     }
     let shape = options.params.shape;
-    let empty = Puzzle::new(shape, vec![0; shape.cells()]).expect("validated shape");
     let grower = Grower {
         params: options.params,
-        topology: Topology::new(&empty),
+        neighbours: neighbours(shape.rows(), shape.cols()),
     };
     match search(
         &grower,
