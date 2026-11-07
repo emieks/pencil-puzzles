@@ -54,7 +54,7 @@ fn generated_puzzles_have_exact_ratings_unique_solutions_and_repeatable_limits()
 
 #[test]
 fn maximum_size_work_and_hints_are_bounded() {
-    let mut options = GenerateOptions::new("16x16".parse().unwrap(), 1);
+    let mut options = GenerateOptions::new("16x16".parse().unwrap(), 5);
     options.difficulty = Some(Difficulty::Easy);
     assert_eq!(
         generate(&options, &Budget::new(1)),
@@ -117,4 +117,47 @@ fn maximum_size_work_and_hints_are_bounded() {
         generate(&o, &Budget::unlimited()),
         Err(GenerateError::UnsupportedRequest(_))
     ));
+}
+
+/// Layouts have a half turn symmetry, no inner row or column without white
+/// cells, and connected white cells.
+#[test]
+fn layouts_are_symmetric_full_and_connected() {
+    for shape in ["5x5", "5x8", "6x6", "8x8", "10x10"] {
+        for seed in 0..4 {
+            let g = generate(
+                &GenerateOptions::new(shape.parse().unwrap(), seed),
+                &Budget::new(100_000_000),
+            )
+            .unwrap();
+            let p = &g.puzzle;
+            let (rows, cols) = (p.shape().rows(), p.shape().cols());
+            let white = |r: usize, c: usize| p.cell(r, c) == Cell::White;
+            for r in 1..rows {
+                assert!((1..cols).any(|c| white(r, c)), "{} row {r}", p.id());
+                for c in 1..cols {
+                    assert_eq!(white(r, c), white(rows - r, cols - c), "{}", p.id());
+                }
+            }
+            for c in 1..cols {
+                assert!((1..rows).any(|r| white(r, c)), "{} column {c}", p.id());
+            }
+            let whites: Vec<(usize, usize)> = (1..rows)
+                .flat_map(|r| (1..cols).map(move |c| (r, c)))
+                .filter(|&(r, c)| white(r, c))
+                .collect();
+            let mut seen = vec![whites[0]];
+            let mut at = 0;
+            while at < seen.len() {
+                let (r, c) = seen[at];
+                at += 1;
+                for next in [(r + 1, c), (r - 1, c), (r, c + 1), (r, c - 1)] {
+                    if whites.contains(&next) && !seen.contains(&next) {
+                        seen.push(next);
+                    }
+                }
+            }
+            assert_eq!(seen.len(), whites.len(), "{} is not connected", p.id());
+        }
+    }
 }
