@@ -168,7 +168,7 @@ pub struct View {
     pub col_separators: Vec<u32>,
     /// What happens to unmarked cells when checking a finished answer.
     pub finish_note: String,
-    /// Short instructions for the displayed rules.
+    /// Short instructions for the displayed rules, one rule per line.
     pub instructions: String,
 }
 

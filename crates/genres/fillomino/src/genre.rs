@@ -14,7 +14,7 @@ static METADATA: Metadata = {
     let mut m = Metadata::new(
         "fillomino",
         "Fillomino",
-        "Divide the grid into regions and write each region's size in its cells; regions of the same size never touch.",
+        "Divide the grid into regions whose cells hold the region's size; same-size regions never share a side.",
         GENERATOR_VERSION,
         RATER_VERSION,
     );
@@ -156,7 +156,7 @@ impl Genre for Fillomino {
             })
             .collect();
         v.finish_note = "Every cell needs a number.".into();
-        v.instructions = "Write a number in every cell. Cells with the same number that touch form a region, and each region has exactly as many cells as its number, so regions of the same size never share an edge. Printed numbers stay fixed. Type digits, or choose one below the grid.".into();
+        v.instructions = "Write a number in every cell to divide the grid into regions.\nA region is a group of cells with the same number joined by their sides, and it has exactly that many cells.\nTwo regions of the same size may not share a side, since they would join into one.\nA region can hold several printed numbers or none. Printed numbers stay fixed.".into();
         v
     }
     fn answer_from_values(p: &Puzzle, values: &[String]) -> Result<Answer, ParseError> {

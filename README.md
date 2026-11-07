@@ -59,13 +59,13 @@ The API is six functions (`genres`, `generate`, `solve`, `rate`, `check`,
 
 | Genre | Goal | Sizes | Generation time (easy → expert) |
 | --- | --- | --- | --- |
-| [Fillomino](docs/genres/fillomino.md) | Divide the grid into regions and write each region's size in its cells. | ≤ 10x10 | 6x6: 13 ms → 950 ms |
-| [Hashi](docs/genres/hashi.md) | Join the islands with bridges; each island has as many bridges as its number. | ≤ 15x15 | 7x7: 0.3 ms → 355 ms |
-| [Hitori](docs/genres/hitori.md) | Shade cells so no number repeats in a row or column; shaded cells never touch and the rest stay connected. | ≤ 12x12 | 8x8: 1.6 ms → 558 ms |
-| [Kakurasu](docs/genres/kakurasu.md) | Shade cells so each row and column adds up to its clue. | ≤ 32x32 | 6x6: 0.4 ms → 307 ms |
-| [Kakuro](docs/genres/kakuro.md) | Write digits so each run of white cells adds up to the sum before it, without repeats. | ≤ 16x16 | 8x8: 2.6 ms → 213 ms |
-| [Nurikabe](docs/genres/nurikabe.md) | Shade one connected sea; each number is the size of its island. | ≤ 8x8 | 6x6: 3.4 ms → 4.3 s |
-| [Sudoku](docs/genres/sudoku.md) | Fill every row, column and box with each digit once. | 4x4, 9x9 | 9x9: 185 ms → 2.8 s |
+| [Fillomino](docs/genres/fillomino.md) | Divide the grid into regions whose cells hold the region's size; same-size regions never share a side. | ≤ 10x10 | 6x6: 13 ms → 950 ms |
+| [Hashi](docs/genres/hashi.md) | Connect all islands with straight bridges that never cross, giving each island as many bridges as its number. | ≤ 15x15 | 7x7: 0.3 ms → 355 ms |
+| [Hitori](docs/genres/hitori.md) | Shade cells so no unshaded number repeats in a row or column; shaded cells never share a side and unshaded cells stay connected. | ≤ 12x12 | 8x8: 1.6 ms → 558 ms |
+| [Kakurasu](docs/genres/kakurasu.md) | Shade cells so each row and column clue is the sum of its shaded cells' positions. | ≤ 32x32 | 6x6: 0.4 ms → 307 ms |
+| [Kakuro](docs/genres/kakuro.md) | Fill the white cells with digits 1–9 so each run adds up to its clue without repeating a digit. | ≤ 16x16 | 8x8: 2.6 ms → 213 ms |
+| [Nurikabe](docs/genres/nurikabe.md) | Shade a connected sea, leaving islands the size of their numbers and no shaded 2×2 block. | ≤ 8x8 | 6x6: 3.4 ms → 4.3 s |
+| [Sudoku](docs/genres/sudoku.md) | Fill rows, columns and boxes with each digit exactly once. | 4x4, 9x9 | 9x9: 185 ms → 2.8 s |
 
 Generation times are medians at each genre's default size. Each genre page
 lists its techniques per level and measured generation times per size. See

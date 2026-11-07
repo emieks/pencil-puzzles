@@ -9,7 +9,7 @@ static METADATA: Metadata = {
     let mut m = Metadata::new(
         "kakurasu",
         "Kakurasu",
-        "Shade cells so every weighted row and column total matches its clue.",
+        "Shade cells so each row and column clue is the sum of its shaded cells' positions.",
         GENERATOR_VERSION,
         RATER_VERSION,
     );
@@ -189,8 +189,8 @@ impl Genre for Kakurasu {
             MarkOption::shaded("#", "Shaded"),
             MarkOption::new("-", "Unshaded", "×"),
         ];
-        view.finish_note = "Blanks count as unshaded.".into();
-        view.instructions="Shade cells so each row adds up to its clue using the column weights above. Each column adds up to its clue using the row weights on the left.".into();
+        view.finish_note = "Blanks count as unshaded cells.".into();
+        view.instructions="Shade some cells.\nA shaded cell counts its column number (above the grid) toward its row's total, and its row number (left of the grid) toward its column's total.\nEach row's total must equal the clue on its right, and each column's total the clue below it.".into();
         view
     }
     fn answer_from_values(puzzle: &Puzzle, values: &[String]) -> Result<Answer, ParseError> {

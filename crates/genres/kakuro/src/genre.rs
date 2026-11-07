@@ -14,7 +14,7 @@ static METADATA: Metadata = {
     let mut m = Metadata::new(
         "kakuro",
         "Kakuro",
-        "Write a digit from 1 to 9 in every white cell so that each run adds up to the sum before it, with no digit repeated in a run.",
+        "Fill the white cells with digits 1–9 so each run adds up to its clue without repeating a digit.",
         GENERATOR_VERSION,
         RATER_VERSION,
     );
@@ -154,7 +154,7 @@ impl Genre for Kakuro {
             })
             .collect();
         v.finish_note = "Every white cell needs a digit.".into();
-        v.instructions = "Write a digit from 1 to 9 in every white cell. A run is a line of white cells across or down; its digits add up to the sum in the block before it (down sums below the diagonal, across sums above it), and no digit repeats in a run. Type digits, or choose one below the grid.".into();
+        v.instructions = "Write a digit from 1 to 9 in every white cell.\nA run is an unbroken line of white cells across or down. Its digits add up to the clue in the block where it starts: across clues above the diagonal, down clues below it.\nNo digit repeats within a run.".into();
         v
     }
     fn answer_from_values(p: &Puzzle, values: &[String]) -> Result<Answer, ParseError> {

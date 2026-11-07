@@ -1,7 +1,7 @@
 # Hitori
 
-Shade cells so that no number repeats among the unshaded cells of a row or
-column.
+Shade cells so no unshaded number repeats in a row or column; shaded cells
+never share a side and unshaded cells stay connected.
 
 ## Rules
 

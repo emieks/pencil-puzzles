@@ -15,7 +15,7 @@ static METADATA: Metadata = {
     let mut m = Metadata::new(
         "hashi",
         "Hashi",
-        "Join the islands with straight bridges so that each island has as many bridges as its number, no bridges cross and every island is connected.",
+        "Connect all islands with straight bridges that never cross, giving each island as many bridges as its number.",
         GENERATOR_VERSION,
         RATER_VERSION,
     );
@@ -152,8 +152,8 @@ impl Genre for Hashi {
                 ViewLink::editable(at(a), at(b), link_value(count))
             })
             .collect();
-        v.finish_note = "Bridges you haven't drawn count as none.".into();
-        v.instructions = "Join the islands with straight horizontal or vertical bridges, at most two between any two islands. Each island has as many bridges as its number, bridges never cross, and every island is connected to every other through bridges. Click between two islands to add a bridge, and right-click to remove one. With the keyboard, move between islands with the arrow keys or WASD, and hold Shift to add a bridge in that direction.".into();
+        v.finish_note = "Bridges not drawn count as none.".into();
+        v.instructions = "Join the circled islands with bridges.\nBridges run straight across or down between two islands and may not cross a bridge or another island. At most two bridges join the same pair.\nEach island has as many bridges as its number.\nThe bridges must join all islands into one group.".into();
         v
     }
     fn answer_from_values(p: &Puzzle, values: &[String]) -> Result<Answer, ParseError> {

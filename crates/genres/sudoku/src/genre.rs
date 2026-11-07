@@ -152,9 +152,9 @@ impl Genre for Sudoku {
             .collect();
         view.row_separators = (1..b).map(|k| (k * b) as u32).collect();
         view.col_separators = view.row_separators.clone();
-        view.finish_note = "Empty cells must be filled.".into();
+        view.finish_note = "Every cell needs a digit.".into();
         view.instructions = format!(
-            "Fill each row, column and {}×{} box with digits 1–{}, once each. Printed digits stay fixed. Type digits, or choose one below the grid.",
+            "Fill the empty cells so that each row, column and {}×{} box holds the digits 1–{} once each.\nPrinted digits stay fixed.",
             b, b, n
         );
         view
