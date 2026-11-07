@@ -5,7 +5,7 @@ use pencil_puzzles_core::SplitMix64;
 use pencil_puzzles_core::search::{Construct, Move, Outcome, SearchError, search};
 use std::{error::Error, fmt};
 /// Generator version (V3).
-pub const GENERATOR_VERSION: u32 = 4;
+pub const GENERATOR_VERSION: u32 = 5;
 /// Reproducible generator inputs.
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[non_exhaustive]
@@ -133,19 +133,19 @@ struct Digger {
     symmetric: bool,
 }
 
+/// Rounds of putting clues back before starting from a new grid.
+const ROUNDS: u32 = 8;
+
 #[derive(Clone)]
 struct Candidate {
     solution: Answer,
     givens: Vec<u8>,
     order: Vec<usize>,
     next: usize,
-    /// Best clue set seen at Expert, by level then proof size, for restarts nearby.
+    /// Best clue set seen, by level then proof size, for restarts nearby.
     best: Option<(Vec<u8>, (Difficulty, u64))>,
     rounds: u32,
 }
-
-/// Rounds of putting clues back before starting from a new grid.
-const ROUNDS: u32 = 32;
 
 impl Digger {
     fn order(&self, rng: &mut SplitMix64) -> Vec<usize> {
@@ -187,6 +187,14 @@ impl Construct for Digger {
         cap: Difficulty,
         budget: &Budget,
     ) -> Result<Outcome, BudgetExceeded> {
+        // Nearly every rejected removal leaves several solutions, which the
+        // brute-force solver finds faster than the techniques get stuck.
+        if crate::board::count_solutions(p, 2, budget)? != 1 {
+            let open = (0..p.givens().len())
+                .filter(|&i| p.givens()[i] == 0)
+                .collect();
+            return Ok(Outcome::Stuck(open));
+        }
         Ok(crate::human::analyze(p, budget, cap, false)?.outcome())
     }
 
@@ -214,7 +222,7 @@ impl Construct for Digger {
             return Move::Try(fewer);
         }
         // Every clue was tried and the puzzle is still below the cap.
-        if self.symmetric || c.rounds >= ROUNDS {
+        if c.rounds >= ROUNDS {
             return Move::Restart;
         }
         if c.best
@@ -225,10 +233,15 @@ impl Construct for Digger {
         }
         let mut more = c.clone();
         more.givens = c.best.as_ref().expect("just set").0.clone();
-        let mut missing: Vec<_> = (0..total).filter(|&i| more.givens[i] == 0).collect();
+        let mut missing: Vec<_> = (0..total)
+            .filter(|&i| more.givens[i] == 0 && (!self.symmetric || i <= total - 1 - i))
+            .collect();
         rng.shuffle(&mut missing);
         for &i in missing.iter().take(4 + rng.below(5) as usize) {
             more.givens[i] = more.solution.cells[i];
+            if self.symmetric {
+                more.givens[total - 1 - i] = more.solution.cells[total - 1 - i];
+            }
         }
         more.order = self.order(rng);
         more.next = 0;
@@ -261,11 +274,12 @@ impl Construct for Digger {
 
 /// Generate with the shared search loop and certify the exact canonical
 /// level. Default and Easy-Hard puzzles have rotationally symmetric givens:
-/// clues are removed in symmetric pairs while the puzzle stays solvable at
-/// the requested level. Expert removes single clues and, when a puzzle stays
-/// too easy, puts a few clues back into the best one so far and tries again.
-/// Extreme has no supported human repertoire. Only the current generator
-/// version is supported.
+/// clues are removed in symmetric pairs while the puzzle stays unique and
+/// solvable at the requested level; Expert removes single clues. When every
+/// clue was tried and the puzzle is still too easy, a few clues (or pairs)
+/// go back into the best candidate so far and removal starts over in a new
+/// order, up to `ROUNDS` times before a new grid. Extreme has no supported
+/// human repertoire. Only the current generator version is supported.
 pub fn generate(options: &GenerateOptions, budget: &Budget) -> Result<Generated, GenerateError> {
     if options.version != GENERATOR_VERSION {
         return Err(GenerateError::UnsupportedVersion(options.version));

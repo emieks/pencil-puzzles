@@ -11,7 +11,7 @@ grid:
 .42..7...
 ...9....1
 9...327..
-generator_version: 4
+generator_version: 5
 params: 9x9
 difficulty: expert
 seed: 10
