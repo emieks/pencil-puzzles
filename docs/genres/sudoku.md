@@ -11,7 +11,7 @@ Fill rows, columns and boxes with each digit exactly once.
 
 ## Example
 
-Generator version 4, shape `4x4`, easy, seed `0` produces
+Generator version 5, shape `4x4`, easy, seed `0` produces
 `sudoku:4x4:....2.3..3.4....`:
 
 ```text
@@ -81,12 +81,14 @@ need them are unrated.
 Boxes are 1x1, 2x2 and 3x3 respectively. 6x6 grids with 2x3 boxes are not
 supported yet.
 
-Generator version 4 fills a grid in seeded order, then removes clues while
-the puzzle stays solvable at the requested level. Below expert it removes
-clues in 180-degree rotational pairs. For expert it removes single clues and,
-when the puzzle stays too easy, puts 4-8 clues back into the best candidate
-so far (by level, then score) and tries again, starting from a new grid after
-32 rounds. In the result, removing any further clue (or pair, below expert)
+Generator version 5 fills a grid in seeded order, then removes clues while
+the puzzle stays unique and solvable at the requested level. Below expert it
+removes clues in 180-degree rotational pairs; expert removes single clues.
+Each removal is checked for uniqueness with the brute-force solver before the
+techniques run. When every clue has been tried and the puzzle is still too
+easy, 4-8 clues (or pairs) go back into the best candidate so far (by level,
+then score) and removal starts over in a new order, up to 8 rounds before a
+new grid. In the result, removing any further clue (or pair, below expert)
 would change the level or the number of solutions.
 
 ## Formats

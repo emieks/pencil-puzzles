@@ -64,6 +64,10 @@ pub struct Candidates<'a, C> {
     pub level: Difficulty,
     /// Kind given to steps built here; set by the running technique.
     pub kind: Kind,
+    /// Whether the caller applies only the first step a technique finds.
+    /// A technique may then return as soon as it has one; the steps it
+    /// does return must still come in its usual order.
+    pub first_only: bool,
 }
 
 impl<'a, C> Candidates<'a, C> {
@@ -77,6 +81,7 @@ impl<'a, C> Candidates<'a, C> {
             budget,
             level: Difficulty::Easy,
             kind: Kind::Skill,
+            first_only: false,
         }
     }
 
@@ -178,6 +183,7 @@ pub struct Trace {
     /// Every applied step, in order.
     pub steps: Vec<HumanStep>,
     /// Distinct productive steps of the chosen technique before each step.
+    /// Empty unless metrics were requested.
     pub choices: Vec<u32>,
     /// Distinct placements offered by Easy skill techniques before each
     /// step; zero for bookkeeping. Empty unless metrics were requested.
@@ -236,8 +242,12 @@ impl<C> Profile<C> {
         {
             let mut steps = technique.run(candidates)?;
             if !steps.is_empty() {
-                let mut seen = BTreeSet::new();
-                steps.retain(|step| seen.insert(step.changes.clone()));
+                if candidates.first_only {
+                    steps.truncate(1);
+                } else {
+                    let mut seen = BTreeSet::new();
+                    steps.retain(|step| seen.insert(step.changes.clone()));
+                }
                 return Ok(steps);
             }
         }
@@ -277,7 +287,8 @@ impl<C> Profile<C> {
             if chain.len() >= max_steps {
                 return Ok(None);
             }
-            let view = Candidates::new(context, &masks, &placed, candidates.budget);
+            let mut view = Candidates::new(context, &masks, &placed, candidates.budget);
+            view.first_only = true;
             let Some(step) = self.first(&view, cap, false)?.into_iter().next() else {
                 return Ok(None);
             };
@@ -415,8 +426,9 @@ impl<C> Profile<C> {
     }
 
     /// Solve from `masks` using techniques up to `cap`, until solved,
-    /// contradictory or stuck. `metrics` also records placements before each
-    /// step, which costs extra work.
+    /// contradictory or stuck. `metrics` also records the choices and
+    /// placements before each step, which costs extra work: without it,
+    /// techniques may stop at their first step.
     pub fn analyze(
         &self,
         context: &C,
@@ -438,13 +450,14 @@ impl<C> Profile<C> {
             if masks.iter().all(|m| m.count_ones() == 1) || (self.broken)(context, &masks) {
                 break;
             }
-            let candidates = Candidates::new(context, &masks, &placed, budget);
+            let mut candidates = Candidates::new(context, &masks, &placed, budget);
+            candidates.first_only = !metrics;
             let found = self.next(&candidates, cap)?;
             let Some(mut step) = found.first().cloned() else {
                 break;
             };
-            choices.push(found.len() as u32);
             if metrics {
+                choices.push(found.len() as u32);
                 placements.push(if step.kind == Kind::Bookkeeping {
                     0
                 } else {
