@@ -66,10 +66,9 @@ fn loaded(input: &Input) -> Result<Value, RegistryError> {
         json!({"id":id,"params":params,"text":text,"view":input.genre.view(&text,None)?,"rating":input.rating}),
     )
 }
-/// Work allowed per request. Medium 9x9 sudoku needs about 3.6 million
-/// operations on average and expert about 24 million
-/// (docs/benchmarks/sudoku.csv); the page also stops a request after 15 s.
-const WORK_BUDGET: u64 = 50_000_000;
+/// Work allowed per request. A few 10x10 hard nurikabe puzzles need more
+/// than 50 million operations; the page also stops a request after 15 s.
+const WORK_BUDGET: u64 = 100_000_000;
 fn execute(request: Request) -> Result<Value, RegistryError> {
     let budget = Budget::new(WORK_BUDGET);
     match request {
