@@ -4,12 +4,12 @@
 //! Variables are cells in row-major order with two candidates: land
 //! (unshaded, value 0) and sea (shaded, value 1). Numbered cells start as
 //! land. An "island" is a connected group of land cells; a "numbered island"
-//! contains a number.
+//! contains a number. Cell sets are bitboards (`bits`).
 use crate::Puzzle;
-use crate::board::{LAND, SEA};
+use crate::bits::{self, Bits, bit, cells, count, first};
+use crate::board::{LAND, SEA, State};
 use pencil_puzzles_core::human::{Candidates, Find, HumanStep, Kind, Profile, Technique, Trace};
 use pencil_puzzles_core::{Budget, BudgetExceeded, Difficulty};
-use std::collections::{BTreeSet, VecDeque};
 
 const BOTH: u16 = LAND | SEA;
 /// Longest Hard contradiction chain, using Easy and Medium techniques.
@@ -17,166 +17,111 @@ const SHORT_CHAIN: usize = 6;
 /// Longest Expert contradiction chain.
 const LONG_CHAIN: usize = 20;
 
-/// The board's shape, numbers and neighbours.
+/// The board's shape and numbers.
 pub(crate) struct Grid {
-    cols: usize,
+    g: bits::Grid,
     clues: Vec<u32>,
-    neighbours: Vec<Vec<usize>>,
+    /// Numbered cells.
+    numbered: Bits,
 }
 
 impl Grid {
     pub(crate) fn new(puzzle: &Puzzle) -> Self {
-        let (rows, cols) = (puzzle.shape().rows(), puzzle.shape().cols());
-        let neighbours = pencil_puzzles_core::grid::neighbours(rows, cols);
+        let mut numbered = 0;
+        for (i, &n) in puzzle.clues().iter().enumerate() {
+            if n > 0 {
+                numbered |= bit(i);
+            }
+        }
         Self {
-            cols,
+            g: bits::Grid::new(puzzle.shape()),
             clues: puzzle.clues().to_vec(),
-            neighbours,
+            numbered,
         }
     }
 
-    /// Top-left cells of every 2x2 block.
-    fn blocks(&self) -> impl Iterator<Item = [usize; 4]> + '_ {
-        let (cols, rows) = (self.cols, self.clues.len() / self.cols.max(1));
-        (0..rows.saturating_sub(1)).flat_map(move |r| {
-            (0..cols.saturating_sub(1)).map(move |c| {
-                let i = r * cols + c;
-                [i, i + 1, i + cols, i + cols + 1]
-            })
-        })
+    /// The single number of an island, if it has exactly one.
+    fn number(&self, island: Bits) -> Option<u32> {
+        let numbers = island & self.numbered;
+        (count(numbers) == 1).then(|| self.clues[first(numbers)])
     }
 }
 
-/// Connected groups of cells holding exactly `value`.
-struct Groups {
-    /// Group index of each cell, if it holds the value.
-    of: Vec<Option<usize>>,
-    cells: Vec<Vec<usize>>,
+/// The candidates as cell sets: fixed land, fixed sea and open cells.
+#[derive(Clone, Copy)]
+struct Cells {
+    land: Bits,
+    sea: Bits,
+    open: Bits,
 }
 
-fn groups(grid: &Grid, masks: &[u16], value: u16) -> Groups {
-    let mut of = vec![None; masks.len()];
-    let mut cells = Vec::new();
-    for start in 0..masks.len() {
-        if masks[start] != value || of[start].is_some() {
-            continue;
+impl Cells {
+    fn new(grid: &Grid, masks: &[u16]) -> Self {
+        let s = State::from_masks(masks);
+        Self {
+            land: s.land & !s.sea,
+            sea: s.sea & !s.land,
+            open: s.open(grid.g.all),
         }
-        let id = cells.len();
-        let mut group = vec![start];
-        of[start] = Some(id);
-        let mut at = 0;
-        while at < group.len() {
-            for &j in &grid.neighbours[group[at]] {
-                if masks[j] == value && of[j].is_none() {
-                    of[j] = Some(id);
-                    group.push(j);
-                }
-            }
-            at += 1;
-        }
-        cells.push(group);
     }
-    Groups { of, cells }
 }
 
-/// The numbered cells of an island.
-fn numbers(grid: &Grid, island: &[usize]) -> Vec<usize> {
-    island
+/// Connected groups of a set of cells, in order of their lowest cell.
+fn groups(g: &bits::Grid, mut set: Bits) -> Vec<Bits> {
+    let mut out = Vec::new();
+    while set != 0 {
+        let group = g.flood(bit(first(set)), set);
+        set &= !group;
+        out.push(group);
+    }
+    out
+}
+
+/// The cells of every numbered island.
+fn numbered_land(grid: &Grid, islands: &[Bits]) -> Bits {
+    islands
         .iter()
-        .copied()
-        .filter(|&i| grid.clues[i] > 0)
-        .collect()
+        .filter(|&&island| island & grid.numbered != 0)
+        .fold(0, |acc, &island| acc | island)
 }
 
-/// The single number of an island, if it has exactly one.
-fn number(grid: &Grid, island: &[usize]) -> Option<u32> {
-    match numbers(grid, island)[..] {
-        [i] => Some(grid.clues[i]),
-        _ => None,
-    }
-}
-
-/// Unknown cells next to a group, in order.
-fn border(grid: &Grid, masks: &[u16], group: &[usize]) -> Vec<usize> {
-    let mut out = BTreeSet::new();
-    for &i in group {
-        out.extend(
-            grid.neighbours[i]
-                .iter()
-                .copied()
-                .filter(|&j| masks[j] == BOTH),
-        );
-    }
-    out.into_iter().collect()
-}
-
-/// Whether unknown cell `i` touches a numbered island other than `own`.
-fn touches_other(grid: &Grid, land: &Groups, own: Option<usize>, i: usize) -> bool {
-    grid.neighbours[i].iter().any(|&j| {
-        land.of[j].is_some_and(|g| Some(g) != own && !numbers(grid, &land.cells[g]).is_empty())
-    })
-}
-
-/// Cells a numbered island could still grow into, with the distance from
-/// the island: through unknown cells and unnumbered land, never next to
-/// another numbered island, at most `reach` cells away.
-fn reachable(grid: &Grid, masks: &[u16], land: &Groups, island: usize, reach: usize) -> Vec<usize> {
-    let mut dist = vec![usize::MAX; masks.len()];
-    let mut queue = VecDeque::new();
-    for &i in &land.cells[island] {
-        dist[i] = 0;
-        queue.push_back(i);
-    }
-    while let Some(i) = queue.pop_front() {
-        if dist[i] == reach {
-            continue;
-        }
-        for &j in &grid.neighbours[i] {
-            if dist[j] != usize::MAX || masks[j] & LAND == 0 {
-                continue;
-            }
-            let other_numbered = land.of[j]
-                .is_some_and(|g| g != island && !numbers(grid, &land.cells[g]).is_empty());
-            if other_numbered || (masks[j] == BOTH && touches_other(grid, land, Some(island), j)) {
-                continue;
-            }
-            dist[j] = dist[i] + 1;
-            queue.push_back(j);
-        }
-    }
-    (0..masks.len())
-        .filter(|&i| dist[i] != usize::MAX)
-        .collect()
+/// Cells a numbered island could still grow into, with the island itself:
+/// through open cells and unnumbered land, never into or next to another
+/// numbered island, at most `reach` cells away.
+fn reachable(grid: &Grid, c: Cells, numbered: Bits, island: Bits, reach: usize) -> Bits {
+    let others = numbered & !island;
+    let allowed = (c.land | c.open) & !others & !(c.open & grid.g.adjacent(others));
+    grid.g.flood_steps(island, allowed, reach)
 }
 
 /// Whether the candidates already break a rule. Never true while some
 /// completion could satisfy every rule; exact on full grids.
 fn broken(grid: &Grid, masks: &[u16]) -> bool {
-    if masks.contains(&0) || masks.iter().all(|&m| m == LAND) {
+    let g = &grid.g;
+    let s = State::from_masks(masks);
+    if s.dead() || s.land == g.all {
         return true;
     }
-    if grid.blocks().any(|b| b.iter().all(|&i| masks[i] == SEA)) {
+    let c = Cells::new(grid, masks);
+    if g.pools(c.sea) != 0 {
         return true;
     }
-    let land = groups(grid, masks, LAND);
-    for (g, island) in land.cells.iter().enumerate() {
-        match numbers(grid, island).len() {
+    let islands = groups(g, c.land);
+    let numbered = numbered_land(grid, &islands);
+    let possible = c.land | c.open;
+    for &island in &islands {
+        match count(island & grid.numbered) {
             0 => {
                 // Unnumbered land must be able to reach some number.
-                let possible: Vec<bool> = masks.iter().map(|&m| m & LAND != 0).collect();
-                let region =
-                    pencil_puzzles_core::grid::flood(island[0], |j| possible[j], &grid.neighbours);
-                if !region.iter().any(|&i| grid.clues[i] > 0) {
+                if g.flood(island, possible) & grid.numbered == 0 {
                     return true;
                 }
             }
             1 => {
-                let clue = number(grid, island).expect("one number") as usize;
-                if island.len() > clue {
-                    return true;
-                }
-                let room = reachable(grid, masks, &land, g, masks.len());
-                if room.len() < clue {
+                let clue = grid.number(island).expect("one number") as usize;
+                if count(island) > clue
+                    || count(reachable(grid, c, numbered, island, usize::MAX)) < clue
+                {
                     return true;
                 }
             }
@@ -184,33 +129,32 @@ fn broken(grid: &Grid, masks: &[u16]) -> bool {
         }
     }
     // The sea must be able to connect.
-    let possible: Vec<bool> = masks.iter().map(|&m| m & SEA != 0).collect();
-    if let Some(first) = masks.iter().position(|&m| m == SEA) {
-        let region = pencil_puzzles_core::grid::flood(first, |j| possible[j], &grid.neighbours);
-        let mut reached = vec![false; masks.len()];
-        for i in region {
-            reached[i] = true;
-        }
-        if (0..masks.len()).any(|i| masks[i] == SEA && !reached[i]) {
-            return true;
-        }
-    }
-    false
+    c.sea != 0 && g.flood(bit(first(c.sea)), c.sea | c.open) & c.sea != c.sea
+}
+
+/// The cells of a set, in order, as changes to one value.
+fn changes(set: Bits, keep: u16) -> Vec<(usize, u16)> {
+    cells(set).map(|i| (i, keep)).collect()
 }
 
 /// Bookkeeping: a numbered island of its full size is walled off by sea.
 fn island_complete(c: &Candidates<'_, Grid>) -> Result<Vec<HumanStep>, BudgetExceeded> {
     let grid = c.context;
-    let land = groups(grid, c.masks, LAND);
+    let cs = Cells::new(grid, c.masks);
     let mut steps = Vec::new();
-    for island in &land.cells {
+    for island in groups(&grid.g, cs.land) {
         c.charge()?;
-        if number(grid, island).is_some_and(|n| n as usize == island.len()) {
-            let changes = border(grid, c.masks, island)
-                .into_iter()
-                .map(|i| (i, SEA))
-                .collect();
-            steps.extend(c.step("island_complete", island.clone(), Vec::new(), changes));
+        if grid
+            .number(island)
+            .is_some_and(|n| n as usize == count(island))
+        {
+            let border = grid.g.border(island) & cs.open;
+            steps.extend(c.step(
+                "island_complete",
+                cells(island).collect(),
+                Vec::new(),
+                changes(border, SEA),
+            ));
         }
     }
     Ok(steps)
@@ -220,45 +164,50 @@ fn island_complete(c: &Candidates<'_, Grid>) -> Result<Vec<HumanStep>, BudgetExc
 /// is left, every open cell is sea.
 fn all_complete(c: &Candidates<'_, Grid>) -> Result<Vec<HumanStep>, BudgetExceeded> {
     let grid = c.context;
-    let land = groups(grid, c.masks, LAND);
+    let cs = Cells::new(grid, c.masks);
     c.charge()?;
-    let done = land
-        .cells
-        .iter()
-        .all(|island| number(grid, island).is_some_and(|n| n as usize == island.len()))
-        && (0..c.masks.len()).all(|i| grid.clues[i] == 0 || land.of[i].is_some());
+    let islands = groups(&grid.g, cs.land);
+    let done = islands.iter().all(|&island| {
+        grid.number(island)
+            .is_some_and(|n| n as usize == count(island))
+    }) && grid.numbered & !cs.land == 0;
     if !done {
         return Ok(Vec::new());
     }
-    let changes = (0..c.masks.len())
-        .filter(|&i| c.masks[i] == BOTH)
-        .map(|i| (i, SEA))
-        .collect();
-    let support = land.cells.concat();
-    Ok(c.step("all_complete", support, Vec::new(), changes)
-        .into_iter()
-        .collect())
+    Ok(c.step(
+        "all_complete",
+        cells(cs.land).collect(),
+        Vec::new(),
+        changes(cs.open, SEA),
+    )
+    .into_iter()
+    .collect())
 }
 
 /// A cell next to two different numbered islands is sea.
 fn separate_clues(c: &Candidates<'_, Grid>) -> Result<Vec<HumanStep>, BudgetExceeded> {
     let grid = c.context;
-    let land = groups(grid, c.masks, LAND);
+    let cs = Cells::new(grid, c.masks);
+    let islands: Vec<Bits> = groups(&grid.g, cs.land)
+        .into_iter()
+        .filter(|&island| island & grid.numbered != 0)
+        .collect();
     let mut steps = Vec::new();
     for i in 0..c.masks.len() {
         c.charge()?;
-        if c.masks[i] != BOTH {
+        if cs.open & bit(i) == 0 {
             continue;
         }
-        let touching: BTreeSet<_> = grid.neighbours[i]
+        let around = grid.g.adjacent(bit(i));
+        let touching: Vec<Bits> = islands
             .iter()
-            .filter_map(|&j| land.of[j])
-            .filter(|&g| !numbers(grid, &land.cells[g]).is_empty())
+            .copied()
+            .filter(|&island| island & around != 0)
             .collect();
         if touching.len() >= 2 {
             let mut support = vec![i];
-            for &g in &touching {
-                support.extend(&land.cells[g]);
+            for island in touching {
+                support.extend(cells(island));
             }
             steps.extend(c.step("separate_clues", support, Vec::new(), vec![(i, SEA)]));
         }
@@ -268,18 +217,20 @@ fn separate_clues(c: &Candidates<'_, Grid>) -> Result<Vec<HumanStep>, BudgetExce
 
 /// A 2x2 block with three sea cells has land in the fourth.
 fn no_pool(c: &Candidates<'_, Grid>) -> Result<Vec<HumanStep>, BudgetExceeded> {
+    let grid = c.context;
+    let cs = Cells::new(grid, c.masks);
     let mut steps = Vec::new();
-    for block in c.context.blocks() {
+    for corner in cells(grid.g.pools(grid.g.all)) {
         c.charge()?;
-        let open: Vec<_> = block
-            .iter()
-            .copied()
-            .filter(|&i| c.masks[i] == BOTH)
-            .collect();
-        if let [i] = open[..]
-            && block.iter().filter(|&&j| c.masks[j] == SEA).count() == 3
-        {
-            steps.extend(c.step("no_pool", block.to_vec(), Vec::new(), vec![(i, LAND)]));
+        let block = grid.g.block(corner);
+        let open = block & cs.open;
+        if count(open) == 1 && count(block & cs.sea) == 3 {
+            steps.extend(c.step(
+                "no_pool",
+                cells(block).collect(),
+                Vec::new(),
+                vec![(first(open), LAND)],
+            ));
         }
     }
     Ok(steps)
@@ -289,25 +240,31 @@ fn no_pool(c: &Candidates<'_, Grid>) -> Result<Vec<HumanStep>, BudgetExceeded> {
 /// a number, with only one way out extends through it.
 fn island_exit(c: &Candidates<'_, Grid>) -> Result<Vec<HumanStep>, BudgetExceeded> {
     let grid = c.context;
-    let land = groups(grid, c.masks, LAND);
+    let cs = Cells::new(grid, c.masks);
+    let islands = groups(&grid.g, cs.land);
+    let numbered = numbered_land(grid, &islands);
     let mut steps = Vec::new();
-    for (g, island) in land.cells.iter().enumerate() {
+    for &island in &islands {
         c.charge()?;
-        let growing = match numbers(grid, island).len() {
+        let growing = match count(island & grid.numbered) {
             0 => true,
-            1 => (number(grid, island).expect("one number") as usize) > island.len(),
+            1 => (grid.number(island).expect("one number") as usize) > count(island),
             _ => false,
         };
         if !growing {
             continue;
         }
-        let numbered = !numbers(grid, island).is_empty();
-        let exits: Vec<_> = border(grid, c.masks, island)
-            .into_iter()
-            .filter(|&i| !numbered || !touches_other(grid, &land, Some(g), i))
-            .collect();
-        if let [i] = exits[..] {
-            steps.extend(c.step("island_exit", island.clone(), Vec::new(), vec![(i, LAND)]));
+        let mut exits = grid.g.border(island) & cs.open;
+        if island & grid.numbered != 0 {
+            exits &= !grid.g.adjacent(numbered & !island);
+        }
+        if count(exits) == 1 {
+            steps.extend(c.step(
+                "island_exit",
+                cells(island).collect(),
+                Vec::new(),
+                vec![(first(exits), LAND)],
+            ));
         }
     }
     Ok(steps)
@@ -317,15 +274,22 @@ fn island_exit(c: &Candidates<'_, Grid>) -> Result<Vec<HumanStep>, BudgetExceede
 /// extends through it.
 fn sea_exit(c: &Candidates<'_, Grid>) -> Result<Vec<HumanStep>, BudgetExceeded> {
     let grid = c.context;
-    let sea = groups(grid, c.masks, SEA);
+    let cs = Cells::new(grid, c.masks);
+    let areas = groups(&grid.g, cs.sea);
     let mut steps = Vec::new();
-    if sea.cells.len() < 2 {
+    if areas.len() < 2 {
         return Ok(steps);
     }
-    for area in &sea.cells {
+    for area in areas {
         c.charge()?;
-        if let [i] = border(grid, c.masks, area)[..] {
-            steps.extend(c.step("sea_exit", area.clone(), Vec::new(), vec![(i, SEA)]));
+        let exits = grid.g.border(area) & cs.open;
+        if count(exits) == 1 {
+            steps.extend(c.step(
+                "sea_exit",
+                cells(area).collect(),
+                Vec::new(),
+                vec![(first(exits), SEA)],
+            ));
         }
     }
     Ok(steps)
@@ -334,27 +298,23 @@ fn sea_exit(c: &Candidates<'_, Grid>) -> Result<Vec<HumanStep>, BudgetExceeded> 
 /// A cell no numbered island can reach is sea.
 fn unreachable(c: &Candidates<'_, Grid>) -> Result<Vec<HumanStep>, BudgetExceeded> {
     let grid = c.context;
-    let land = groups(grid, c.masks, LAND);
-    let mut reached = vec![false; c.masks.len()];
+    let cs = Cells::new(grid, c.masks);
+    let islands = groups(&grid.g, cs.land);
+    let numbered = numbered_land(grid, &islands);
+    let mut reached = 0;
     let mut support = Vec::new();
-    for (g, island) in land.cells.iter().enumerate() {
+    for &island in &islands {
         c.charge()?;
-        let Some(clue) = number(grid, island) else {
+        let Some(clue) = grid.number(island) else {
             continue;
         };
-        let need = (clue as usize).saturating_sub(island.len());
-        support.extend(island);
-        for i in reachable(grid, c.masks, &land, g, need) {
-            reached[i] = true;
-        }
+        let need = (clue as usize).saturating_sub(count(island));
+        support.extend(cells(island));
+        reached |= reachable(grid, cs, numbered, island, need);
     }
-    let mut steps = Vec::new();
-    for (i, &seen) in reached.iter().enumerate() {
-        if c.masks[i] == BOTH && !seen {
-            steps.extend(c.step("unreachable", support.clone(), Vec::new(), vec![(i, SEA)]));
-        }
-    }
-    Ok(steps)
+    Ok(cells(cs.open & !reached)
+        .filter_map(|i| c.step("unreachable", support.clone(), Vec::new(), vec![(i, SEA)]))
+        .collect())
 }
 
 const fn entry(
@@ -431,6 +391,7 @@ mod tests {
     use super::*;
     use crate::{Answer, Mark, Shape};
     use pencil_puzzles_core::SplitMix64;
+    use std::collections::BTreeSet;
 
     fn answer(shape: Shape, sea: &[bool]) -> Answer {
         let mut answer = Answer::new(shape);
@@ -467,10 +428,10 @@ mod tests {
         let mut clues = vec![0; cells];
         let land: Vec<bool> = sea.iter().map(|s| !s).collect();
         let mut seen = vec![false; cells];
-        let grid = Grid::new(&Puzzle::new(shape, vec![0; cells]).unwrap());
+        let neighbours = pencil_puzzles_core::grid::neighbours(rows, cols);
         for i in 0..cells {
             if land[i] && !seen[i] {
-                let island = pencil_puzzles_core::grid::flood(i, |j| land[j], &grid.neighbours);
+                let island = pencil_puzzles_core::grid::flood(i, |j| land[j], &neighbours);
                 for &j in &island {
                     seen[j] = true;
                 }

@@ -12,7 +12,7 @@ fn main() {
         ("medium", "5x5", Difficulty::Medium, 0),
         ("hard", "5x5", Difficulty::Hard, 0),
         ("expert", "5x5", Difficulty::Expert, 0),
-        ("largest", "8x8", Difficulty::Medium, 0),
+        ("largest", "10x10", Difficulty::Medium, 0),
     ];
     let mut golden = String::from("# params difficulty seed id generator_version\n");
     for (name, shape, level, seed) in cases {

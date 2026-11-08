@@ -27,7 +27,7 @@ static METADATA: Metadata = {
 };
 impl Genre for Nurikabe {
     fn text_limits() -> pencil_puzzles_core::text::GridLimits {
-        pencil_puzzles_core::text::GridLimits::new(8, 24)
+        crate::model::TEXT_LIMITS
     }
     type Shape = Shape;
     type Params = Params;

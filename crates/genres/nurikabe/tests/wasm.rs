@@ -4,7 +4,7 @@ use pencil_puzzles_nurikabe::*;
 use wasm_bindgen_test::wasm_bindgen_test;
 #[wasm_bindgen_test]
 fn largest_shape_solve_rate_generate_and_golden() {
-    let empty = Puzzle::new("8x8".parse().unwrap(), vec![0; 64]).unwrap();
+    let empty = Puzzle::new("10x10".parse().unwrap(), vec![0; 100]).unwrap();
     assert!(solve(&empty, &Budget::new(1)).is_err());
     assert!(rate(&empty, &Budget::new(1)).is_err());
     assert!(generate(&GenerateOptions::new(Params::default(), 0), &Budget::new(1)).is_err());

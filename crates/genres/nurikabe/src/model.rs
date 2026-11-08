@@ -200,11 +200,13 @@ impl TryFrom<PuzzleData> for Puzzle {
         Self::from_rows(&d.grid)
     }
 }
+/// Grid limits for text input: up to three-digit clues separated by spaces.
+pub(crate) const TEXT_LIMITS: text::GridLimits = text::GridLimits::new(MAX_SIZE, 4 * MAX_SIZE);
 /// Parsed puzzle and preserved shared metadata.
 pub type Record = pencil_puzzles_core::Record<Puzzle, Answer>;
 /// Read Nurikabe documents with preserved metadata (F6-F8).
 pub fn parse_records(source: &str) -> Result<Vec<Record>, ParseError> {
-    let docs = text::parse_with_limits(source, text::GridLimits::new(8, 24))?;
+    let docs = text::parse_with_limits(source, TEXT_LIMITS)?;
     if docs.is_empty() {
         return Err(ParseError::at_line(1, "there is no puzzle"));
     }

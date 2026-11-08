@@ -6,6 +6,7 @@
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 mod answer;
+mod bits;
 mod board;
 mod generate;
 mod genre;

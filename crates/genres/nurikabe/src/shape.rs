@@ -6,7 +6,7 @@ use std::str::FromStr;
 use pencil_puzzles_core::ParseError;
 
 /// The largest number of rows or columns a puzzle may have.
-pub const MAX_SIZE: usize = 8;
+pub const MAX_SIZE: usize = 10;
 
 /// A puzzle's number of rows and columns, written like `5x7` (rows first).
 ///
@@ -53,9 +53,9 @@ impl Shape {
 }
 
 impl Default for Shape {
-    /// 6×6.
+    /// 10×10.
     fn default() -> Self {
-        Self { rows: 6, cols: 6 }
+        Self { rows: 10, cols: 10 }
     }
 }
 
@@ -172,7 +172,7 @@ mod tests {
 
     #[test]
     fn shapes_are_strict() {
-        for good in ["1x1", "5x7", "8x8"] {
+        for good in ["1x1", "5x7", "10x10"] {
             assert_eq!(good.parse::<Shape>().unwrap().to_string(), good);
         }
         for bad in [
@@ -184,7 +184,7 @@ mod tests {
             "5X5",
             " 5x5",
             "0x5",
-            "9x1",
+            "11x1",
             "5x5x5",
             "99999999999x1",
         ] {
