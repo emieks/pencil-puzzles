@@ -16,7 +16,7 @@ import warnings
 
 from . import _native
 
-__version__ = "0.3.0"
+__version__ = "0.3.1"
 __all__ = [
     "AttemptsExhaustedError", "BudgetExceededError", "CancellationToken", "CancelledError",
     "Difficulty", "FillominoPuzzle", "Generated", "HashiPuzzle", "HitoriPuzzle", "KakurasuClues", "KakurasuPuzzle", "KakuroPuzzle", "Limits", "Mark",

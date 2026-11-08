@@ -5,6 +5,32 @@ and versions follow [Semantic Versioning](https://semver.org/). Changes that
 alter generated puzzles are marked **(new puzzles)**, and changes that alter
 ratings **(new ratings)**.
 
+## [0.3.1] - 2026-11-08
+
+### Added
+
+- Python: `print(puzzle)` shows the grid.
+- Python: `generate` without a shape gives the genre's standard size.
+- Python: every puzzle has `clues`; kakurasu's is a `KakurasuClues` with
+  `rows` and `cols`.
+- Rust: the crates are on crates.io.
+
+### Changed
+
+- Generating without a size gives hashi and kakuro 10x10 puzzles (were 7x7
+  and 8x8), kakurasu 7x7 (was 6x6) and fillomino 10x10 (was 6x6).
+  **(new puzzles)**
+- Python: `generate` without a seed picks a random one, kept in
+  `Generated.seed` (was 0).
+- Sudoku: box lines cross with `+` when printed, also in the command-line
+  tool's `--format pretty`.
+- README rewritten around the Python package.
+
+### Deprecated
+
+- Python: `givens`, `numbers`, `cells`, `row_clues` and `col_clues`; use
+  `clues`.
+
 ## [0.3.0] - 2026-11-08
 
 ### Added
