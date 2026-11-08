@@ -46,15 +46,15 @@ fn malformed_inputs_have_positions_and_respect_limits() {
     );
     assert!(Shape::new(usize::MAX, 1).is_err());
     assert!(Puzzle::from_id(&"x".repeat(4097)).is_err());
-    for rows in [vec!["........."; 8], vec!["."; 9], vec![". "; 8]] {
+    for rows in [vec!["..........."; 10], vec!["."; 11], vec![". "; 10]] {
         assert!(Puzzle::from_rows(&rows).is_err());
     }
     #[cfg(feature = "serde")]
     {
         for json in [
             r#"{"grid":["1"],"extra":true}"#.to_string(),
-            serde_json::json!({"grid":vec![".";9]}).to_string(),
-            serde_json::json!({"grid":vec!["x".repeat(1000);8]}).to_string(),
+            serde_json::json!({"grid":vec![".";11]}).to_string(),
+            serde_json::json!({"grid":vec!["x".repeat(1000);10]}).to_string(),
         ] {
             assert!(serde_json::from_str::<Puzzle>(&json).is_err());
         }

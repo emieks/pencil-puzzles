@@ -64,7 +64,7 @@ The API is six functions (`genres`, `generate`, `solve`, `rate`, `check`,
 | [Hitori](docs/genres/hitori.md) | Shade cells so no unshaded number repeats in a row or column; shaded cells never share a side and unshaded cells stay connected. | ≤ 12x12 | 8x8: 1.6 ms → 558 ms |
 | [Kakurasu](docs/genres/kakurasu.md) | Shade cells so each row and column clue is the sum of its shaded cells' positions. | ≤ 32x32 | 6x6: 0.4 ms → 307 ms |
 | [Kakuro](docs/genres/kakuro.md) | Fill the white cells with digits 1–9 so each run adds up to its clue without repeating a digit. | ≤ 16x16 | 8x8: 2.6 ms → 213 ms |
-| [Nurikabe](docs/genres/nurikabe.md) | Shade a connected sea, leaving islands the size of their numbers and no shaded 2×2 block. | ≤ 8x8 | 6x6: 3.4 ms → 4.3 s |
+| [Nurikabe](docs/genres/nurikabe.md) | Shade a connected sea, leaving islands the size of their numbers and no shaded 2×2 block. | ≤ 10x10 | 6x6: 3.4 ms → 4.3 s |
 | [Sudoku](docs/genres/sudoku.md) | Fill rows, columns and boxes with each digit exactly once. | 4x4, 9x9 | 9x9: 185 ms → 2.8 s |
 
 Generation times are medians at each genre's default size. Each genre page

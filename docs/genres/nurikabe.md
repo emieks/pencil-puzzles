@@ -81,8 +81,8 @@ separate_clues     no_pool      island_exit     unreachable
 
 | Parameter | Part of the shape? | Limits | Default |
 | --- | --- | --- | --- |
-| rows | yes | 1-8 | 6 |
-| columns | yes | 1-8 | 6 |
+| rows | yes | 1-10 | 10 |
+| columns | yes | 1-10 | 10 |
 
 The shape is written `<rows>x<columns>`, such as `5x5`. Clues go from 1 to
 the number of cells. Contradictory clues still parse and have no solution.

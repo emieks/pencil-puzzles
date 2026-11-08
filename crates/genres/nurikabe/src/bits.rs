@@ -1,9 +1,9 @@
-//! Cell sets of a grid with at most 64 cells, one bit per cell in row-major
+//! Cell sets of a grid with at most 128 cells, one bit per cell in row-major
 //! order. Neighbours, floods and 2x2 blocks are a few shifts and masks.
 use crate::Shape;
 
 /// A set of cells.
-pub(crate) type Bits = u64;
+pub(crate) type Bits = u128;
 
 /// The cell with index `i`.
 pub(crate) const fn bit(i: usize) -> Bits {
@@ -52,8 +52,8 @@ impl Grid {
     pub fn new(shape: Shape) -> Self {
         let (rows, cols) = (shape.rows(), shape.cols());
         let cells = rows * cols;
-        debug_assert!(cells <= 64);
-        let all = if cells == 64 { !0 } else { bit(cells) - 1 };
+        debug_assert!(cells <= 128);
+        let all = if cells == 128 { !0 } else { bit(cells) - 1 };
         let mut not_left = 0;
         let mut not_right = 0;
         let mut corners = 0;
@@ -170,7 +170,11 @@ mod tests {
         assert_eq!(g.ball(0, 1), bit(0) | bit(1) | bit(4));
         assert_eq!(cells(bit(3) | bit(9)).collect::<Vec<_>>(), [3, 9]);
         let full = Grid::new(Shape::new(8, 8).unwrap());
-        assert_eq!(full.all, u64::MAX);
-        assert_eq!(count(full.pools(u64::MAX)), 49);
+        assert_eq!(full.all, u64::MAX.into());
+        assert_eq!(count(full.pools(full.all)), 49);
+        let largest = Grid::new(Shape::new(10, 10).unwrap());
+        assert_eq!(count(largest.all), 100);
+        assert_eq!(count(largest.pools(largest.all)), 81);
+        assert_eq!(largest.adjacent(bit(99)), bit(89) | bit(98));
     }
 }

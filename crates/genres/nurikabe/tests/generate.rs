@@ -52,7 +52,7 @@ fn generated_puzzles_have_exact_ratings_unique_solutions_and_repeatable_limits()
 }
 #[test]
 fn maximum_size_work_and_hints_are_bounded() {
-    let options = GenerateOptions::new("8x8".parse().unwrap(), 0);
+    let options = GenerateOptions::new("10x10".parse().unwrap(), 0);
     assert_eq!(
         generate(&options, &Budget::new(1)),
         Err(GenerateError::BudgetExceeded)
