@@ -16,18 +16,19 @@ clue-free 1x1 board has the single solution `#`.
 
 ## Example
 
-Generator version 2, shape `3x3`, easy, seed `0` produces
-`nurikabe:3x3:.,1,.,.,.,.,1,.,1`:
+Generator version 3, shape `3x3`, easy, seed `0` produces
+`nurikabe:3x3:.,.,.,.,.,.,5,.,1`:
 
 ```text
 Clues     Solution
-.1.       #-#
-...       ###
-1.1       -#-
+...       ---
+...       -##
+5.1       -#-
 ```
 
-Each 1 is an island of one cell, walled off by sea; the six sea cells are
-connected, and no 2x2 block is all sea. `corpus/nurikabe/` has puzzles from
+The 1 is an island of one cell, walled off by sea; the 5 fills the top row
+and the left column. The three sea cells are connected, and no 2x2 block is
+all sea. `corpus/nurikabe/` has puzzles from
 easy to expert, with solutions.
 
 ## Variables
@@ -86,11 +87,21 @@ separate_clues     no_pool      island_exit     unreachable
 The shape is written `<rows>x<columns>`, such as `5x5`. Clues go from 1 to
 the number of cells. Contradictory clues still parse and have no solution.
 
-Generator version 2 grows a seeded connected sea without pools and gives each
-island one number, its size. The puzzle is screened with the techniques up to
-the requested level. A cell they could not decide (or any cell, if the puzzle
-was too easy) is flipped, keeping the sea connected and pool-free, and the
-islands are renumbered.
+Generator version 3 grows islands from seeds inside a connected sea. A seed
+is a cell not touching land whose removal keeps the sea connected; each
+island grows one cell at a time toward a size drawn from 1 to 6 (1 to 3 for
+easy), until 40-55% of the cells are land, and a cell of every all-sea 2x2
+block then becomes land. Each island is numbered on a random cell. The
+puzzle is screened with the techniques up to the requested level, at most
+Medium; if they do not finish and the level is above Medium, the brute-force
+solver looks for a second solution within the candidates they left before
+the contradiction techniques run. A second solution is ruled out by moving a
+clue onto a cell that is land in the intended solution and sea in the other.
+Where the techniques got stuck, a sea cell touching at most one island
+becomes land, or a clue moves there. A puzzle below the requested level gets
+a clue moved within its island, two islands joined through one sea cell, or
+an island grown by one cell. A candidate starts over after 12 times as many
+changes without improvement as it has rows and columns.
 
 ## Formats
 

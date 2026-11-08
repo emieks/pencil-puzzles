@@ -416,14 +416,14 @@ fn search(
     mut b: Board<'_>,
     limit: usize,
     found: &mut usize,
-    mut visit: impl FnMut(Answer),
+    mut visit: impl FnMut(&Board<'_>),
 ) -> Result<(), BudgetExceeded> {
     // Explicit recursive visitor shares output storage; recursion is at most one per cell.
     fn dfs(
         b: &mut Board<'_>,
         limit: usize,
         found: &mut usize,
-        visit: &mut dyn FnMut(Answer),
+        visit: &mut dyn FnMut(&Board<'_>),
     ) -> Result<(), BudgetExceeded> {
         if *found >= limit {
             return Ok(());
@@ -449,17 +449,34 @@ fn search(
             }
         } else {
             *found += 1;
-            visit(b.answer());
+            visit(b);
         }
         Ok(())
     }
     dfs(&mut b, limit, found, &mut visit)
 }
 
+impl Board<'_> {
+    /// A solution within the current candidates other than the one with
+    /// sea `known`, as its sea, if there is one. At most two solutions
+    /// are visited.
+    pub fn second_solution(&self, known: Bits) -> Result<Option<Bits>, BudgetExceeded> {
+        let mut other = None;
+        search(self.clone(), 2, &mut 0, |b| {
+            if b.state.sea != known {
+                other = Some(b.state.sea);
+            }
+        })?;
+        Ok(other)
+    }
+}
+
 /// Prove zero, one or multiple solutions; budget exhaustion is an error.
 pub fn solve(p: &Puzzle, budget: &Budget) -> Result<Solutions<Answer>, BudgetExceeded> {
     let mut answers = Vec::new();
-    search(Board::new(p, budget), 2, &mut 0, |a| answers.push(a))?;
+    search(Board::new(p, budget), 2, &mut 0, |b| {
+        answers.push(b.answer())
+    })?;
     Ok(match answers.len() {
         0 => Solutions::None,
         1 => Solutions::Unique(answers.remove(0)),
