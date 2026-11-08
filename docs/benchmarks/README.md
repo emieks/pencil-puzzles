@@ -44,6 +44,6 @@ node web/benchmark.mjs <genre> <default size> 20
 ```
 
 This times the web app's engine with its limits (10,000 attempts and
-50,000,000 operations). Each genre page gives the WebAssembly median divided
+100,000,000 operations). Each genre page gives the WebAssembly median divided
 by the native median, as a geometric mean over the levels where both found
 all 20 puzzles and the native median is at least 10 ms.
