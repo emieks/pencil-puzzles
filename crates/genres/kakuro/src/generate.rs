@@ -1,31 +1,35 @@
-//! Reproducible generation: a random layout of blocks, random digits, and
-//! digits changed until the human techniques solve the puzzle at the
+//! Reproducible generation: a symmetric layout of blocks, random digits,
+//! and digits changed until the human techniques solve the puzzle at the
 //! requested level.
 use crate::human::screen;
 use crate::*;
 use pencil_puzzles_core::SplitMix64;
 use pencil_puzzles_core::grid::{flood, neighbours};
 use pencil_puzzles_core::search::{Construct, Move, Outcome, SearchError, search};
+use std::cell::RefCell;
 use std::{error::Error, fmt};
 
 /// Generator version (V3).
-pub const GENERATOR_VERSION: u32 = 1;
+pub const GENERATOR_VERSION: u32 = 2;
 
-/// The longest run the generator builds, by level as for [`DENSITY`].
-const LONGEST: [usize; 5] = [6, 5, 5, 6, 7];
+/// The longest run the generator builds, by level: any, easy, medium,
+/// hard, expert.
+const LONGEST: [usize; 5] = [4, 4, 4, 5, 5];
 /// Percent of the inner cells (below the first row, right of the first
-/// column) made blocks, by level: any, easy, medium, hard, expert.
-const DENSITY: [usize; 5] = [25, 30, 25, 22, 20];
+/// column) made blocks, by level as for [`LONGEST`]. Breaking long runs
+/// may need more.
+const DENSITY: [usize; 5] = [30, 32, 30, 28, 26];
 /// How much the digit order varies from each run's preference for low or
-/// high digits, by level as for [`DENSITY`]. Small values give sums with
+/// high digits, by level as for [`LONGEST`]. Small values give sums with
 /// few combinations.
 const NOISE: [u64; 5] = [8, 3, 6, 10, 16];
-/// The most cells one new block may turn into blocks while the layout is
-/// built or changed, counting cells left in runs of one cell.
-const CASCADE: usize = 3;
-/// When stuck, one change in this many makes the chosen cell a block, while
-/// the blocks stay within twenty points of the level's density.
-const BLOCK_CHANCE: u64 = 4;
+/// The most cells one placement may turn into blocks, counting the mirror
+/// cell and cells left in runs of one cell.
+const CASCADE: usize = 6;
+/// Placements tried for the random blocks of a layout, per inner cell.
+const PLACEMENTS: usize = 2;
+/// Layouts tried before runs one cell longer are allowed.
+const LAYOUT_TRIES: u32 = 256;
 /// Cells tried when filling in digits before starting a new layout.
 const FILL_NODES: u32 = 20_000;
 /// How many times [`Construct::patience`] changes a stuck candidate gets
@@ -40,6 +44,10 @@ const SAMPLE: u32 = 3;
 const SPREAD: usize = 16;
 /// Cells tried for one change before starting over.
 const TRIES: u32 = 8;
+/// Solutions enumerated to find the cells that vary between them.
+const AMBIGUITY: usize = 4;
+/// Cells tried by the brute-force solver when screening before it gives up.
+const SEARCH_NODES: usize = 2048;
 
 /// Reproducible generator inputs.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -141,6 +149,16 @@ struct Builder {
     nb: Vec<Vec<usize>>,
     /// The number of digit sets of each size and sum: `ways[size][sum]`.
     ways: [[u32; 46]; 10],
+    /// For the last stuck outcomes of puzzles with several solutions: the
+    /// unresolved variables and how many of them, listed first, vary
+    /// between the solutions.
+    ambiguous: RefCell<Vec<(Vec<usize>, usize)>>,
+}
+
+/// A layout of blocks while it is built.
+struct Layout {
+    white: Vec<bool>,
+    whites: usize,
 }
 
 impl Builder {
@@ -170,20 +188,33 @@ impl Builder {
         out
     }
 
-    /// Make `i` a block, then every white cell left in a run of one cell,
-    /// and so on; returns the cells made blocks. Undone, returning `None`,
-    /// if fewer than four white cells would remain or, when `small`, if
-    /// more than [`CASCADE`] cells change or the white cells would no
-    /// longer be connected.
-    fn block(
-        &self,
-        white: &mut [bool],
-        i: usize,
-        whites: &mut usize,
-        small: bool,
-    ) -> Option<Vec<usize>> {
+    /// The cell opposite `i` under a half turn of the inner area.
+    fn mirror(&self, i: usize) -> usize {
+        let cols = self.shape.cols();
+        let (r, c) = (i / cols, i % cols);
+        (self.shape.rows() - r) * cols + (cols - c)
+    }
+
+    /// Whether white cell `i` has a white neighbour along the axis.
+    fn joined(&self, white: &[bool], i: usize, down: bool) -> bool {
+        let cols = self.shape.cols();
+        let step = if down { cols } else { 1 };
+        let before = i >= step && (down || !i.is_multiple_of(cols)) && white[i - step];
+        let after =
+            i + step < white.len() && (down || !(i + step).is_multiple_of(cols)) && white[i + step];
+        before || after
+    }
+
+    /// Make `i` and its mirror blocks, then every white cell left in a run
+    /// of one cell, and so on. Undone, returning `None`, if more than
+    /// `limit` cells change, fewer than four white cells remain, an inner
+    /// row or column loses its last white cell, or the white cells are no
+    /// longer connected.
+    fn block(&self, layout: &mut Layout, i: usize, limit: usize) -> Option<Vec<usize>> {
+        let cols = self.shape.cols();
+        let white = &mut layout.white;
         let mut changed = Vec::new();
-        let mut stack = vec![i];
+        let mut stack = vec![i, self.mirror(i)];
         while let Some(j) = stack.pop() {
             if !white[j] {
                 continue;
@@ -191,36 +222,57 @@ impl Builder {
             white[j] = false;
             changed.push(j);
             for &k in &self.nb[j] {
-                if white[k]
-                    && (self.run(white, k, false).len() == 1 || self.run(white, k, true).len() == 1)
-                {
+                if white[k] && !(self.joined(white, k, false) && self.joined(white, k, true)) {
                     stack.push(k);
+                    stack.push(self.mirror(k));
                 }
             }
         }
-        let left = whites.saturating_sub(changed.len());
-        let fails = left < 4
-            || (small
-                && (changed.len() > CASCADE || {
-                    let start = (0..white.len()).find(|&j| white[j]);
-                    start.is_none_or(|s| flood(s, |j| white[j], &self.nb).len() != left)
-                }));
+        let left = layout.whites - changed.len();
+        let line_emptied = changed.iter().any(|&j| {
+            let (r, c) = (j / cols, j % cols);
+            (1..cols).all(|k| !white[r * cols + k])
+                || (1..self.shape.rows()).all(|k| !white[k * cols + c])
+        });
+        let disconnected = (0..white.len())
+            .find(|&j| white[j])
+            .is_none_or(|s| flood(s, |j| white[j], &self.nb).len() != left);
+        let fails = changed.len() > limit || left < 4 || line_emptied || disconnected;
         if fails {
             for j in changed {
                 white[j] = true;
             }
             return None;
         }
-        *whites = left;
+        layout.whites = left;
         Some(changed)
     }
 
-    /// A random layout: inner cells start white and some become blocks,
-    /// then long runs are broken. `None` if a long run cannot be broken.
+    /// A run longer than `longest`, if any: its cells in order.
+    fn long_run(&self, white: &[bool], longest: usize) -> Option<Vec<usize>> {
+        let cols = self.shape.cols();
+        (0..white.len()).find_map(|i| {
+            [false, true].into_iter().find_map(|down| {
+                let step = if down { cols } else { 1 };
+                let first = i < step || (!down && i % cols == 0) || !white[i - step];
+                (white[i] && first)
+                    .then(|| self.run(white, i, down))
+                    .filter(|r| r.len() > longest)
+            })
+        })
+    }
+
+    /// A random layout with a half turn symmetry: inner cells start white;
+    /// every run longer than the limit is broken by a block inside it,
+    /// then random cells become blocks up to the density. Every placement
+    /// keeps every run at least two cells long, every inner row and column
+    /// partly white, and the white cells connected. `None` if a long run
+    /// cannot be broken.
     fn layout(
         &self,
         rng: &mut SplitMix64,
         budget: &Budget,
+        longest: usize,
     ) -> Result<Option<Vec<bool>>, BudgetExceeded> {
         let (rows, cols) = (self.shape.rows(), self.shape.cols());
         let n = self.shape.cells();
@@ -228,52 +280,47 @@ impl Builder {
             // Too small for a run of two cells.
             return Ok(Some(vec![false; n]));
         }
-        let mut white: Vec<bool> = (0..n).map(|i| i / cols > 0 && i % cols > 0).collect();
         let inner = (rows - 1) * (cols - 1);
-        let mut whites = inner;
-        let target = inner * self.density / 100;
-        let mut order: Vec<usize> = (0..n).filter(|&i| white[i]).collect();
-        rng.shuffle(&mut order);
-        for &i in &order {
-            if inner - whites >= target {
-                break;
-            }
-            Self::spend(budget, 4 * rows.max(cols))?;
-            if white[i] {
-                self.block(&mut white, i, &mut whites, true);
-            }
-        }
-        loop {
-            let long = (0..n).find_map(|i| {
-                let first = |down: bool| {
-                    let step = if down { cols } else { 1 };
-                    i < step || !white[i - step] || (!down && i % cols == 0)
-                };
-                [false, true].into_iter().find_map(|down| {
-                    (white[i] && first(down))
-                        .then(|| self.run(&white, i, down))
-                        .filter(|r| r.len() > self.longest)
-                })
-            });
+        let mut layout = Layout {
+            white: (0..n).map(|i| i / cols > 0 && i % cols > 0).collect(),
+            whites: inner,
+        };
+        while let Some(long) = self.long_run(&layout.white, longest) {
             Self::spend(budget, n)?;
-            let Some(mut long) = long else {
-                return Ok(Some(white));
-            };
-            rng.shuffle(&mut long);
-            // A small change if possible, any change otherwise.
-            if ![true, false].iter().any(|&small| {
-                long.iter()
-                    .any(|&i| self.block(&mut white, i, &mut whites, small).is_some())
+            // A block inside the run leaves at least two cells on each
+            // side; one that blocks only the pair is preferred.
+            let mut inside: Vec<usize> = long[2..long.len() - 2].to_vec();
+            rng.shuffle(&mut inside);
+            if ![2, CASCADE].iter().any(|&limit| {
+                inside
+                    .iter()
+                    .any(|&i| self.block(&mut layout, i, limit).is_some())
             }) {
                 return Ok(None);
             }
         }
+        let target = inner * self.density / 100;
+        for _ in 0..inner * PLACEMENTS {
+            if inner - layout.whites >= target {
+                break;
+            }
+            Self::spend(budget, n)?;
+            let i = (1 + rng.below((rows - 1) as u64) as usize) * cols
+                + 1
+                + rng.below((cols - 1) as u64) as usize;
+            if layout.white[i] && self.block(&mut layout, i, 2).is_none() {
+                self.block(&mut layout, i, CASCADE);
+            }
+        }
+        Ok(Some(layout.white))
     }
 
     /// Random digits with no repeat in a run, row-major by backtracking
     /// with an explicit stack. Each run prefers low or high digits at
     /// random, and each cell tries digits in the order its two runs prefer,
-    /// varied by [`NOISE`]. `None` after [`FILL_NODES`] cells.
+    /// varied by [`NOISE`]. A digit that completes a 2x2 block of white
+    /// cells holding two digits crosswise is skipped, since swapping them
+    /// would give a second solution. `None` after [`FILL_NODES`] cells.
     fn fill(
         &self,
         white: &[bool],
@@ -316,8 +363,9 @@ impl Builder {
             o.sort_unstable();
             o.map(|(_, d)| d)
         };
-        // Digits already in the cells before `i` in its two runs.
-        let used = |digits: &[u8], i: usize| {
+        // Digits already in the cells before `i` in its two runs, and the
+        // digit that would complete a crosswise 2x2 block.
+        let taken = |digits: &[u8], i: usize| {
             let mut used = 0u16;
             let mut j = i;
             while !j.is_multiple_of(cols) && white[j - 1] {
@@ -329,6 +377,15 @@ impl Builder {
                 j -= cols;
                 used |= 1 << digits[j];
             }
+            if !i.is_multiple_of(cols)
+                && i >= cols
+                && white[i - 1]
+                && white[i - cols]
+                && white[i - cols - 1]
+                && digits[i - 1] == digits[i - cols]
+            {
+                used |= 1 << digits[i - cols - 1];
+            }
             used
         };
         let mut stack = vec![(0usize, order(rng, cells[0]), 0usize)];
@@ -336,8 +393,8 @@ impl Builder {
         while let Some(top) = stack.last_mut() {
             let i = cells[top.0];
             digits[i] = 0;
-            let used = used(&digits, i);
-            let Some(k) = (top.2..9).find(|&k| used & (1 << top.1[k]) == 0) else {
+            let taken = taken(&digits, i);
+            let Some(k) = (top.2..9).find(|&k| taken & (1 << top.1[k]) == 0) else {
                 stack.pop();
                 continue;
             };
@@ -366,9 +423,9 @@ impl Builder {
         })
     }
 
-    /// One change to cell `i`: make it a block (sometimes, when stuck),
-    /// give it a digit neither of its runs has, or swap its digit with
-    /// another cell of one of its runs where neither digit repeats.
+    /// One change to cell `i`: give it a digit neither of its runs has, or
+    /// swap its digit with another cell of one of its runs where neither
+    /// digit repeats.
     fn alter(
         &self,
         c: &Candidate,
@@ -376,36 +433,24 @@ impl Builder {
         stuck: bool,
         rng: &mut SplitMix64,
     ) -> Option<Candidate> {
-        if stuck && rng.below(BLOCK_CHANCE) == 0 {
-            let inner = (self.shape.rows() - 1) * (self.shape.cols() - 1);
-            let mut whites = c.white.iter().filter(|&&w| w).count();
-            let mut next = c.clone();
-            if (inner - whites) * 100 < inner * (self.density + 20)
-                && let Some(changed) = self.block(&mut next.white, i, &mut whites, true)
-            {
-                for j in changed {
-                    next.digits[j] = 0;
-                }
-                return Some(next);
-            }
-        }
         let mates = self.mates(c, i);
         let taken =
             Self::digits_of(c, &mates[0]) | Self::digits_of(c, &mates[1]) | 1 << c.digits[i];
         let free: Vec<u8> = (1..=9).filter(|&d| taken & (1 << d) == 0).collect();
         if !free.is_empty() {
             let mut next = c.clone();
+            // The combinations the two runs would have with digit `d`.
+            let ways = |d: u8| -> u32 {
+                mates
+                    .iter()
+                    .map(|run| {
+                        let sum: u32 = run.iter().map(|&j| u32::from(c.digits[j])).sum();
+                        self.ways[run.len() + 1][(sum + u32::from(d)) as usize]
+                    })
+                    .sum()
+            };
             next.digits[i] = if stuck {
-                // The digit leaving the two runs fewest combinations.
-                let ways = |d: u8| -> u32 {
-                    mates
-                        .iter()
-                        .map(|run| {
-                            let sum: u32 = run.iter().map(|&j| u32::from(c.digits[j])).sum();
-                            self.ways[run.len() + 1][(sum + u32::from(d)) as usize]
-                        })
-                        .sum()
-                };
+                // The digit leaving the two runs the fewest combinations.
                 let start = rng.below(free.len() as u64) as usize;
                 let mut best = free[start];
                 for k in 1..free.len() {
@@ -452,9 +497,14 @@ impl Construct for Builder {
     type Candidate = Candidate;
     type Puzzle = Puzzle;
 
+    /// A layout and digits. When layouts keep failing, runs one cell
+    /// longer are allowed, up to [`MAX_RUN`].
     fn build(&self, rng: &mut SplitMix64, budget: &Budget) -> Result<Candidate, BudgetExceeded> {
+        let mut failures = 0;
         loop {
-            let Some(white) = self.layout(rng, budget)? else {
+            let longest = (self.longest + (failures / LAYOUT_TRIES) as usize).min(MAX_RUN);
+            let Some(white) = self.layout(rng, budget, longest)? else {
+                failures += 1;
                 continue;
             };
             if let Some(digits) = self.fill(&white, rng, budget)? {
@@ -496,23 +546,52 @@ impl Construct for Builder {
         Puzzle::new(self.shape, cells).expect("generated layouts are valid")
     }
 
-    /// Above Medium, a puzzle that Medium techniques do not solve is tried
-    /// with the chains only if it has one solution; otherwise it is stuck
-    /// with the cells Medium techniques left.
+    /// Techniques up to Medium (or the cap) run first. If they do not
+    /// solve the puzzle, the brute-force solver looks for solutions within
+    /// the candidates they left, up to [`SEARCH_NODES`] cells tried. With
+    /// several solutions the puzzle is stuck with the cells the techniques
+    /// left, those varying between the solutions listed first. A unique
+    /// puzzle is tried with the chains when the cap allows.
     fn screen(
         &self,
         p: &Puzzle,
         cap: Difficulty,
         budget: &Budget,
     ) -> Result<Outcome, BudgetExceeded> {
-        if cap <= Difficulty::Medium {
+        let grid = crate::human::Grid::new(p);
+        let start = crate::human::initial_masks(&grid);
+        let low = cap.min(Difficulty::Medium);
+        let trace =
+            crate::human::analyze(&grid, start, vec![false; grid.whites.len()], budget, low)?;
+        let outcome = trace.outcome();
+        if trace.solved {
+            return Ok(outcome);
+        }
+        let Outcome::Stuck(mut vars) = outcome else {
+            return Ok(outcome);
+        };
+        let (found, complete) =
+            crate::board::solutions_within(p, &trace.masks, AMBIGUITY, SEARCH_NODES, budget)?;
+        if found.len() > 1 || (complete && found.is_empty()) {
+            let varies = |v: usize| {
+                let i = grid.whites[v];
+                found.iter().any(|a| a.marks()[i] != found[0].marks()[i])
+            };
+            let mut varying: Vec<usize> = vars.iter().copied().filter(|&v| varies(v)).collect();
+            vars.retain(|v| !varying.contains(v));
+            let count = varying.len();
+            varying.extend(vars);
+            let mut ambiguous = self.ambiguous.borrow_mut();
+            if ambiguous.len() == 2 {
+                ambiguous.remove(0);
+            }
+            ambiguous.push((varying.clone(), count));
+            return Ok(Outcome::Stuck(varying));
+        }
+        if cap > low && complete {
             return screen(p, budget, cap);
         }
-        let medium = screen(p, budget, Difficulty::Medium)?;
-        if matches!(medium, Outcome::Solved(..)) || !crate::solve(p, budget)?.is_unique() {
-            return Ok(medium);
-        }
-        screen(p, budget, cap)
+        Ok(Outcome::Stuck(vars))
     }
 
     /// Change a digit: of a cell left unresolved, or of any cell when the
@@ -544,7 +623,22 @@ impl Construct for Builder {
         }
         let whites: Vec<usize> = (0..c.white.len()).filter(|&i| c.white[i]).collect();
         let pool: Vec<usize> = match outcome {
-            Outcome::Stuck(vars) if !vars.is_empty() => vars.iter().map(|&v| whites[v]).collect(),
+            Outcome::Stuck(vars) if !vars.is_empty() => {
+                // Cells varying between solutions come first; every other
+                // change is to one of those.
+                let varying = self
+                    .ambiguous
+                    .borrow()
+                    .iter()
+                    .find(|(v, _)| v == vars)
+                    .map_or(vars.len(), |&(_, count)| count);
+                let take = if rng.below(2) == 0 {
+                    varying
+                } else {
+                    vars.len()
+                };
+                vars[..take].iter().map(|&v| whites[v]).collect()
+            }
             _ => whites,
         };
         if pool.is_empty() {
@@ -579,9 +673,6 @@ impl Construct for Builder {
                 }
             }
             let base = next.as_ref().unwrap_or(c);
-            if !base.white[i] {
-                continue;
-            }
             if let Some(changed) = self.alter(base, i, stuck, rng) {
                 next = Some(changed);
                 done += 1;
@@ -606,7 +697,7 @@ impl Construct for Builder {
     }
 }
 
-/// Generate with the shared search loop. A random layout of blocks gets
+/// Generate with the shared search loop. A symmetric layout of blocks gets
 /// random digits; while the techniques up to the requested level cannot
 /// solve the puzzle, digits of unresolved cells change, and while it is
 /// too easy, digits of any cells change. The returned puzzle is rated in
@@ -634,6 +725,7 @@ pub fn generate(options: &GenerateOptions, budget: &Budget) -> Result<Generated,
         longest: LONGEST[level],
         nb: neighbours(shape.rows(), shape.cols()),
         ways,
+        ambiguous: RefCell::new(Vec::new()),
     };
     match search(
         &builder,

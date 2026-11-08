@@ -1,8 +1,8 @@
 //! The exact solver and the checker. Independent of the human techniques:
 //! the solver tracks each run's used digits, remaining sum and open cells,
-//! and allows a digit in a cell only if both its runs can still reach
-//! their sums with different digits.
-use crate::{Answer, BudgetExceeded, Mark, Puzzle};
+//! keeps for every empty cell the digits both its runs can still take, and
+//! branches on a cell with the fewest.
+use crate::{Answer, BudgetExceeded, Mark, Puzzle, Shape};
 use pencil_puzzles_core::{Budget, ParseError, Place, Solutions, Violation};
 
 /// Every digit, as bits: bit `d - 1` stands for digit `d`.
@@ -38,13 +38,18 @@ impl Reach {
 struct Search<'a> {
     reach: Reach,
     budget: &'a Budget,
+    shape: Shape,
     whites: Vec<usize>,
     /// For each cell, the indices of its two runs.
     runs_of: Vec<[usize; 2]>,
+    /// The cells of each run.
+    runs: Vec<Vec<usize>>,
     digit: Vec<u8>,
     used: Vec<u16>,
     left: Vec<u32>,
     open: Vec<usize>,
+    /// The digits each empty cell can still take.
+    allowed: Vec<u16>,
 }
 
 enum Choice {
@@ -62,20 +67,40 @@ impl Search<'_> {
                 runs_of[i][usize::from(run.down)] = k;
             }
         }
-        Search {
+        let mut s = Search {
             reach: Reach::new(),
             budget,
+            shape: p.shape(),
             whites: (0..n).filter(|&i| runs_of[i][0] != usize::MAX).collect(),
             runs_of,
+            runs: p.runs().iter().map(|r| r.cells.clone()).collect(),
             digit: vec![0; n],
             used: vec![0; p.runs().len()],
             left: p.runs().iter().map(|r| r.sum).collect(),
             open: p.runs().iter().map(|r| r.cells.len()).collect(),
+            allowed: vec![0; n],
+        };
+        for &x in &s.whites {
+            s.allowed[x] = s.compute(x);
+        }
+        s
+    }
+
+    /// Recompute the digits allowed in the empty cells of `x`'s two runs.
+    fn refresh(&mut self, x: usize) {
+        for r in self.runs_of[x] {
+            for k in 0..self.runs[r].len() {
+                let y = self.runs[r][k];
+                if self.digit[y] == 0 {
+                    self.allowed[y] = self.compute(y);
+                }
+            }
         }
     }
 
-    /// Digits allowed in the empty cell `x`.
-    fn allowed(&self, x: usize) -> u16 {
+    /// Digits allowed in the empty cell `x`: both its runs can still reach
+    /// their sums with different digits.
+    fn compute(&self, x: usize) -> u16 {
         let [a, b] = self.runs_of[x];
         let mut out = 0;
         let mut rest = DIGITS & !(self.used[a] | self.used[b]);
@@ -105,6 +130,7 @@ impl Search<'_> {
             self.open[r] -= 1;
         }
         self.digit[x] = d;
+        self.refresh(x);
     }
 
     fn clear(&mut self, x: usize) {
@@ -115,6 +141,7 @@ impl Search<'_> {
             self.open[r] += 1;
         }
         self.digit[x] = 0;
+        self.refresh(x);
     }
 
     /// The empty cell with the fewest allowed digits, lowest first.
@@ -124,7 +151,7 @@ impl Search<'_> {
             if self.digit[x] != 0 {
                 continue;
             }
-            let allowed = self.allowed(x);
+            let allowed = self.allowed[x];
             if allowed == 0 {
                 return Choice::Dead;
             }
@@ -135,9 +162,9 @@ impl Search<'_> {
         best.map_or(Choice::Solved, |(_, x, allowed)| Choice::Cell(x, allowed))
     }
 
-    fn answer(&self, p: &Puzzle) -> Answer {
-        let cols = p.shape().cols();
-        let mut a = Answer::new(p.shape());
+    fn answer(&self) -> Answer {
+        let cols = self.shape.cols();
+        let mut a = Answer::new(self.shape);
         for &x in &self.whites {
             a.set(x / cols, x % cols, Mark::Digit(self.digit[x]));
         }
@@ -152,24 +179,40 @@ fn run(
     budget: &Budget,
     visit: &mut dyn FnMut(Answer),
 ) -> Result<usize, BudgetExceeded> {
-    let mut s = Search::new(p, budget);
+    search(Search::new(p, budget), limit, usize::MAX, visit).map(|(found, _)| found)
+}
+
+/// Visit up to `limit` solutions of a search, depth first with an explicit
+/// stack, giving up after `max_nodes` cells tried. Returns the number found
+/// and whether the search finished.
+fn search(
+    mut s: Search<'_>,
+    limit: usize,
+    max_nodes: usize,
+    visit: &mut dyn FnMut(Answer),
+) -> Result<(usize, bool), BudgetExceeded> {
     let mut found = 0;
+    let mut nodes = 0;
     // Each frame: a cell and the digits not tried there yet.
     let mut stack: Vec<(usize, u16)> = Vec::new();
     if limit == 0 {
-        return Ok(0);
+        return Ok((0, true));
     }
     loop {
         if !s.budget.spend(s.whites.len() as u64 + 1) {
             return Err(BudgetExceeded);
         }
+        nodes += 1;
+        if nodes > max_nodes {
+            return Ok((found, false));
+        }
         match s.choose() {
             Choice::Dead => {}
             Choice::Solved => {
                 found += 1;
-                visit(s.answer(p));
+                visit(s.answer());
                 if found >= limit {
-                    return Ok(found);
+                    return Ok((found, true));
                 }
             }
             Choice::Cell(x, allowed) => stack.push((x, allowed)),
@@ -177,7 +220,7 @@ fn run(
         // Try the next digit of the deepest cell that has one left.
         loop {
             let Some(&(x, rest)) = stack.last() else {
-                return Ok(found);
+                return Ok((found, true));
             };
             if s.digit[x] != 0 {
                 s.clear(x);
@@ -203,6 +246,25 @@ pub fn solve(p: &Puzzle, budget: &Budget) -> Result<Solutions<Answer>, BudgetExc
         1 => Solutions::Unique(answers.remove(0)),
         _ => Solutions::Multiple(answers.remove(0), answers.remove(0)),
     })
+}
+
+/// Up to `limit` solutions within the candidates `masks` (one per white
+/// cell in row-major order), in search order, giving up after `max_nodes`
+/// cells tried. The second value is whether the search finished.
+pub(crate) fn solutions_within(
+    p: &Puzzle,
+    masks: &[u16],
+    limit: usize,
+    max_nodes: usize,
+    budget: &Budget,
+) -> Result<(Vec<Answer>, bool), BudgetExceeded> {
+    let mut s = Search::new(p, budget);
+    for (v, &x) in s.whites.clone().iter().enumerate() {
+        s.allowed[x] &= masks[v];
+    }
+    let mut answers = Vec::new();
+    let (_, complete) = search(s, limit, max_nodes, &mut |a| answers.push(a))?;
+    Ok((answers, complete))
 }
 
 /// Count solutions, stopping at `limit`.

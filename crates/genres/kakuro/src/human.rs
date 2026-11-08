@@ -159,7 +159,12 @@ fn digit_used(c: &Candidates<'_, Grid>) -> Result<Vec<HumanStep>, BudgetExceeded
             continue;
         }
         let changes = grid.mates(x).map(|j| (j, !m)).collect();
-        steps.extend(c.step("digit_used", vec![x], grid.runs_of[x].to_vec(), changes));
+        if let Some(step) = c.step("digit_used", vec![x], grid.runs_of[x].to_vec(), changes) {
+            steps.push(step);
+            if c.first_only {
+                break;
+            }
+        }
     }
     Ok(steps)
 }
@@ -178,6 +183,9 @@ fn single(c: &Candidates<'_, Grid>) -> Result<Vec<HumanStep>, BudgetExceeded> {
         if let Some(mut step) = c.step("single", vec![x], grid.runs_of[x].to_vec(), changes) {
             step.places = Some((x, m));
             steps.push(step);
+            if c.first_only {
+                break;
+            }
         }
     }
     Ok(steps)
@@ -205,7 +213,12 @@ fn sum_combinations(c: &Candidates<'_, Grid>) -> Result<Vec<HumanStep>, BudgetEx
             .filter(|&&v| !fixed(c.masks[v]))
             .map(|&v| (v, union & !used))
             .collect();
-        steps.extend(c.step("sum_combinations", support, vec![k], changes));
+        if let Some(step) = c.step("sum_combinations", support, vec![k], changes) {
+            steps.push(step);
+            if c.first_only {
+                break;
+            }
+        }
     }
     Ok(steps)
 }
@@ -233,6 +246,9 @@ fn only_cell(c: &Candidates<'_, Grid>) -> Result<Vec<HumanStep>, BudgetExceeded>
             if let Some(mut step) = c.step("only_cell", vars.clone(), vec![k], vec![(x, bit)]) {
                 step.places = Some((x, bit));
                 steps.push(step);
+                if c.first_only {
+                    return Ok(steps);
+                }
             }
         }
     }
@@ -246,6 +262,8 @@ fn combination_fit(c: &Candidates<'_, Grid>) -> Result<Vec<HumanStep>, BudgetExc
     let grid = c.context;
     let mut steps = Vec::new();
     let (mut seen, mut good, mut stamp) = (vec![0u32; 512], vec![0u32; 512], 0u32);
+    // The digit sets the first i cells of a run can take, reused per run.
+    let mut lists: Vec<Vec<u16>> = vec![Vec::new(); crate::MAX_RUN + 1];
     for k in 0..grid.runs.len() {
         c.charge()?;
         let vars = &grid.runs[k];
@@ -258,14 +276,15 @@ fn combination_fit(c: &Candidates<'_, Grid>) -> Result<Vec<HumanStep>, BudgetExc
         // of different sizes never collide, so one mark per run tells
         // which sets were seen, and another which can still be finished.
         stamp += 1;
-        let mut lists: Vec<Vec<u16>> = vec![vec![0]];
-        let mut work = 0u64;
+        lists[0].clear();
+        lists[0].push(0);
         for i in 0..len {
             let m = c.masks[vars[i]];
-            let mut next: Vec<u16> = Vec::new();
-            for &set in &lists[i] {
+            let (done, rest) = lists.split_at_mut(i + 1);
+            let next = &mut rest[0];
+            next.clear();
+            for &set in &done[i] {
                 for bit in bits(m & !set) {
-                    work += 1;
                     let t = usize::from(set | bit);
                     if grid.total[t] <= sum && seen[t] != stamp {
                         seen[t] = stamp;
@@ -273,7 +292,6 @@ fn combination_fit(c: &Candidates<'_, Grid>) -> Result<Vec<HumanStep>, BudgetExc
                     }
                 }
             }
-            lists.push(next);
         }
         // Back from the full sets with the right sum: which sets can still
         // be finished, and with which digit in each cell.
@@ -282,12 +300,11 @@ fn combination_fit(c: &Candidates<'_, Grid>) -> Result<Vec<HumanStep>, BudgetExc
                 good[usize::from(set)] = stamp;
             }
         }
-        let mut keep = vec![0u16; len];
+        let mut keep = [0u16; crate::MAX_RUN];
         for i in (0..len).rev() {
             let m = c.masks[vars[i]];
             for &set in &lists[i] {
                 for bit in bits(m & !set) {
-                    work += 1;
                     if good[usize::from(set | bit)] == stamp {
                         good[usize::from(set)] = stamp;
                         keep[i] |= bit;
@@ -295,11 +312,13 @@ fn combination_fit(c: &Candidates<'_, Grid>) -> Result<Vec<HumanStep>, BudgetExc
                 }
             }
         }
-        if !c.budget.spend(work) {
-            return Err(BudgetExceeded);
-        }
         let changes = vars.iter().copied().zip(keep).collect();
-        steps.extend(c.step("combination_fit", vars.clone(), vec![k], changes));
+        if let Some(step) = c.step("combination_fit", vars.clone(), vec![k], changes) {
+            steps.push(step);
+            if c.first_only {
+                break;
+            }
+        }
     }
     Ok(steps)
 }
@@ -486,6 +505,43 @@ mod tests {
             groups.entry(p.id()).or_insert((p, Vec::new())).1.push(f);
         }
         groups.into_values().collect()
+    }
+
+    /// Screening stops each technique at its first step; the applied steps
+    /// are the same as when every step is listed for the metrics.
+    #[test]
+    fn screening_applies_the_same_steps_as_rating() {
+        for shape in ["6x6", "8x8"] {
+            for level in [Easy, Medium, Hard, Expert] {
+                for seed in 0..3 {
+                    let mut o = crate::GenerateOptions::new(shape.parse().unwrap(), seed);
+                    o.difficulty = Some(level);
+                    let p = crate::generate(&o, &Budget::new(100_000_000))
+                        .unwrap()
+                        .puzzle;
+                    let grid = Grid::new(&p);
+                    for cap in [Easy, Medium, Hard, Expert] {
+                        let budget = Budget::unlimited();
+                        let run = |metrics| {
+                            PROFILE
+                                .analyze(
+                                    &grid,
+                                    initial_masks(&grid),
+                                    vec![false; grid.whites.len()],
+                                    &budget,
+                                    cap,
+                                    metrics,
+                                )
+                                .unwrap()
+                        };
+                        let (full, quick) = (run(true), run(false));
+                        assert_eq!(full.steps, quick.steps, "{} {cap:?}", p.id());
+                        assert_eq!(full.masks, quick.masks);
+                        assert_eq!(full.solved, quick.solved);
+                    }
+                }
+            }
+        }
     }
 
     /// `broken` is exact on complete grids: false for every filling of

@@ -19,21 +19,21 @@ every run has its sum. The first row and column hold only blocks.
 
 ## Example
 
-Generator version 1, shape `5x5`, easy, seed `0` produces
-`kakuro:5x5:FbCcCbF/8.19.4.3.17.9`:
+Generator version 2, shape `5x5`, easy, seed `0` produces
+`kakuro:5x5:HbBcAcBbB/7.5.8.3.3.6.8.6`:
 
 ```text
 Puzzle                     Solution
-  #  8/ 19/   #   #        # # # # #
- /4   .   .  3/   #        # 1 3 # #
-/17   .   .   .   #        # 7 9 1 #
-  #  /9   .   .   #        # # 7 2 #
-  #   #   #   #   #        # # # # #
+  #   #   #  7/  5/        # # # # #
+  #   # 8/3   .   .        # # # 1 2
+  # 3/6   .   .   .        # # 1 2 3
+ /8   .   .   .   #        # 1 3 4 #
+ /6   .   .   #   #        # 2 4 # #
 ```
 
-`8/` is a down sum of 8 and `/4` an across sum of 4. Two cells adding up to
-4 hold 1 and 3, and two adding up to 3 hold 1 and 2; the other runs follow
-from there. `corpus/kakuro/` has puzzles from easy to expert, with
+`7/` is a down sum of 7 and `/3` an across sum of 3. Two cells adding up to
+3 hold 1 and 2, across in the second row and down below `3/`; the other
+runs follow from there. `corpus/kakuro/` has puzzles from easy to expert, with
 solutions.
 
 ## Variables
@@ -93,29 +93,35 @@ grid, including the first row and column; a grid with fewer than 3 rows or
 columns holds only blocks. Sums go from 1 to 45. Sums that no
 digits can reach still parse and have no solution.
 
-Generator version 1 starts from white cells everywhere below the first row
-and right of the first column. It makes cells blocks in a seeded order until
-a share of the inner cells set by the level is blocked (30% easy, 25%
-medium, 22% hard, 20% expert, 25% for any level). A new block also blocks
-any white cell left in a run of one cell; a block that would change more
-than 3 cells or split the white cells is skipped. Runs longer than a level's
-limit (5 cells up to medium, 6 at hard and any level, 7 at expert) are then
-broken the same way, and the layout starts over if one cannot be. Digits are
-filled in row-major order by backtracking, each run preferring low or high
-digits at random, more strictly at lower levels; the layout starts over
-after 20,000 steps.
+Generator version 2 starts from white cells everywhere below the first row
+and right of the first column and makes cells blocks in pairs that are
+symmetric under a half turn of that inner area. First every run longer than
+the level's limit (4 cells up to medium and for any level, 5 at hard and
+expert) is broken by a block inside it; then random cells become blocks
+until the level's share of the inner cells is blocked (32% easy, 30% medium
+and any level, 28% hard, 26% expert). A new block also blocks any white
+cell left in a run of one cell; a placement is skipped if it would change
+more than 6 cells, leave an inner row or column without white cells, or
+split the white cells, and one that changes only the pair is preferred. If
+no block can break a long run, the layout starts over; after 256 failed
+layouts, runs one cell longer are allowed. Digits are filled in row-major
+order by backtracking, each run preferring low or high digits at random,
+more strictly at lower levels, never completing a 2x2 block of white cells
+whose digits could be swapped; the layout starts over after 20,000 steps.
 
-The sums follow from the digits. While the techniques up to the requested
-level leave cells unresolved, unresolved cells change: a cell gets a digit
-its runs do not have, chosen to leave its runs the fewest combinations, or
-swaps digits with another cell of one of its runs, or, one time in four,
-becomes a block while the blocks stay within 20 points of the level's
-share. One more cell changes for every 16 unresolved cells. A puzzle solved
-below the requested level gets random digit changes. Above Medium, a
-puzzle that Medium techniques do not solve is tried with the contradiction
-techniques only if it has one solution. A candidate starts over after 3
-times as many changes without improvement as it has inner cells, or 8
-times as many once solved.
+The sums follow from the digits. Each candidate is screened with the
+techniques up to the requested level, at most Medium; if they do not solve
+it, the brute-force solver looks for up to 4 solutions within the
+candidates they left, trying at most 2,048 cells. While the puzzle has
+several solutions or unresolved cells, cells change: every other time one
+of the cells whose digits vary between the solutions found, otherwise any
+unresolved cell; a cell gets a digit its runs do not have, chosen to leave
+its runs the fewest combinations, or swaps digits with another cell of one
+of its runs. One more cell changes for every 16 unresolved cells. A puzzle
+solved below the requested level gets random digit changes. Above Medium,
+the contradiction techniques run only once the brute-force solver has found
+a single solution. A candidate starts over after 3 times as many changes
+without improvement as it has inner cells, or 8 times as many once solved.
 
 ## Formats
 
