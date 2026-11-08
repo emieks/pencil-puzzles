@@ -91,8 +91,8 @@ island_bounds          isolated_pair
 
 | Parameter | Part of the shape? | Limits | Default |
 | --- | --- | --- | --- |
-| rows | yes | 1-15 | 7 |
-| columns | yes | 1-15 | 7 |
+| rows | yes | 1-15 | 10 |
+| columns | yes | 1-15 | 10 |
 
 The shape is written `<rows>x<columns>`, such as `7x7`.
 

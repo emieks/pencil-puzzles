@@ -85,8 +85,8 @@ sum_combinations              combination_fit
 
 | Parameter | Part of the shape? | Limits | Default |
 | --- | --- | --- | --- |
-| rows | yes | 1-16 | 8 |
-| columns | yes | 1-16 | 8 |
+| rows | yes | 1-16 | 10 |
+| columns | yes | 1-16 | 10 |
 
 The shape is written `<rows>x<columns>`, such as `8x8`, and counts the whole
 grid, including the first row and column; a grid with fewer than 3 rows or

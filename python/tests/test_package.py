@@ -25,6 +25,16 @@ class PackageTests(unittest.TestCase):
                 self.assertEqual(g.solution.shape, shape)
                 self.assertIn(genre, pp.genres())
 
+    def test_standard_sizes_and_random_seeds(self):
+        for genre, shape in (("sudoku", (9, 9)), ("nurikabe", (10, 10)), ("kakurasu", (7, 7)),
+                             ("fillomino", (10, 10)), ("hashi", (10, 10)), ("hitori", (8, 8)),
+                             ("kakuro", (10, 10))):
+            with self.subTest(genre=genre):
+                self.assertEqual(pp.generate(genre, difficulty="easy").puzzle.shape, shape)
+        first = pp.generate("sudoku", (4, 4))
+        self.assertEqual(pp.generate("sudoku", (4, 4), seed=first.seed), first)
+        self.assertEqual(len({pp.generate("sudoku", (4, 4)).seed for _ in range(5)}), 5)
+
     def test_print_shows_the_grid(self):
         puzzle = pp.Puzzle.from_text("genre: sudoku\ngrid:\n1..4\n.4..\n..4.\n4..1")
         self.assertEqual(str(puzzle), "1 . | . 4\n. 4 | . .\n----+----\n. . | 4 .\n4 . | . 1")

@@ -25,8 +25,8 @@ print(pp.hint(g.puzzle))          # the first step a solver would take
 same = pp.Puzzle.from_id(g.puzzle.id)
 ```
 
-The same arguments and package version always give the same puzzle. To save
-or share a puzzle, use its ID. Every operation takes
+The same seed and package version always give the same puzzle. To save or
+share a puzzle, use its ID. Every operation takes
 `limits=pp.Limits(work=..., attempts=...)` and `cancel=pp.CancellationToken()`;
 running out of a limit raises an error. Cancellation can come from another
 thread, and Ctrl-C raises `KeyboardInterrupt`.

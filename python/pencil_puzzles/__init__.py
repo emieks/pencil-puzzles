@@ -10,6 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum
 import json
+import random
 from typing import Any
 
 from . import _native
@@ -338,21 +339,28 @@ def genres() -> tuple[str, ...]:
     return tuple(row["id"] for row in _native.metadata())
 
 
-def generate(genre: str, shape: tuple[int, int], *, difficulty: Difficulty | str | None = None,
-             seed: int = 0, limits: Limits = Limits(),
-             cancel: CancellationToken | None = None) -> Generated:
+def generate(genre: str, shape: tuple[int, int] | None = None, *,
+             difficulty: Difficulty | str | None = None, seed: int | None = None,
+             limits: Limits = Limits(), cancel: CancellationToken | None = None) -> Generated:
     """A puzzle with exactly one solution, at exactly `difficulty` (any level if None).
 
-    The same arguments and package version always give the same puzzle.
+    Without `shape`, the puzzle has the genre's standard size. Without `seed`, the seed is
+    random; it is kept in `Generated.seed`. The same seed and package version always give the
+    same puzzle.
     """
     if not isinstance(genre, str):
         raise TypeError("genre must be a string")
-    if not isinstance(shape, tuple) or len(shape) != 2:
-        raise TypeError("shape must be a (rows, columns) tuple")
-    rows, cols = (_integer(n, "shape", _U32) for n in shape)
+    size = None
+    if shape is not None:
+        if not isinstance(shape, tuple) or len(shape) != 2:
+            raise TypeError("shape must be a (rows, columns) tuple")
+        rows, cols = (_integer(n, "shape", _U32) for n in shape)
+        size = f"{rows}x{cols}"
+    if seed is None:
+        seed = random.getrandbits(64)
     _integer(seed, "seed", _U64)
     level = Difficulty(difficulty) if difficulty is not None else None
-    handle, data = _call(_native.generate, genre, f"{rows}x{cols}", level.value if level else None,
+    handle, data = _call(_native.generate, genre, size, level.value if level else None,
                          seed, limits.attempts, limits.work, None, cancel or CancellationToken())
     puzzle = _puzzle(handle)
     return Generated(puzzle, Solution._read(puzzle.genre, data["solution"]), Rating._read(data["rating"]),

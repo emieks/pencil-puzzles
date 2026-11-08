@@ -7,7 +7,7 @@ see [python/README.md](../../python/README.md).
 
 | Name | What it is |
 | --- | --- |
-| `generate(genre, shape, *, difficulty=None, seed=0, limits=Limits(), cancel=None)` | A puzzle with exactly one solution at the requested level (easy to expert), or any level when `difficulty` is `None`. Returns `Generated`. |
+| `generate(genre, shape=None, *, difficulty=None, seed=None, limits=Limits(), cancel=None)` | A puzzle with exactly one solution at the requested level (easy to expert), or any level when `difficulty` is `None`. Without `shape`, the genre's standard size; without `seed`, a random seed. Returns `Generated`. |
 | `solve(puzzle, ...)` | The solution; raises `NoSolutionError` or `MultipleSolutionsError` (with two `witnesses`). |
 | `rate(puzzle, ...)` | The `Rating`; raises `UnratedPuzzleError` if the supported techniques cannot finish it. |
 | `check(puzzle, answer, *, finished=False, ...)` | A list of `Violation`s; empty when the answer breaks no rule. With `finished`, unmarked cells and undrawn bridges first take the genre's finished default. |
