@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "pencil-puzzles"
-version = "0.2.0"
+version = "0.3.0"
 description = "Generate, solve, rate and check pencil puzzles such as sudoku and nurikabe, with difficulty set by the human techniques they need"
 requires-python = ">=3.10"
 license = "MIT"

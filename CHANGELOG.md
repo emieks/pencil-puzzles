@@ -5,6 +5,36 @@ and versions follow [Semantic Versioning](https://semver.org/). Changes that
 alter generated puzzles are marked **(new puzzles)**, and changes that alter
 ratings **(new ratings)**.
 
+## [0.3.0] - 2026-11-08
+
+### Added
+
+- Nurikabe: grids up to 10x10 (was 8x8).
+- Web app: per-puzzle saves with undo history across reloads, Show mistakes,
+  Show solution and Pause, difficulty next to the timer and size presets.
+- Web app: selecting several cells at once, keyboard input, kakuro
+  combinations for the selected run and easier hashi bridges.
+- Rust: `Candidates.first_only`.
+
+### Changed
+
+- Nurikabe: new generator, and solving and rating on bitboards. Generation is
+  ~463% faster on average. **(new puzzles)**
+- Nurikabe: generating without a size gives 10x10 puzzles (was 6x6).
+  **(new puzzles)**
+- Sudoku: new generator and rating on bitboards. Generation is ~1791% faster
+  on average. **(new puzzles)**
+- Kakuro: new generator with symmetric layouts that finds more puzzles at
+  12x12 and 16x16. Generation is ~11% slower on average at the sizes where
+  both versions find every puzzle. **(new puzzles)**
+- Web app: each request may use 100 million operations (was 50 million).
+- Genre summaries and rule texts read the same in the library, docs and
+  README.
+
+### Fixed
+
+- Web app: highlighting follows each genre's rules.
+
 ## [0.2.0] - 2026-11-06
 
 ### Added

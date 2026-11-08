@@ -165,35 +165,35 @@ time. Operation counts are in [`kakuro.csv`](../benchmarks/kakuro.csv).
 
 | Size | Level | Found | Median | 95th percentile | Mean attempts |
 | --- | --- | --- | --- | --- | --- |
-| 6x6 | any | 20/20 | 4.8 ms | 30 ms | 38 |
-| 6x6 | easy | 20/20 | 0.8 ms | 3.2 ms | 35 |
-| 6x6 | medium | 20/20 | 5.8 ms | 33 ms | 50 |
-| 6x6 | hard | 20/20 | 26 ms | 190 ms | 194 |
-| 6x6 | expert | 20/20 | 163 ms | 562 ms | 691 |
-| 8x8 | any | 20/20 | 16 ms | 273 ms | 80 |
-| 8x8 | easy | 20/20 | 2.6 ms | 54 ms | 73 |
-| 8x8 | medium | 20/20 | 10 ms | 102 ms | 61 |
-| 8x8 | hard | 20/20 | 67 ms | 254 ms | 144 |
-| 8x8 | expert | 20/20 | 213 ms | 1.1 s | 233 |
-| 10x10 | any | 20/20 | 72 ms | 784 ms | 105 |
-| 10x10 | easy | 20/20 | 8.7 ms | 133 ms | 147 |
-| 10x10 | medium | 20/20 | 22 ms | 414 ms | 116 |
-| 10x10 | hard | 20/20 | 222 ms | 554 ms | 154 |
-| 10x10 | expert | 20/20 | 425 ms | 1.9 s | 262 |
-| 12x12 | any | 14/20 | 469 ms | — | 95 |
-| 12x12 | easy | 20/20 | 159 ms | 1.4 s | 595 |
-| 12x12 | medium | 20/20 | 127 ms | 2.4 s | 267 |
-| 12x12 | hard | 12/20 | 1.2 s | — | 207 |
-| 12x12 | expert | 6/20 | — | — | 101 |
-| 16x16 | any | 2/20 | — | — | 39 |
-| 16x16 | easy | 15/20 | 1.9 s | — | 914 |
-| 16x16 | medium | 4/20 | — | — | 34 |
-| 16x16 | hard | 2/20 | — | — | 74 |
-| 16x16 | expert | 0/20 | — | — | — |
+| 6x6 | any | 20/20 | 12 ms | 61 ms | 96 |
+| 6x6 | easy | 20/20 | 7.0 ms | 58 ms | 134 |
+| 6x6 | medium | 20/20 | 14 ms | 54 ms | 116 |
+| 6x6 | hard | 20/20 | 39 ms | 310 ms | 391 |
+| 6x6 | expert | 20/20 | 163 ms | 1.1 s | 1115 |
+| 8x8 | any | 20/20 | 12 ms | 122 ms | 40 |
+| 8x8 | easy | 20/20 | 9.2 ms | 36 ms | 44 |
+| 8x8 | medium | 20/20 | 10 ms | 104 ms | 35 |
+| 8x8 | hard | 20/20 | 33 ms | 135 ms | 105 |
+| 8x8 | expert | 20/20 | 222 ms | 757 ms | 306 |
+| 10x10 | any | 20/20 | 18 ms | 259 ms | 41 |
+| 10x10 | easy | 20/20 | 14 ms | 158 ms | 91 |
+| 10x10 | medium | 20/20 | 23 ms | 193 ms | 47 |
+| 10x10 | hard | 20/20 | 154 ms | 780 ms | 254 |
+| 10x10 | expert | 20/20 | 377 ms | 2.8 s | 404 |
+| 12x12 | any | 20/20 | 110 ms | 1.8 s | 166 |
+| 12x12 | easy | 20/20 | 35 ms | 793 ms | 196 |
+| 12x12 | medium | 20/20 | 48 ms | 1.0 s | 116 |
+| 12x12 | hard | 20/20 | 687 ms | 3.4 s | 480 |
+| 12x12 | expert | 19/20 | 1.8 s | — | 721 |
+| 16x16 | any | 11/20 | 3.6 s | — | 192 |
+| 16x16 | easy | 12/20 | 3.0 s | — | 594 |
+| 16x16 | medium | 13/20 | 1.8 s | — | 207 |
+| 16x16 | hard | 8/20 | — | — | 213 |
+| 16x16 | expert | 5/20 | — | — | 226 |
 
-Largest practical size (B1): easy 12x12, medium 12x12, hard 10x10, expert
-10x10. Rating a corpus puzzle takes at most 23 ms. In WebAssembly
-([`web/benchmark.mjs`](../../web/benchmark.mjs), 8x8), generation took 0.91
+Largest practical size (B1): easy 12x12, medium 12x12, hard 12x12, expert
+10x10. Rating a corpus puzzle takes at most 9.5 ms. In WebAssembly
+([`web/benchmark.mjs`](../../web/benchmark.mjs), 8x8), generation took 0.87
 times the native time.
 
 ## References
