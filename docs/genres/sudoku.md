@@ -127,16 +127,16 @@ time. Operation counts are in [`sudoku.csv`](../benchmarks/sudoku.csv).
 
 | Size | Level | Found | Median | 95th percentile | Mean attempts |
 | --- | --- | --- | --- | --- | --- |
-| 9x9 | any | 20/20 | 271 ms | 324 ms | 42 |
-| 9x9 | easy | 20/20 | 185 ms | 215 ms | 42 |
-| 9x9 | medium | 20/20 | 1.2 s | 3.6 s | 307 |
-| 9x9 | hard | 20/20 | 1.0 s | 8.3 s | 304 |
-| 9x9 | expert | 20/20 | 2.8 s | 14.6 s | 493 |
+| 9x9 | any | 20/20 | 14 ms | 26 ms | 42 |
+| 9x9 | easy | 20/20 | 14 ms | 22 ms | 42 |
+| 9x9 | medium | 20/20 | 42 ms | 298 ms | 204 |
+| 9x9 | hard | 20/20 | 54 ms | 162 ms | 214 |
+| 9x9 | expert | 20/20 | 147 ms | 538 ms | 486 |
 
-Largest practical size (B1): easy 9x9; no measured size is practical for
-medium, hard or expert. Rating a corpus puzzle takes at most 22 ms. In
-WebAssembly ([`web/benchmark.mjs`](../../web/benchmark.mjs), 9x9),
-generation took 0.79 times the native time. Memory is O(N^4) for N cells.
+Largest practical size (B1): easy 9x9, medium 9x9, hard 9x9, expert 9x9.
+Rating a corpus puzzle takes at most 4.0 ms. In WebAssembly
+([`web/benchmark.mjs`](../../web/benchmark.mjs), 9x9), generation took 0.98
+times the native time. Memory is O(N^4) for N cells.
 
 ## References
 

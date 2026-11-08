@@ -1,16 +1,21 @@
 # Benchmarks
 
-Generation and rating times for every genre, measured in one run on one
-machine. Times are comparable within the run. Operation counts are
-deterministic and the same on every machine.
+Generation and rating times for every genre, measured on one machine. Times
+are comparable within a run. Operation counts are deterministic and the same
+on every machine.
 
-## This run
+## Runs
 
-- Code: pencil-puzzles 0.2.0
+| Genres | Code | Date |
+| --- | --- | --- |
+| fillomino, hashi, hitori, kakurasu | pencil-puzzles 0.2.0 | 2026-11-06 |
+| kakuro, nurikabe, sudoku | pencil-puzzles 0.3.0 | 2026-11-08 |
+
+Both runs used the same setup:
+
 - Machine: Intel Core i7-8700K, Windows 11 Pro, otherwise idle
 - Rust: rustc 1.99.1, release profile
 - WebAssembly: Node.js 24.17.0
-- Date: 2026-11-06
 
 ## Native
 
