@@ -25,6 +25,16 @@ class PackageTests(unittest.TestCase):
                 self.assertEqual(g.solution.shape, shape)
                 self.assertIn(genre, pp.genres())
 
+    def test_print_shows_the_grid(self):
+        puzzle = pp.Puzzle.from_text("genre: sudoku\ngrid:\n1..4\n.4..\n..4.\n4..1")
+        self.assertEqual(str(puzzle), "1 . | . 4\n. 4 | . .\n----+----\n. . | 4 .\n4 . | . 1")
+        for genre, shape in (("nurikabe", (3, 3)), ("kakurasu", (3, 4)), ("fillomino", (3, 4)),
+                             ("hashi", (5, 5)), ("hitori", (4, 5)), ("kakuro", (5, 6))):
+            with self.subTest(genre=genre):
+                text = str(pp.generate(genre, shape, difficulty="easy", seed=42).puzzle)
+                self.assertTrue(text.strip())
+                self.assertNotIn("genre:", text)
+
     def test_fillomino_numbers_and_two_digit_sizes(self):
         puzzle = pp.Puzzle.from_text("genre: fillomino\ngrid:\n2.\n..\n.1")
         self.assertIsInstance(puzzle, pp.FillominoPuzzle)

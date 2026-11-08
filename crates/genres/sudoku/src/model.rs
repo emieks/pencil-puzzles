@@ -403,10 +403,16 @@ impl Puzzle {
             return "the answer has the wrong shape".into();
         }
         let b = self.shape().box_size();
+        let boxes = self.shape().size / b;
+        // A box row is `b` digits joined by spaces, with a space on each side of a `|`.
+        let separator = (0..boxes)
+            .map(|i| "-".repeat(2 * b - 1 + usize::from(i > 0) + usize::from(i + 1 < boxes)))
+            .collect::<Vec<_>>()
+            .join("+");
         let mut result = Vec::new();
         for (r, row) in grid.rows().iter().enumerate() {
             if r > 0 && r % b == 0 {
-                result.push("-".repeat(self.shape().size * 2 + 2 * (b - 1) - 1));
+                result.push(separator.clone());
             }
             result.push(
                 row.as_bytes()

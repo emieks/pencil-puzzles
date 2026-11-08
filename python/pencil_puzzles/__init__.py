@@ -243,6 +243,10 @@ class Puzzle:
         """The puzzle in the shared text format."""
         return self._handle.to_text()
 
+    def __str__(self) -> str:
+        """The grid laid out for reading, as `print(puzzle)` shows it."""
+        return self._handle.render()
+
 
 @dataclass(frozen=True)
 class SudokuPuzzle(Puzzle):

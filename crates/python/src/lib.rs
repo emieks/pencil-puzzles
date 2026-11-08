@@ -236,6 +236,9 @@ where
 fn puzzle_text<G: Genre>(p: &G::Puzzle) -> String {
     G::write_record(&Record::new(p.clone()))
 }
+fn puzzle_render<G: Genre>(p: &G::Puzzle) -> String {
+    G::render(p, None)
+}
 #[pymethods]
 impl NativePuzzle {
     fn data(&self, py: Python<'_>) -> PyResult<Py<PyAny>> {
@@ -243,6 +246,9 @@ impl NativePuzzle {
     }
     fn to_text(&self) -> String {
         dispatch!(self, puzzle_text)
+    }
+    fn render(&self) -> String {
+        dispatch!(self, puzzle_render)
     }
     #[pyo3(signature=(operation, work, cancel, answer=None, finished=false))]
     fn operate(
