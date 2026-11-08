@@ -236,6 +236,9 @@ where
 fn puzzle_text<G: Genre>(p: &G::Puzzle) -> String {
     G::write_record(&Record::new(p.clone()))
 }
+fn puzzle_render<G: Genre>(p: &G::Puzzle) -> String {
+    G::render(p, None)
+}
 #[pymethods]
 impl NativePuzzle {
     fn data(&self, py: Python<'_>) -> PyResult<Py<PyAny>> {
@@ -243,6 +246,9 @@ impl NativePuzzle {
     }
     fn to_text(&self) -> String {
         dispatch!(self, puzzle_text)
+    }
+    fn render(&self) -> String {
+        dispatch!(self, puzzle_render)
     }
     #[pyo3(signature=(operation, work, cancel, answer=None, finished=false))]
     fn operate(
@@ -404,7 +410,7 @@ fn from_text(source: &str) -> PyResult<NativePuzzle> {
 }
 
 fn generate_typed<G: Genre>(
-    shape: &str,
+    shape: Option<&str>,
     difficulty: Option<Difficulty>,
     seed: u64,
     attempts: u32,
@@ -413,8 +419,12 @@ fn generate_typed<G: Genre>(
 where
     G::Answer: Serialize,
 {
-    let shape: G::Shape = shape.parse().map_err(|e| Failure::new("unsupported", e))?;
-    let params = G::params_for_shape(shape);
+    let params = match shape {
+        Some(shape) => {
+            G::params_for_shape(shape.parse().map_err(|e| Failure::new("unsupported", e))?)
+        }
+        None => G::Params::default(),
+    };
     let g = G::generate(&params, difficulty, seed, attempts, budget).map_err(|e| error(&e))?;
     let value = json!({"solution":g.record.solution, "rating":g.rating,
         "attempts":g.attempts, "work":budget.spent(), "generator_version":G::metadata().generator_version});
@@ -426,7 +436,7 @@ where
 fn generate(
     py: Python<'_>,
     genre: String,
-    shape: String,
+    shape: Option<String>,
     difficulty: Option<String>,
     seed: u64,
     attempts: u32,
@@ -450,7 +460,8 @@ fn generate(
         let budget = Budget::with_cancellation(work, flag);
         macro_rules! go {
             ($g:ty,$variant:path) => {{
-                let (p, v) = generate_typed::<$g>(&shape, level, seed, attempts, &budget)?;
+                let (p, v) =
+                    generate_typed::<$g>(shape.as_deref(), level, seed, attempts, &budget)?;
                 Ok(($variant(p), v))
             }};
         }

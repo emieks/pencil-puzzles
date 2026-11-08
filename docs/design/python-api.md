@@ -7,13 +7,13 @@ see [python/README.md](../../python/README.md).
 
 | Name | What it is |
 | --- | --- |
-| `generate(genre, shape, *, difficulty=None, seed=0, limits=Limits(), cancel=None)` | A puzzle with exactly one solution at the requested level (easy to expert), or any level when `difficulty` is `None`. Returns `Generated`. |
+| `generate(genre, shape=None, *, difficulty=None, seed=None, limits=Limits(), cancel=None)` | A puzzle with exactly one solution at the requested level (easy to expert), or any level when `difficulty` is `None`. Without `shape`, the genre's standard size; without `seed`, a random seed. Returns `Generated`. |
 | `solve(puzzle, ...)` | The solution; raises `NoSolutionError` or `MultipleSolutionsError` (with two `witnesses`). |
 | `rate(puzzle, ...)` | The `Rating`; raises `UnratedPuzzleError` if the supported techniques cannot finish it. |
 | `check(puzzle, answer, *, finished=False, ...)` | A list of `Violation`s; empty when the answer breaks no rule. With `finished`, unmarked cells and undrawn bridges first take the genre's finished default. |
 | `hint(puzzle, answer=None, ...)` | The next `Step` after routine bookkeeping, or `None` when solved. |
 | `genres()` | The genre ids. |
-| `Puzzle` (`SudokuPuzzle`, `NurikabePuzzle`, `KakurasuPuzzle`, `FillominoPuzzle`, `HashiPuzzle`, `HitoriPuzzle`, `KakuroPuzzle`) | Immutable clues; `id`, `genre`, `shape`, `to_text()`, `Puzzle.from_id()`, `Puzzle.from_text()`. `KakuroPuzzle.cells` has `None` for a white cell and `(down, across)` for a block, 0 for a missing sum. |
+| `Puzzle` (`SudokuPuzzle`, `NurikabePuzzle`, `KakurasuPuzzle`, `FillominoPuzzle`, `HashiPuzzle`, `HitoriPuzzle`, `KakuroPuzzle`) | Immutable clues; `clues`, `id`, `genre`, `shape`, `to_text()`, `Puzzle.from_id()`, `Puzzle.from_text()`, and `str()` for a readable grid. `KakuroPuzzle.clues` has `None` for a white cell and `(down, across)` for a block, 0 for a missing sum. `KakurasuPuzzle.clues` is a `KakurasuClues` with `rows` and `cols`. The old names `givens`, `numbers`, `cells`, `row_clues` and `col_clues` are deprecated. |
 | `Solution` | `genre` and `cells`: numbers for sudoku, fillomino and kakuro (0 unmarked, `None` for kakuro blocks), each cell's text for hashi (`"."`, an island number, `"-"`, `"="`, `"\|"`, `"H"`), `Mark` values otherwise. Also used for partial answers. |
 | `Generated` | `puzzle`, `solution`, `rating`, `seed`, `generator_version`, `attempts`. |
 | `Rating` | `level`, `techniques`, `steps`, `score` (unstable; see [difficulty.md](../difficulty.md)), `rater_version`. |

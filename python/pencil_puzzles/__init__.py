@@ -10,14 +10,16 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum
 import json
-from typing import Any
+import random
+from typing import Any, NamedTuple
+import warnings
 
 from . import _native
 
 __version__ = "0.3.0"
 __all__ = [
     "AttemptsExhaustedError", "BudgetExceededError", "CancellationToken", "CancelledError",
-    "Difficulty", "FillominoPuzzle", "Generated", "HashiPuzzle", "HitoriPuzzle", "KakurasuPuzzle", "KakuroPuzzle", "Limits", "Mark",
+    "Difficulty", "FillominoPuzzle", "Generated", "HashiPuzzle", "HitoriPuzzle", "KakurasuClues", "KakurasuPuzzle", "KakuroPuzzle", "Limits", "Mark",
     "MultipleSolutionsError", "NoSolutionError", "NurikabePuzzle", "ParseError",
     "PencilPuzzlesError", "Puzzle", "Rating",
     "Solution", "Step", "SudokuPuzzle", "UnratedPuzzleError", "UnsupportedRequestError",
@@ -243,10 +245,24 @@ class Puzzle:
         """The puzzle in the shared text format."""
         return self._handle.to_text()
 
+    def __str__(self) -> str:
+        """The grid laid out for reading, as `print(puzzle)` shows it."""
+        return self._handle.render()
+
+
+def _alias(old: str, get: Any) -> property:
+    """A deprecated name for part of `clues`."""
+    def read(self: Any) -> Any:
+        warnings.warn(f"{old} is deprecated; use clues", DeprecationWarning, stacklevel=2)
+        return get(self)
+    return property(read, doc="Deprecated; use `clues`.")
+
 
 @dataclass(frozen=True)
 class SudokuPuzzle(Puzzle):
-    givens: tuple[tuple[int, ...], ...]
+    clues: tuple[tuple[int, ...], ...]
+    """Digits, 0 for empty cells."""
+    givens = _alias("givens", lambda p: p.clues)
 
 
 @dataclass(frozen=True)
@@ -267,20 +283,29 @@ class HashiPuzzle(Puzzle):
 
 @dataclass(frozen=True)
 class HitoriPuzzle(Puzzle):
-    numbers: tuple[tuple[int, ...], ...]
+    clues: tuple[tuple[int, ...], ...]
+    numbers = _alias("numbers", lambda p: p.clues)
 
 
 @dataclass(frozen=True)
 class KakuroPuzzle(Puzzle):
+    clues: tuple[tuple[tuple[int, int] | None, ...], ...]
     """Per cell: None for a white cell, (down, across) sums for a block, 0 for
     a missing sum."""
-    cells: tuple[tuple[tuple[int, int] | None, ...], ...]
+    cells = _alias("cells", lambda p: p.clues)
+
+
+class KakurasuClues(NamedTuple):
+    """Kakurasu clues: one sum per row and one per column."""
+    rows: tuple[int, ...]
+    cols: tuple[int, ...]
 
 
 @dataclass(frozen=True)
 class KakurasuPuzzle(Puzzle):
-    row_clues: tuple[int, ...]
-    col_clues: tuple[int, ...]
+    clues: KakurasuClues
+    row_clues = _alias("row_clues", lambda p: p.clues.rows)
+    col_clues = _alias("col_clues", lambda p: p.clues.cols)
 
 
 def _tokens(rows: list[str], row: str) -> list[str]:
@@ -315,7 +340,7 @@ def _puzzle(handle: Any) -> Puzzle:
             down, _, across = token.partition("/")
             return (int(down or 0), int(across or 0))
         return KakuroPuzzle(*common, tuple(tuple(cell(t) for t in _tokens(rows, row)) for row in rows))
-    return KakurasuPuzzle(*common, tuple(clues["row_clues"]), tuple(clues["col_clues"]))
+    return KakurasuPuzzle(*common, KakurasuClues(tuple(clues["row_clues"]), tuple(clues["col_clues"])))
 
 
 @dataclass(frozen=True)
@@ -334,21 +359,28 @@ def genres() -> tuple[str, ...]:
     return tuple(row["id"] for row in _native.metadata())
 
 
-def generate(genre: str, shape: tuple[int, int], *, difficulty: Difficulty | str | None = None,
-             seed: int = 0, limits: Limits = Limits(),
-             cancel: CancellationToken | None = None) -> Generated:
+def generate(genre: str, shape: tuple[int, int] | None = None, *,
+             difficulty: Difficulty | str | None = None, seed: int | None = None,
+             limits: Limits = Limits(), cancel: CancellationToken | None = None) -> Generated:
     """A puzzle with exactly one solution, at exactly `difficulty` (any level if None).
 
-    The same arguments and package version always give the same puzzle.
+    Without `shape`, the puzzle has the genre's standard size. Without `seed`, the seed is
+    random; it is kept in `Generated.seed`. The same seed and package version always give the
+    same puzzle.
     """
     if not isinstance(genre, str):
         raise TypeError("genre must be a string")
-    if not isinstance(shape, tuple) or len(shape) != 2:
-        raise TypeError("shape must be a (rows, columns) tuple")
-    rows, cols = (_integer(n, "shape", _U32) for n in shape)
+    size = None
+    if shape is not None:
+        if not isinstance(shape, tuple) or len(shape) != 2:
+            raise TypeError("shape must be a (rows, columns) tuple")
+        rows, cols = (_integer(n, "shape", _U32) for n in shape)
+        size = f"{rows}x{cols}"
+    if seed is None:
+        seed = random.getrandbits(64)
     _integer(seed, "seed", _U64)
     level = Difficulty(difficulty) if difficulty is not None else None
-    handle, data = _call(_native.generate, genre, f"{rows}x{cols}", level.value if level else None,
+    handle, data = _call(_native.generate, genre, size, level.value if level else None,
                          seed, limits.attempts, limits.work, None, cancel or CancellationToken())
     puzzle = _puzzle(handle)
     return Generated(puzzle, Solution._read(puzzle.genre, data["solution"]), Rating._read(data["rating"]),

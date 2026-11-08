@@ -66,8 +66,8 @@ Shorter contradiction chains are tried first.
 
 | Parameter | Part of the shape? | Limits | Default |
 | --- | --- | --- | --- |
-| rows | yes | 1-32 | 6 |
-| columns | yes | 1-32 | 6 |
+| rows | yes | 1-32 | 7 |
+| columns | yes | 1-32 | 7 |
 
 The shape is written `<rows>x<columns>`, such as `5x7`.
 

@@ -58,10 +58,10 @@ impl Shape {
 }
 
 impl Default for Shape {
-    /// 8×8: a 7×7 area of white cells and blocks inside the first row and
+    /// 10×10: a 9×9 area of white cells and blocks inside the first row and
     /// column.
     fn default() -> Self {
-        Self { rows: 8, cols: 8 }
+        Self { rows: 10, cols: 10 }
     }
 }
 

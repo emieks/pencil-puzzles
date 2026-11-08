@@ -14,7 +14,7 @@ pip install pencil-puzzles
 import pencil_puzzles as pp
 
 g = pp.generate("sudoku", (9, 9), difficulty="medium", seed=42)
-print(g.puzzle.givens)
+print(g.puzzle.clues)
 print(g.rating.level, g.rating.techniques)
 
 assert pp.solve(g.puzzle) == g.solution
@@ -25,8 +25,8 @@ print(pp.hint(g.puzzle))          # the first step a solver would take
 same = pp.Puzzle.from_id(g.puzzle.id)
 ```
 
-The same arguments and package version always give the same puzzle. To save
-or share a puzzle, use its ID. Every operation takes
+The same seed and package version always give the same puzzle. To save or
+share a puzzle, use its ID. Every operation takes
 `limits=pp.Limits(work=..., attempts=...)` and `cancel=pp.CancellationToken()`;
 running out of a limit raises an error. Cancellation can come from another
 thread, and Ctrl-C raises `KeyboardInterrupt`.

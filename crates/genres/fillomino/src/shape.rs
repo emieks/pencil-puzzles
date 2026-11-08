@@ -53,9 +53,9 @@ impl Shape {
 }
 
 impl Default for Shape {
-    /// 6×6, the largest size practical at every level.
+    /// 10×10.
     fn default() -> Self {
-        Self { rows: 6, cols: 6 }
+        Self { rows: 10, cols: 10 }
     }
 }
 

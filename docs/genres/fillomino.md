@@ -94,8 +94,8 @@ too_big            only_exit
 
 | Parameter | Part of the shape? | Limits | Default |
 | --- | --- | --- | --- |
-| rows | yes | 1-10 | 6 |
-| columns | yes | 1-10 | 6 |
+| rows | yes | 1-10 | 10 |
+| columns | yes | 1-10 | 10 |
 
 The shape is written `<rows>x<columns>`, such as `6x6`. Clues go from 1 to the number
 of cells. Contradictory clues still parse and have no solution.
