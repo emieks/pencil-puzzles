@@ -45,6 +45,20 @@ class PackageTests(unittest.TestCase):
                 self.assertTrue(text.strip())
                 self.assertNotIn("genre:", text)
 
+    def test_clues_and_deprecated_names(self):
+        sudoku = pp.Puzzle.from_text("genre: sudoku\ngrid:\n1..4\n.4..\n..4.\n4..1")
+        self.assertEqual(sudoku.clues[0], (1, 0, 0, 4))
+        kakurasu = pp.Puzzle.from_id("kakurasu:2x2:1.2/1.2")
+        self.assertEqual(kakurasu.clues, pp.KakurasuClues((1, 2), (1, 2)))
+        self.assertEqual(kakurasu.clues.rows, (1, 2))
+        hitori = pp.Puzzle.from_text("genre: hitori\ngrid:\n11\n12")
+        kakuro = pp.Puzzle.from_text("genre: kakuro\ngrid:\n# 4/ 6/\n/3 . .\n/7 . .")
+        for puzzle, old, value in ((sudoku, "givens", sudoku.clues), (hitori, "numbers", hitori.clues),
+                                   (kakuro, "cells", kakuro.clues),
+                                   (kakurasu, "row_clues", (1, 2)), (kakurasu, "col_clues", (1, 2))):
+            with self.subTest(old=old), self.assertWarns(DeprecationWarning):
+                self.assertEqual(getattr(puzzle, old), value)
+
     def test_fillomino_numbers_and_two_digit_sizes(self):
         puzzle = pp.Puzzle.from_text("genre: fillomino\ngrid:\n2.\n..\n.1")
         self.assertIsInstance(puzzle, pp.FillominoPuzzle)
@@ -80,19 +94,19 @@ class PackageTests(unittest.TestCase):
     def test_hitori_numbers_and_marks(self):
         puzzle = pp.Puzzle.from_text("genre: hitori\ngrid:\n11\n12")
         self.assertIsInstance(puzzle, pp.HitoriPuzzle)
-        self.assertEqual(puzzle.numbers, ((1, 1), (1, 2)))
+        self.assertEqual(puzzle.clues, ((1, 1), (1, 2)))
         S, U = pp.Mark.SHADED, pp.Mark.UNSHADED
         self.assertEqual(pp.solve(puzzle).cells, ((S, U), (U, U)))
         self.assertEqual(pp.hint(puzzle).technique, "corner")
         wrong = pp.Solution("hitori", ((U, S), (S, U)))
         self.assertEqual({v.rule for v in pp.check(puzzle, wrong)}, {3})
         wide = pp.Puzzle.from_id("hitori:1x11:123456789ab")
-        self.assertEqual(wide.numbers, (tuple(range(1, 12)),))
+        self.assertEqual(wide.clues, (tuple(range(1, 12)),))
 
     def test_kakuro_blocks_sums_and_digits(self):
         puzzle = pp.Puzzle.from_text("genre: kakuro\ngrid:\n# 4/ 6/\n/3 . .\n/7 . .")
         self.assertIsInstance(puzzle, pp.KakuroPuzzle)
-        self.assertEqual(puzzle.cells, (((0, 0), (4, 0), (6, 0)), ((0, 3), None, None),
+        self.assertEqual(puzzle.clues, (((0, 0), (4, 0), (6, 0)), ((0, 3), None, None),
                                         ((0, 7), None, None)))
         self.assertEqual(puzzle.id, "kakuro:3x3:DbAb/4.6.3.7")
         solution = pp.solve(puzzle)

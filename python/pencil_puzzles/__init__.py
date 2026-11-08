@@ -11,14 +11,15 @@ from dataclasses import dataclass, field
 from enum import Enum
 import json
 import random
-from typing import Any
+from typing import Any, NamedTuple
+import warnings
 
 from . import _native
 
 __version__ = "0.3.0"
 __all__ = [
     "AttemptsExhaustedError", "BudgetExceededError", "CancellationToken", "CancelledError",
-    "Difficulty", "FillominoPuzzle", "Generated", "HashiPuzzle", "HitoriPuzzle", "KakurasuPuzzle", "KakuroPuzzle", "Limits", "Mark",
+    "Difficulty", "FillominoPuzzle", "Generated", "HashiPuzzle", "HitoriPuzzle", "KakurasuClues", "KakurasuPuzzle", "KakuroPuzzle", "Limits", "Mark",
     "MultipleSolutionsError", "NoSolutionError", "NurikabePuzzle", "ParseError",
     "PencilPuzzlesError", "Puzzle", "Rating",
     "Solution", "Step", "SudokuPuzzle", "UnratedPuzzleError", "UnsupportedRequestError",
@@ -249,9 +250,19 @@ class Puzzle:
         return self._handle.render()
 
 
+def _alias(old: str, get: Any) -> property:
+    """A deprecated name for part of `clues`."""
+    def read(self: Any) -> Any:
+        warnings.warn(f"{old} is deprecated; use clues", DeprecationWarning, stacklevel=2)
+        return get(self)
+    return property(read, doc="Deprecated; use `clues`.")
+
+
 @dataclass(frozen=True)
 class SudokuPuzzle(Puzzle):
-    givens: tuple[tuple[int, ...], ...]
+    clues: tuple[tuple[int, ...], ...]
+    """Digits, 0 for empty cells."""
+    givens = _alias("givens", lambda p: p.clues)
 
 
 @dataclass(frozen=True)
@@ -272,20 +283,29 @@ class HashiPuzzle(Puzzle):
 
 @dataclass(frozen=True)
 class HitoriPuzzle(Puzzle):
-    numbers: tuple[tuple[int, ...], ...]
+    clues: tuple[tuple[int, ...], ...]
+    numbers = _alias("numbers", lambda p: p.clues)
 
 
 @dataclass(frozen=True)
 class KakuroPuzzle(Puzzle):
+    clues: tuple[tuple[tuple[int, int] | None, ...], ...]
     """Per cell: None for a white cell, (down, across) sums for a block, 0 for
     a missing sum."""
-    cells: tuple[tuple[tuple[int, int] | None, ...], ...]
+    cells = _alias("cells", lambda p: p.clues)
+
+
+class KakurasuClues(NamedTuple):
+    """Kakurasu clues: one sum per row and one per column."""
+    rows: tuple[int, ...]
+    cols: tuple[int, ...]
 
 
 @dataclass(frozen=True)
 class KakurasuPuzzle(Puzzle):
-    row_clues: tuple[int, ...]
-    col_clues: tuple[int, ...]
+    clues: KakurasuClues
+    row_clues = _alias("row_clues", lambda p: p.clues.rows)
+    col_clues = _alias("col_clues", lambda p: p.clues.cols)
 
 
 def _tokens(rows: list[str], row: str) -> list[str]:
@@ -320,7 +340,7 @@ def _puzzle(handle: Any) -> Puzzle:
             down, _, across = token.partition("/")
             return (int(down or 0), int(across or 0))
         return KakuroPuzzle(*common, tuple(tuple(cell(t) for t in _tokens(rows, row)) for row in rows))
-    return KakurasuPuzzle(*common, tuple(clues["row_clues"]), tuple(clues["col_clues"]))
+    return KakurasuPuzzle(*common, KakurasuClues(tuple(clues["row_clues"]), tuple(clues["col_clues"])))
 
 
 @dataclass(frozen=True)

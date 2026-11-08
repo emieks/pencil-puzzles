@@ -14,7 +14,7 @@ pip install pencil-puzzles
 import pencil_puzzles as pp
 
 g = pp.generate("sudoku", (9, 9), difficulty="medium", seed=42)
-print(g.puzzle.givens)
+print(g.puzzle.clues)
 print(g.rating.level, g.rating.techniques)
 
 assert pp.solve(g.puzzle) == g.solution
