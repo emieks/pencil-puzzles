@@ -2,8 +2,9 @@
 
 A static site for playing and solving every genre in the registry. It runs
 the Rust engine compiled to WebAssembly in a Web Worker, so it gives the same
-results as the library. It is deployed to GitHub Pages by
-`.github/workflows/pages.yml` on every push to `main`.
+results as the library. `.github/workflows/pages.yml` deploys it to GitHub
+Pages when a push to `main` changes the web app, the Rust crates or the
+benchmark tables.
 
 The site is static and has no frontend dependencies. `web/build.mjs` reads
 the registry and builds the pages for every genre, so the frontend has no

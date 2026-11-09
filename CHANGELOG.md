@@ -5,6 +5,26 @@ and versions follow [Semantic Versioning](https://semver.org/). Changes that
 alter generated puzzles are marked **(new puzzles)**, and changes that alter
 ratings **(new ratings)**.
 
+## [0.4.0] - 2026-11-09
+
+### Added
+
+- Documentation site at https://pencil-puzzles.org/docs/: installation, a
+  quickstart, a user guide, an API reference, and the genre and difficulty
+  pages.
+- Web app: the sidebar links to the documentation, the source and issues,
+  and holds the light and dark mode switch.
+
+### Changed
+
+- Web app and documentation are served at https://pencil-puzzles.org/.
+- Web app: the home page describes the players and solvers. On narrow
+  screens the menu button is labelled Menu.
+- Python: the package links point to the documentation site.
+- Rust: the command-line crate has its own README, and the umbrella crate's
+  README shows how to use it.
+- README and contributing guide rewritten.
+
 ## [0.3.1] - 2026-11-08
 
 ### Added
