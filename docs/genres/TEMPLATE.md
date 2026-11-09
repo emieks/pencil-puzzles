@@ -1,7 +1,7 @@
 <!--
 Template for a genre page. Copy it to docs/genres/<id>.md, replace every part
 in angle brackets, and delete these comments. The codes (L25, D2, ...) refer
-to docs/difficulty.md (L) and docs/guidelines.md (the rest).
+to docs/difficulty.md and docs/guidelines.md.
 
 Write Rules, Variables, Rule instances and Techniques before any code (L25).
 -->

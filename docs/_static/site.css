@@ -1,0 +1,30 @@
+/* Small adjustments to the Furo theme. */
+
+/* Section captions in the left navigation. */
+.sidebar-tree .caption,
+.sidebar-tree :not(.caption) > .caption-text {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.72rem;
+  color: var(--color-foreground-muted);
+}
+
+/* Tables: compact, full width, no zebra stripes. */
+article table.docutils {
+  width: 100%;
+  font-size: 0.875rem;
+  border-radius: 0;
+  box-shadow: none;
+  border: 1px solid var(--color-background-border);
+}
+article table.docutils th {
+  background: var(--color-background-secondary);
+}
+article table.docutils tr:nth-child(2n) td {
+  background: transparent;
+}
+
+/* Signatures in the API reference. */
+dl.py > dt {
+  font-size: 0.9rem;
+}

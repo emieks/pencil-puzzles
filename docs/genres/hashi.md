@@ -193,7 +193,7 @@ time. Operation counts are in [`hashi.csv`](../benchmarks/hashi.csv).
 
 Largest practical size (B1): easy 15x15, medium 15x15, hard 15x15, expert
 10x10. Rating a corpus puzzle takes at most 3.5 ms. In WebAssembly
-([`web/benchmark.mjs`](../../web/benchmark.mjs), 7x7), generation took 0.84
+([`web/benchmark.mjs`](https://github.com/emieks/pencil-puzzles/blob/main/web/benchmark.mjs), 7x7), generation took 0.84
 times the native time.
 
 ## References

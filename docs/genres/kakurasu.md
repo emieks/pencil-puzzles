@@ -125,7 +125,7 @@ time. Operation counts are in [`kakurasu.csv`](../benchmarks/kakurasu.csv).
 
 Largest practical size (B1): easy 12x12, medium 12x12, hard 10x10, expert
 8x8. Rating a corpus puzzle takes at most 186 ms. In WebAssembly
-([`web/benchmark.mjs`](../../web/benchmark.mjs), 6x6), generation took 0.65
+([`web/benchmark.mjs`](https://github.com/emieks/pencil-puzzles/blob/main/web/benchmark.mjs), 6x6), generation took 0.65
 times the native time. Memory is O(N^2) for N cells. Generating puzzles near
 the 32x32 limit is slow.
 

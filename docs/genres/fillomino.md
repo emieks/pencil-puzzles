@@ -176,7 +176,7 @@ time. Operation counts are in [`fillomino.csv`](../benchmarks/fillomino.csv).
 
 Largest practical size (B1): easy 10x10, medium 10x10, hard 5x5, expert 6x6.
 Rating a corpus puzzle takes at most 15 ms. In WebAssembly
-([`web/benchmark.mjs`](../../web/benchmark.mjs), 6x6), generation took 0.76
+([`web/benchmark.mjs`](https://github.com/emieks/pencil-puzzles/blob/main/web/benchmark.mjs), 6x6), generation took 0.76
 times the native time. Memory is O(N^2) for N cells.
 
 ## References

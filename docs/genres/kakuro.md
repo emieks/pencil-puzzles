@@ -193,7 +193,7 @@ time. Operation counts are in [`kakuro.csv`](../benchmarks/kakuro.csv).
 
 Largest practical size (B1): easy 12x12, medium 12x12, hard 12x12, expert
 10x10. Rating a corpus puzzle takes at most 9.5 ms. In WebAssembly
-([`web/benchmark.mjs`](../../web/benchmark.mjs), 8x8), generation took 0.87
+([`web/benchmark.mjs`](https://github.com/emieks/pencil-puzzles/blob/main/web/benchmark.mjs), 8x8), generation took 0.87
 times the native time.
 
 ## References

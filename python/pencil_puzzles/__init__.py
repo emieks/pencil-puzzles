@@ -173,7 +173,7 @@ class Violation:
 class Solution:
     """A complete or partial answer: numbers for sudoku, fillomino and kakuro
     (0 for unmarked, None for kakuro blocks), each cell's text for hashi
-    (`"."`, an island number, `"-"`, `"="`, `"|"` or `"H"`), `Mark`s
+    (`"."`, an island number, `"-"`, `"="`, `"|"` or `"H"`), `Mark` values
     otherwise."""
     genre: str
     cells: tuple[tuple[int | str | Mark | None, ...], ...]

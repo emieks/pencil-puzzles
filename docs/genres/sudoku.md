@@ -135,7 +135,7 @@ time. Operation counts are in [`sudoku.csv`](../benchmarks/sudoku.csv).
 
 Largest practical size (B1): easy 9x9, medium 9x9, hard 9x9, expert 9x9.
 Rating a corpus puzzle takes at most 4.0 ms. In WebAssembly
-([`web/benchmark.mjs`](../../web/benchmark.mjs), 9x9), generation took 0.98
+([`web/benchmark.mjs`](https://github.com/emieks/pencil-puzzles/blob/main/web/benchmark.mjs), 9x9), generation took 0.98
 times the native time. Memory is O(N^4) for N cells.
 
 ## References
