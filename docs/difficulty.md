@@ -36,7 +36,7 @@ need not take the same time.
 | [Kakurasu](genres/kakurasu.md) | weight bounds | short lists of combinations | long lists, contradiction chains of up to 6 steps | up to 20 steps |
 | [Kakuro](genres/kakuro.md) | sum combinations, singles, a digit with one place in a run | combinations that fit the candidates of a run | contradiction chains of up to 6 steps | up to 20 steps |
 | [Nurikabe](genres/nurikabe.md) | separating numbers, pools, single exits | unreachable cells, immediate rule breaks | contradiction chains of up to 6 steps | up to 20 steps |
-| [Sudoku](genres/sudoku.md) | singles | pointing, claiming, pairs | triples, quads, X-wing, swordfish, short chains, wings, simple coloring | jellyfish, extended coloring, X- and XY-chains |
+| [Sudoku](genres/sudoku.md) | singles | pointing, claiming, naked pairs | hidden pairs, triples, quads | fish, wings, kites, coloring, X- and XY-chains |
 
 ## Rating procedure
 

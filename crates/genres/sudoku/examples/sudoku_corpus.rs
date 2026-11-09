@@ -13,7 +13,7 @@ fn main() {
         ("medium", "9x9", Difficulty::Medium, 0),
         ("hard", "9x9", Difficulty::Hard, 0),
         // Pins the Expert search (clues put back into the best candidate).
-        ("expert", "9x9", Difficulty::Expert, 10),
+        ("expert", "9x9", Difficulty::Expert, 0),
     ];
     if rare {
         for (name, level) in [("expert", Difficulty::Expert)] {

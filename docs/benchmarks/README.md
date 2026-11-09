@@ -9,9 +9,10 @@ on every machine.
 | Genres | Code | Date |
 | --- | --- | --- |
 | fillomino, hashi, hitori, kakurasu | pencil-puzzles 0.2.0 | 2026-11-06 |
-| kakuro, nurikabe, sudoku | pencil-puzzles 0.3.0 | 2026-11-08 |
+| kakuro, nurikabe | pencil-puzzles 0.3.0 | 2026-11-08 |
+| sudoku | pencil-puzzles after 0.3.1 | 2026-11-09 |
 
-Both runs used the same setup:
+All runs used the same setup:
 
 - Machine: Intel Core i7-8700K, Windows 11 Pro, otherwise idle
 - Rust: rustc 1.99.1, release profile

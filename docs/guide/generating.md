@@ -46,7 +46,7 @@ have any level.
 >>> g.rating.level
 <Difficulty.HARD: 'hard'>
 >>> g.rating.techniques
-('claiming', 'hidden_pair', 'hidden_single', 'naked_pair', 'pointing', 'two_string_kite')
+('claiming', 'hidden_pair', 'hidden_single', 'naked_pair', 'naked_single', 'pointing')
 ```
 
 [How puzzles are rated](../difficulty.md) describes the levels, and each

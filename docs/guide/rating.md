@@ -9,7 +9,7 @@ sets the level.
 >>> rating.level
 <Difficulty.HARD: 'hard'>
 >>> rating.techniques
-('claiming', 'hidden_pair', 'hidden_single', 'naked_pair', 'pointing', 'two_string_kite')
+('claiming', 'hidden_pair', 'hidden_single', 'naked_pair', 'naked_single', 'pointing')
 ```
 
 `rate` returns a `Rating`:

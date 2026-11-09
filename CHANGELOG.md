@@ -9,21 +9,13 @@ ratings **(new ratings)**.
 
 ### Added
 
-- Documentation site at https://pencil-puzzles.org/docs/: installation, a
-  quickstart, a user guide, an API reference, and the genre and difficulty
-  pages.
-- Web app: the sidebar links to the documentation, the source and issues,
-  and holds the light and dark mode switch.
+- Documentation site at https://pencil-puzzles.org/docs/.
 
 ### Changed
 
-- Web app and documentation are served at https://pencil-puzzles.org/.
-- Web app: the home page describes the players and solvers. On narrow
-  screens the menu button is labelled Menu.
-- Python: the package links point to the documentation site.
-- Rust: the command-line crate has its own README, and the umbrella crate's
-  README shows how to use it.
-- README and contributing guide rewritten.
+- Sudoku: levels follow common sudoku grading, with X-wing and similar
+  techniques at expert. **(new ratings)** **(new puzzles)**
+- The web app moved to https://pencil-puzzles.org/.
 
 ## [0.3.1] - 2026-11-08
 

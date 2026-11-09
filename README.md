@@ -39,17 +39,17 @@ print(game.puzzle)
 ```
 
 ```text
-. . 1 | . 7 . | 9 4 .
-2 . . | . . . | . . .
-. . . | 5 3 . | . 7 .
+. 1 . | 4 . . | 5 . 6
+. . . | 9 . . | . . .
+9 . . | . . 6 | 1 2 4
 ------+-------+------
-8 1 . | . 4 7 | . . .
-7 . . | . . . | . . 6
-. . . | 3 1 . | . 9 7
+5 . 7 | . . . | 9 . .
+8 . . | . . . | . . 5
+. . 1 | . . . | 2 . 7
 ------+-------+------
-. 7 . | . 8 3 | . . .
-. . . | . . . | . . 5
-. 3 6 | . 5 . | 8 . .
+4 6 9 | 5 . . | . . 1
+. . . | . . 1 | . . .
+1 . 3 | . . 7 | . 5 .
 ```
 
 The same seed always gives the same puzzle; leave it out for a new one each
@@ -57,10 +57,10 @@ time. Every puzzle comes with its solution and rating. Clues and solutions
 are tuples of rows, with 0 for an empty cell:
 
 ```python
-game.rating.techniques  # ('claiming', 'hidden_pair', ..., 'two_string_kite')
-game.puzzle.clues[0]    # (0, 0, 1, 0, 7, 0, 9, 4, 0)
-game.solution.cells[0]  # (3, 5, 1, 2, 7, 6, 9, 4, 8)
-game.puzzle.id          # 'sudoku:9x9:..1.7.94.2...' — save or share it
+game.rating.techniques  # ('claiming', 'hidden_pair', ..., 'pointing')
+game.puzzle.clues[0]    # (0, 1, 0, 4, 0, 0, 5, 0, 6)
+game.solution.cells[0]  # (7, 1, 2, 4, 8, 3, 5, 9, 6)
+game.puzzle.id          # 'sudoku:9x9:.1.4..5.6...' — save or share it
 
 pp.solve(game.puzzle) == game.solution  # True
 ```
