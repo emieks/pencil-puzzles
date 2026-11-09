@@ -1,18 +1,21 @@
 name: Web app on GitHub Pages
 
-# Builds the static web app and publishes it to this repository's GitHub
-# Pages site, https://<owner>.github.io/<repository>/. It runs only when the
-# web app, the Rust code it is built from or the benchmark tables that set its
-# size presets change.
+# Builds the static web app and the documentation site and publishes them to
+# this repository's GitHub Pages site: the web app at the root and the
+# documentation under /docs/. It runs when the web app, the documentation, or
+# the Rust and Python code they are built from change.
 on:
   push:
     branches: [main]
     paths:
       - "web/**"
-      - "docs/benchmarks/**"
+      - "docs/**"
       - "crates/**"
+      - "python/**"
       - "Cargo.toml"
       - "Cargo.lock"
+      - "pyproject.toml"
+      - "CHANGELOG.md"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
@@ -36,10 +39,19 @@ jobs:
           targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@v2
       - run: cargo install wasm-bindgen-cli --version 0.2.105 --locked
-      # A project site lives under /<repository>/.
+      # The site's path: /<repository>/ for a project site, / with a custom
+      # domain.
+      - id: pages
+        uses: actions/configure-pages@v5
       - run: node web/build.mjs
         env:
-          BASE_PATH: /${{ github.event.repository.name }}/
+          BASE_PATH: ${{ steps.pages.outputs.base_path }}/
+      # The API reference is read from the package built from this commit.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install . -r docs/requirements.txt
+      - run: sphinx-build -W --keep-going -b dirhtml -d target/doctrees docs web/dist/docs
       - uses: actions/upload-pages-artifact@v3
         with:
           path: web/dist
