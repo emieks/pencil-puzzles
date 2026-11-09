@@ -8,8 +8,8 @@ Generate, solve and rate pencil puzzles in Python.
 
 Every puzzle has exactly one solution, and a brute-force solver proves it.
 Its difficulty depends on how a person would solve it: the hardest technique
-the puzzle needs decides its level. Ask for a hard sudoku and you get one that
-needs a technique like an X-wing, not just one with fewer clues.
+the puzzle needs decides its level. Ask for an expert sudoku and you get one
+that needs a technique like an X-wing, not just one with fewer clues.
 
 <p>
   <picture>
@@ -40,27 +40,27 @@ print(game.puzzle)
 You get a new puzzle every time, such as this one:
 
 ```text
-. . 3 | . 8 2 | . 5 .
-6 . . | 5 . . | . 9 .
-5 4 . | 3 . . | 8 . .
+2 4 . | . . 3 | . 1 .
+. . 1 | 9 . . | . . .
+. . . | . . . | . 3 5
 ------+-------+------
-. . . | . 5 . | 4 . .
-8 . . | . . . | . . 6
-. . 1 | . 6 . | . . .
+. 2 . | . 7 4 | 3 . .
+. 1 . | . . . | . 5 .
+. . 4 | 1 2 . | . 8 .
 ------+-------+------
-. . 4 | . . 8 | . 7 3
-. 8 . | . . 4 | . . 1
-. 3 . | 6 1 . | 2 . .
+6 8 . | . . . | . . .
+. . . | . . 6 | 5 . .
+. 9 . | 3 . . | . 7 8
 ```
 
 In code, clues and solutions are tuples of rows, with 0 for an empty cell:
 
 ```python
 print(game.puzzle.clues[0])
-# (0, 0, 3, 0, 8, 2, 0, 5, 0)
+# (2, 4, 0, 0, 0, 3, 0, 1, 0)
 
 print(game.solution.cells[0])
-# (7, 9, 3, 1, 8, 2, 6, 5, 4)
+# (2, 4, 8, 5, 6, 3, 9, 1, 7)
 ```
 
 Other genres work the same way. [Each genre's page](#genres) shows its values.

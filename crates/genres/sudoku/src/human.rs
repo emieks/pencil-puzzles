@@ -908,7 +908,7 @@ static TECHNIQUES: [Technique<Grid>; 21] = [
     entry("naked_pair", Medium, Skill, |p| {
         Engine::new(p).subsets(2, false)
     }),
-    entry("hidden_pair", Medium, Skill, |p| {
+    entry("hidden_pair", Hard, Skill, |p| {
         Engine::new(p).subsets(2, true)
     }),
     entry("naked_triple", Hard, Skill, |p| {
@@ -923,13 +923,13 @@ static TECHNIQUES: [Technique<Grid>; 21] = [
     entry("hidden_quad", Hard, Skill, |p| {
         Engine::new(p).subsets(4, true)
     }),
-    entry("x_wing", Hard, Skill, |p| Engine::new(p).fish(2)),
-    entry("swordfish", Hard, Skill, |p| Engine::new(p).fish(3)),
-    entry("turbot_family", Hard, Skill, |p| Engine::new(p).turbot()),
-    entry("xy_wing", Hard, Skill, |p| Engine::new(p).wings(false)),
-    entry("xyz_wing", Hard, Skill, |p| Engine::new(p).wings(true)),
-    entry("w_wing", Hard, Skill, |p| Engine::new(p).w_wing()),
-    entry("simple_coloring", Hard, Skill, |p| {
+    entry("x_wing", Expert, Skill, |p| Engine::new(p).fish(2)),
+    entry("swordfish", Expert, Skill, |p| Engine::new(p).fish(3)),
+    entry("turbot_family", Expert, Skill, |p| Engine::new(p).turbot()),
+    entry("xy_wing", Expert, Skill, |p| Engine::new(p).wings(false)),
+    entry("xyz_wing", Expert, Skill, |p| Engine::new(p).wings(true)),
+    entry("w_wing", Expert, Skill, |p| Engine::new(p).w_wing()),
+    entry("simple_coloring", Expert, Skill, |p| {
         Engine::new(p).coloring(6, false)
     }),
     entry("jellyfish", Expert, Skill, |p| Engine::new(p).fish(4)),
@@ -953,7 +953,7 @@ fn broken(grid: &Grid, masks: &[u16]) -> bool {
 /// The canonical Sudoku human profile.
 pub(crate) static PROFILE: Profile<Grid> = Profile {
     id: "sudoku-human",
-    version: 1,
+    version: 2,
     techniques: &TECHNIQUES,
     broken,
 };

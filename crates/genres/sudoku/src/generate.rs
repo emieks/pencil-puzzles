@@ -5,7 +5,7 @@ use pencil_puzzles_core::SplitMix64;
 use pencil_puzzles_core::search::{Construct, Move, Outcome, SearchError, search};
 use std::{error::Error, fmt};
 /// Generator version (V3).
-pub const GENERATOR_VERSION: u32 = 5;
+pub const GENERATOR_VERSION: u32 = 6;
 /// Reproducible generator inputs.
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[non_exhaustive]
