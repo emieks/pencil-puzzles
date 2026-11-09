@@ -5,6 +5,15 @@ and versions follow [Semantic Versioning](https://semver.org/). Changes that
 alter generated puzzles are marked **(new puzzles)**, and changes that alter
 ratings **(new ratings)**.
 
+## [Unreleased]
+
+### Changed
+
+- Sudoku: levels follow common sudoku grading. Hidden pairs move from medium
+  to hard. X-wing, swordfish, skyscraper, two-string kite, turbot fish,
+  XY-wing, XYZ-wing, W-wing and simple coloring move from hard to expert.
+  Rater version 3, generator version 6. **(new ratings)** **(new puzzles)**
+
 ## [0.3.1] - 2026-11-08
 
 ### Added

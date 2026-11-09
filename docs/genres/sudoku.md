@@ -11,7 +11,7 @@ Fill rows, columns and boxes with each digit exactly once.
 
 ## Example
 
-Generator version 5, shape `4x4`, easy, seed `0` produces
+Generator version 6, shape `4x4`, easy, seed `0` produces
 `sudoku:4x4:....2.3..3.4....`:
 
 ```text
@@ -39,15 +39,15 @@ the rater does not use it.
 
 ## Techniques
 
-Rater version 2 uses the profile `sudoku-human` version 1, in this order:
+Rater version 3 uses the profile `sudoku-human` version 2, in this order:
 
 | Level | Techniques |
 | --- | --- |
 | bookkeeping | `peer_elimination`: a written-in digit (given, player mark or found single) is removed from the candidates of its row, column and box |
 | Easy | `hidden_single` (the only place for a digit in a unit), `naked_single` (a cell left with one candidate by elimination) |
-| Medium | `pointing` and `claiming` (locked candidates), `naked_pair`, `hidden_pair` |
-| Hard | naked and hidden triples and quads, `x_wing`, `swordfish`, `skyscraper`, `two_string_kite`, `turbot_fish`, `xy_wing`, `xyz_wing`, `w_wing`, `simple_coloring` (components of up to 6 cells) |
-| Expert | `jellyfish`, `extended_coloring` (up to 12 cells), `x_chain` (up to 3 strong links), `xy_chain` (up to 6 cells) |
+| Medium | `pointing` and `claiming` (locked candidates), `naked_pair` |
+| Hard | `hidden_pair`, naked and hidden triples and quads |
+| Expert | `x_wing`, `swordfish`, `skyscraper`, `two_string_kite`, `turbot_fish`, `xy_wing`, `xyz_wing`, `w_wing`, `simple_coloring` (components of up to 6 cells), `jellyfish`, `extended_coloring` (up to 12 cells), `x_chain` (up to 3 strong links), `xy_chain` (up to 6 cells) |
 
 Examples:
 
@@ -59,6 +59,8 @@ Examples:
   of that row can be 5.
 - **Naked pair:** if two cells of a column can each only be 1 or 2, no other
   cell of that column can be 1 or 2.
+- **Hidden pair:** if 6 and 8 can only go in the same two cells of a row,
+  those two cells lose every other candidate.
 - **X-wing:** if 3 can only go in columns 2 and 6 in both row 1 and row 8,
   it is in those columns in those rows, so the rest of columns 2 and 6 lose 3.
 - **XY-chain:** a chain of two-candidate cells, each seeing the next, that
@@ -81,7 +83,7 @@ need them are unrated.
 Boxes are 1x1, 2x2 and 3x3 respectively. 6x6 grids with 2x3 boxes are not
 supported yet.
 
-Generator version 5 fills a grid in seeded order, then removes clues while
+Generator version 6 fills a grid in seeded order, then removes clues while
 the puzzle stays unique and solvable at the requested level. Below expert it
 removes clues in 180-degree rotational pairs; expert removes single clues.
 Each removal is checked for uniqueness with the brute-force solver before the
@@ -127,15 +129,15 @@ time. Operation counts are in [`sudoku.csv`](../benchmarks/sudoku.csv).
 
 | Size | Level | Found | Median | 95th percentile | Mean attempts |
 | --- | --- | --- | --- | --- | --- |
-| 9x9 | any | 20/20 | 14 ms | 26 ms | 42 |
-| 9x9 | easy | 20/20 | 14 ms | 22 ms | 42 |
-| 9x9 | medium | 20/20 | 42 ms | 298 ms | 204 |
-| 9x9 | hard | 20/20 | 54 ms | 162 ms | 214 |
-| 9x9 | expert | 20/20 | 147 ms | 538 ms | 486 |
+| 9x9 | any | 20/20 | 15 ms | 27 ms | 42 |
+| 9x9 | easy | 20/20 | 14 ms | 16 ms | 42 |
+| 9x9 | medium | 20/20 | 50 ms | 302 ms | 219 |
+| 9x9 | hard | 20/20 | 361 ms | 2.6 s | 1907 |
+| 9x9 | expert | 20/20 | 63 ms | 239 ms | 209 |
 
 Largest practical size (B1): easy 9x9, medium 9x9, hard 9x9, expert 9x9.
-Rating a corpus puzzle takes at most 4.0 ms. In WebAssembly
-([`web/benchmark.mjs`](../../web/benchmark.mjs), 9x9), generation took 0.98
+Rating a corpus puzzle takes at most 3.9 ms. In WebAssembly
+([`web/benchmark.mjs`](../../web/benchmark.mjs), 9x9), generation took 1.03
 times the native time. Memory is O(N^4) for N cells.
 
 ## References

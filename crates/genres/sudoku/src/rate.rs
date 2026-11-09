@@ -5,8 +5,8 @@ use crate::{
 };
 use pencil_puzzles_core::human::{self, Trace};
 use std::{error::Error, fmt};
-/// Current human rater version. Version 1 is retired.
-pub const RATER_VERSION: u32 = 2;
+/// Current human rater version. Versions 1 and 2 are retired.
+pub const RATER_VERSION: u32 = 3;
 /// A unique puzzle's human analysis, including an explicit unrated outcome.
 #[derive(Clone, Debug)]
 pub struct Analysis {
@@ -152,10 +152,12 @@ mod human_rating_tests {
     fn retired_versions_fail_before_spending_work() {
         let p = Puzzle::new("1x1".parse().unwrap(), vec![0]).unwrap();
         let budget = Budget::new(0);
-        assert_eq!(
-            rate_version(&p, 1, &budget),
-            Err(RateError::UnsupportedVersion(1))
-        );
+        for version in [1, 2] {
+            assert_eq!(
+                rate_version(&p, version, &budget),
+                Err(RateError::UnsupportedVersion(version))
+            );
+        }
         assert_eq!(budget.spent(), 0);
     }
     #[test]
