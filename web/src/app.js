@@ -15,7 +15,7 @@ const icons = {
 // Theme follows the system until the visitor picks one; picking the system's own theme returns to following it.
 const themeButton=$('#theme'),systemDark=matchMedia('(prefers-color-scheme: dark)');
 const storedTheme=()=>{try{return localStorage.getItem('pencil-theme');}catch{return null;}};
-function themeLabel(){const label=document.documentElement.dataset.theme==='dark'?'Switch to light mode':'Switch to dark mode';themeButton.setAttribute('aria-label',label);themeButton.title=label;}
+function themeLabel(){const label=document.documentElement.dataset.theme==='dark'?'Switch to light mode':'Switch to dark mode';themeButton.setAttribute('aria-label',label);$('#theme-text').textContent=document.documentElement.dataset.theme==='dark'?'Light mode':'Dark mode';}
 themeLabel();
 themeButton.onclick=()=>{const theme=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=theme;try{if(theme===(systemDark.matches?'dark':'light'))localStorage.removeItem('pencil-theme');else localStorage.setItem('pencil-theme',theme);}catch{}themeLabel();};
 systemDark.addEventListener('change',()=>{if(!storedTheme()){document.documentElement.dataset.theme=systemDark.matches?'dark':'light';themeLabel();}});
@@ -176,12 +176,13 @@ function home(catalogue){
   document.title='pencil-puzzles';
   const repo='https://github.com/emieks/pencil-puzzles';
   main.innerHTML=`<h1>pencil-puzzles</h1>
-<div class="prose"><p>Open-source generators, solvers and difficulty raters for pencil puzzles, written in Rust. Every generated puzzle has exactly one solution and a rating on a shared difficulty scale.</p>
-<p>This site runs the same engine in your browser through WebAssembly. The library is also a Python package and a command-line tool.</p></div>
+<div class="prose"><p>Players and solvers for the genres in the pencil-puzzles project.</p>
+<p>The player generates a puzzle at a chosen size and level, from easy to expert, and checks your answer. Every generated puzzle has exactly one solution, and its level is the level of the hardest technique it needs. The solver solves a puzzle you enter or paste as an ID, text or JSON.</p>
+<p>The <a href="docs/">documentation</a> covers the Python package, the command-line tool, and each genre's rules, techniques and formats.</p></div>
 <h2>Games</h2><table class="overview"><thead><tr><th>Game</th><th class="description">Goal</th><th>Open</th></tr></thead><tbody id="games"></tbody></table>
-<h2>Contribute</h2>
-<div class="prose"><p>pencil-puzzles is MIT-licensed, and contributions of every size are welcome. Report a bug or a rating that feels off, make generation faster for large grids, or add a new genre.</p>
-<p class="link-row"><a href="${repo}" target="_blank" rel="noopener noreferrer">Source on GitHub</a><a href="${repo}/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener noreferrer">Contributing guide</a><a href="${repo}/issues" target="_blank" rel="noopener noreferrer">Open an issue</a></p></div>`;
+<h2>About</h2>
+<div class="prose"><p>pencil-puzzles is an open-source engine for generating, solving and rating pencil puzzles, available as a Python package and a command-line tool. This site runs the same engine in the browser.</p>
+<p class="link-row"><a href="docs/">Documentation</a><a href="${repo}/issues" target="_blank" rel="noopener noreferrer">Report a problem</a><a href="${repo}" target="_blank" rel="noopener noreferrer">Source on GitHub</a></p></div>`;
   for(const game of catalogue){const m=game.metadata;const row=document.createElement('tr');row.innerHTML=`<td class="game-name"><a href="${m.id}/player/">${escape(m.name)}</a></td><td class="description">${escape(m.summary)}</td><td class="tools"><a href="${m.id}/player/">Player</a><a href="${m.id}/solver/">Solver</a></td>`;$('#games').append(row);}
 }
 function heading(game,page){const id=game.metadata.id;main.innerHTML=`<div class="title-row"><h1>${escape(game.metadata.name)}</h1><nav class="mode-links" aria-label="Game mode"><a id="tab-player" href="${id}/player/" ${page==='player'?'aria-current="page"':''}>Player</a><a id="tab-solver" href="${id}/solver/" ${page==='solver'?'aria-current="page"':''}>Solver</a></nav></div>`;document.title=`${game.metadata.name} ${page} · pencil-puzzles`;}
