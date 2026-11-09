@@ -10,22 +10,22 @@ members = [
 ]
 
 [workspace.package]
-version = "0.3.1"
+version = "0.4.0"
 edition = "2024"
 rust-version = "1.88"
 license = "MIT"
 repository = "https://github.com/emieks/pencil-puzzles"
 
 [workspace.dependencies]
-pencil-puzzles = { path = "crates/pencil-puzzles", version = "0.3.1", default-features = false }
-pencil-puzzles-core = { path = "crates/core", version = "0.3.1" }
-pencil-puzzles-fillomino = { path = "crates/genres/fillomino", version = "0.3.1" }
-pencil-puzzles-hashi = { path = "crates/genres/hashi", version = "0.3.1" }
-pencil-puzzles-hitori = { path = "crates/genres/hitori", version = "0.3.1" }
-pencil-puzzles-kakurasu = { path = "crates/genres/kakurasu", version = "0.3.1" }
-pencil-puzzles-kakuro = { path = "crates/genres/kakuro", version = "0.3.1" }
-pencil-puzzles-nurikabe = { path = "crates/genres/nurikabe", version = "0.3.1" }
-pencil-puzzles-sudoku = { path = "crates/genres/sudoku", version = "0.3.1" }
+pencil-puzzles = { path = "crates/pencil-puzzles", version = "0.4.0", default-features = false }
+pencil-puzzles-core = { path = "crates/core", version = "0.4.0" }
+pencil-puzzles-fillomino = { path = "crates/genres/fillomino", version = "0.4.0" }
+pencil-puzzles-hashi = { path = "crates/genres/hashi", version = "0.4.0" }
+pencil-puzzles-hitori = { path = "crates/genres/hitori", version = "0.4.0" }
+pencil-puzzles-kakurasu = { path = "crates/genres/kakurasu", version = "0.4.0" }
+pencil-puzzles-kakuro = { path = "crates/genres/kakuro", version = "0.4.0" }
+pencil-puzzles-nurikabe = { path = "crates/genres/nurikabe", version = "0.4.0" }
+pencil-puzzles-sudoku = { path = "crates/genres/sudoku", version = "0.4.0" }
 
 # Some tests check every grid of a size against brute force, which is slow
 # without optimizations.
