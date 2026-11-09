@@ -9,7 +9,7 @@ Generate, solve and rate pencil puzzles in Python.
 Every puzzle has exactly one solution, and a brute-force solver proves it.
 Its difficulty depends on how a person would solve it: the hardest technique
 the puzzle needs decides its level. Ask for an expert sudoku and you get one
-that needs a technique like an X-wing, not just one with fewer clues.
+that needs a technique such as an X-wing.
 
 <p>
   <picture>
@@ -18,7 +18,8 @@ that needs a technique like an X-wing, not just one with fewer clues.
   </picture>
 </p>
 
-**[Play them in your browser →](https://emieks.github.io/pencil-puzzles/)**
+**[Play them in your browser →](https://pencil-puzzles.org/)** ·
+**[Documentation](https://pencil-puzzles.org/docs/)**
 
 ## Quick start
 
@@ -33,34 +34,43 @@ Generate a hard sudoku and print it:
 ```python
 import pencil_puzzles as pp
 
-game = pp.generate("sudoku", difficulty="hard")
+game = pp.generate("sudoku", difficulty="hard", seed=7)
 print(game.puzzle)
 ```
 
-You get a new puzzle every time, such as this one:
-
 ```text
-2 4 . | . . 3 | . 1 .
-. . 1 | 9 . . | . . .
-. . . | . . . | . 3 5
+. 1 . | 4 . . | 5 . 6
+. . . | 9 . . | . . .
+9 . . | . . 6 | 1 2 4
 ------+-------+------
-. 2 . | . 7 4 | 3 . .
-. 1 . | . . . | . 5 .
-. . 4 | 1 2 . | . 8 .
+5 . 7 | . . . | 9 . .
+8 . . | . . . | . . 5
+. . 1 | . . . | 2 . 7
 ------+-------+------
-6 8 . | . . . | . . .
-. . . | . . 6 | 5 . .
-. 9 . | 3 . . | . 7 8
+4 6 9 | 5 . . | . . 1
+. . . | . . 1 | . . .
+1 . 3 | . . 7 | . 5 .
 ```
 
-In code, clues and solutions are tuples of rows, with 0 for an empty cell:
+The same seed always gives the same puzzle; leave it out for a new one each
+time. Every puzzle comes with its solution and rating. Clues and solutions
+are tuples of rows, with 0 for an empty cell:
 
 ```python
-print(game.puzzle.clues[0])
-# (2, 4, 0, 0, 0, 3, 0, 1, 0)
+game.rating.techniques  # ('claiming', 'hidden_pair', ..., 'pointing')
+game.puzzle.clues[0]    # (0, 1, 0, 4, 0, 0, 5, 0, 6)
+game.solution.cells[0]  # (7, 1, 2, 4, 8, 3, 5, 9, 6)
+game.puzzle.id          # 'sudoku:9x9:.1.4..5.6...' — save or share it
 
-print(game.solution.cells[0])
-# (2, 4, 8, 5, 6, 3, 9, 1, 7)
+pp.solve(game.puzzle) == game.solution  # True
+```
+
+Every genre takes a size as `(rows, columns)`. Without one, you get the
+genre's [standard size](#genres), such as 9×9 for sudoku:
+
+```python
+pp.generate("sudoku", (4, 4))
+pp.generate("nurikabe", (7, 7), difficulty="medium")
 ```
 
 Other genres work the same way. [Each genre's page](#genres) shows its values.
@@ -70,12 +80,12 @@ Other genres work the same way. [Each genre's page](#genres) shows its values.
 Six functions cover everything:
 
 ```python
-pp.generate(genre, shape=None, difficulty=None, seed=None)  # a new puzzle, its solution and rating
-pp.solve(puzzle)                                            # the solution
-pp.rate(puzzle)                                             # the level and the techniques it needs
-pp.hint(puzzle, answer=None)                                # the next step from your answer so far
-pp.check(puzzle, answer, finished=False)                    # every rule the answer breaks
-pp.genres()                                                 # the genres you can use
+pp.generate(genre, shape=None, *, difficulty=None, seed=None)  # a new puzzle, its solution and rating
+pp.solve(puzzle)                                               # the solution, proven to be the only one
+pp.rate(puzzle)                                                # the level and the techniques it needs
+pp.check(puzzle, answer, *, finished=False)                    # every rule the answer breaks
+pp.hint(puzzle, answer=None)                                   # the next step from the answer so far
+pp.genres()                                                    # the genres you can use
 ```
 
 - **`genre`**: a name from `pp.genres()`, such as `"sudoku"`
@@ -86,20 +96,22 @@ pp.genres()                                                 # the genres you can
 - **`seed`**: a number that fixes the puzzle, or random if left out
 - **`answer`**: a player's grid so far, as `pp.Solution(genre, rows)`
 
+Every function also takes `limits` and `cancel` to bound or stop long calls.
+
 Save a puzzle with `puzzle.to_text()` or share it as `puzzle.id`. The
-[Python guide](python/README.md) has every option.
+[documentation](https://pencil-puzzles.org/docs/) has every option.
 
 ## Genres
 
 | Genre | Goal | Standard size | Largest |
 | --- | --- | --- | --- |
-| [Fillomino](docs/genres/fillomino.md) | Divide the grid into regions whose cells hold the region's size; same-size regions never share a side. | 10×10 | 10×10 |
-| [Hashi](docs/genres/hashi.md) | Connect all islands with straight bridges that never cross, giving each island as many bridges as its number. | 10×10 | 15×15 |
-| [Hitori](docs/genres/hitori.md) | Shade cells so no unshaded number repeats in a row or column; shaded cells never share a side and unshaded cells stay connected. | 8×8 | 12×12 |
-| [Kakurasu](docs/genres/kakurasu.md) | Shade cells so each row and column clue is the sum of its shaded cells' positions. | 7×7 | 32×32 |
-| [Kakuro](docs/genres/kakuro.md) | Fill the white cells with digits 1–9 so each run adds up to its clue without repeating a digit. | 10×10 | 16×16 |
-| [Nurikabe](docs/genres/nurikabe.md) | Shade a connected sea, leaving islands the size of their numbers and no shaded 2×2 block. | 10×10 | 10×10 |
-| [Sudoku](docs/genres/sudoku.md) | Fill rows, columns and boxes with each digit exactly once. | 9×9 | 9×9 (also&nbsp;4×4) |
+| [Fillomino](https://pencil-puzzles.org/docs/genres/fillomino/) | Divide the grid into regions whose cells hold the region's size; same-size regions never share a side. | 10×10 | 10×10 |
+| [Hashi](https://pencil-puzzles.org/docs/genres/hashi/) | Connect all islands with straight bridges that never cross, giving each island as many bridges as its number. | 10×10 | 15×15 |
+| [Hitori](https://pencil-puzzles.org/docs/genres/hitori/) | Shade cells so no unshaded number repeats in a row or column; shaded cells never share a side and unshaded cells stay connected. | 8×8 | 12×12 |
+| [Kakurasu](https://pencil-puzzles.org/docs/genres/kakurasu/) | Shade cells so each row and column clue is the sum of its shaded cells' positions. | 7×7 | 32×32 |
+| [Kakuro](https://pencil-puzzles.org/docs/genres/kakuro/) | Fill the white cells with digits 1–9 so each run adds up to its clue without repeating a digit. | 10×10 | 16×16 |
+| [Nurikabe](https://pencil-puzzles.org/docs/genres/nurikabe/) | Shade a connected sea, leaving islands the size of their numbers and no shaded 2×2 block. | 10×10 | 10×10 |
+| [Sudoku](https://pencil-puzzles.org/docs/genres/sudoku/) | Fill rows, columns and boxes with each digit exactly once. | 9×9 | 9×9 (also&nbsp;4×4) |
 
 Each genre's page has its rules, techniques and formats.
 
@@ -115,17 +127,17 @@ that makes progress. The hardest technique it needs sets the level.
 | Hard | Larger patterns, or short "what if this cell were…" chains |
 | Expert | Several patterns combined, and longer chains |
 
-The full method is in [how puzzles are rated](docs/difficulty.md).
+The full method is in [how puzzles are rated](https://pencil-puzzles.org/docs/difficulty/).
 
 ## Beyond Python
 
-**In the browser.** The [web app](https://emieks.github.io/pencil-puzzles/)
+**In the browser.** The [web app](https://pencil-puzzles.org/)
 lets you play or solve every genre.
 
 **On the command line.** With Rust 1.88 or newer:
 
 ```sh
-cargo install --git https://github.com/emieks/pencil-puzzles pencil-puzzles-cli
+cargo install pencil-puzzles-cli
 pencil-puzzles generate nurikabe --shape 7x7 --difficulty hard --format pretty
 ```
 

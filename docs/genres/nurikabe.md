@@ -158,7 +158,7 @@ time. Operation counts are in [`nurikabe.csv`](../benchmarks/nurikabe.csv).
 
 Largest practical size (B1): easy 10x10, medium 10x10, hard 8x8, expert
 8x8. Rating a corpus puzzle takes at most 8.5 ms. In WebAssembly
-([`web/benchmark.mjs`](../../web/benchmark.mjs), 10x10), generation took 1.41
+([`web/benchmark.mjs`](https://github.com/emieks/pencil-puzzles/blob/main/web/benchmark.mjs), 10x10), generation took 1.41
 times the native time. Memory is O(N^2) for N cells.
 
 ## References

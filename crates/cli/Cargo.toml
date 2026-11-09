@@ -6,8 +6,8 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
-readme = "../../README.md"
-keywords = ["puzzle", "kakurasu", "solver", "generator", "cli"]
+readme = "README.md"
+keywords = ["puzzle", "sudoku", "solver", "generator", "cli"]
 categories = ["games", "command-line-utilities"]
 
 [[bin]]

@@ -5,14 +5,17 @@ and versions follow [Semantic Versioning](https://semver.org/). Changes that
 alter generated puzzles are marked **(new puzzles)**, and changes that alter
 ratings **(new ratings)**.
 
-## [Unreleased]
+## [0.4.0] - 2026-11-09
+
+### Added
+
+- Documentation site at https://pencil-puzzles.org/docs/.
 
 ### Changed
 
-- Sudoku: levels follow common sudoku grading. Hidden pairs move from medium
-  to hard. X-wing, swordfish, skyscraper, two-string kite, turbot fish,
-  XY-wing, XYZ-wing, W-wing and simple coloring move from hard to expert.
-  Rater version 3, generator version 6. **(new ratings)** **(new puzzles)**
+- Sudoku: levels follow common sudoku grading, with X-wing and similar
+  techniques at expert. **(new ratings)** **(new puzzles)**
+- The web app moved to https://pencil-puzzles.org/.
 
 ## [0.3.1] - 2026-11-08
 

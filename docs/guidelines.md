@@ -52,7 +52,7 @@ required. To add a genre, see [Adding a genre](#adding-a-genre).
   checked as complete after unmarked variables take their default (P4). For a
   partial answer, the checker does not report an instance that some completion
   would satisfy, and reports at least what the rater's "broken" check
-  recognizes ([L23](difficulty.md#checking-a-genres-rater)).
+  recognizes ([L23](#checking-a-genres-rater)).
 - **P9. Steps and hints.** The rater lists its steps and, given a partial
   answer that agrees with the solution, returns the next skill step after
   bookkeeping ([L19](difficulty.md#rating-results)). Hints come from the
@@ -159,7 +159,7 @@ A puzzle ID is a one-line form of a puzzle for links and sharing, such as
 ## Rules and documentation
 
 - **D1. Genre page.** Each genre has `docs/genres/<id>.md`, following
-  [the template](genres/TEMPLATE.md) ([L25](difficulty.md#what-a-genre-page-covers)).
+  [the template](genres/TEMPLATE.md) ([L25](#what-a-genre-page-covers)).
   Rule numbers (R1, R2, ...) are used by the checker and do not change once
   the genre is released.
 - **D2. Original text.** Rules and examples are written for this project.
@@ -178,7 +178,7 @@ Each genre has T1-T9 and follows T10 and T11.
 
 - **T1. Solver against brute force.** On shapes small enough for brute force,
   including non-square ones, the solver matches a brute-force count.
-- **T2. Rater.** Every check in [L23](difficulty.md#checking-a-genres-rater).
+- **T2. Rater.** Every check in [L23](#checking-a-genres-rater).
 - **T3. Generator.** For several sizes, including non-square, and every
   level: exactly one solution (G2), the rating matches the rater (G3), the
   same seed gives the same puzzle (G5).
@@ -202,6 +202,24 @@ Each genre has T1-T9 and follows T10 and T11.
   the propagation or search of the code it checks.
 - **T11. Test time.** A genre's default `cargo test` SHOULD take under 60
   seconds.
+
+### Checking a genre's rater
+
+**L23.** Every genre tests that:
+
+1. every technique keeps every solution of random partial states, compared
+   with a brute-force enumeration;
+2. its "broken" check does not fire while a solution remains, and is exact
+   on complete grids;
+3. ratings, step traces and generated puzzles are deterministic and match
+   the corpus and golden files;
+4. work budgets bound every operation.
+
+### What a genre page covers
+
+**L25.** Each genre page lists its techniques in profile order, each with a
+level and an example, defines its bookkeeping and describes its "broken"
+check.
 
 ## Corpus
 
@@ -250,8 +268,8 @@ Each genre has T1-T9 and follows T10 and T11.
 
 ## Versions and compatibility
 
-Releases contain the Python package, the command-line tool and the web app.
-The Rust crates are not published to crates.io.
+Releases contain the Python package on PyPI, the Rust crates on crates.io,
+the command-line tool and the web app.
 
 - **V1. Semantic versioning.** Released packages follow
   [semantic versioning](https://semver.org). Breaking changes are those that

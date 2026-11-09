@@ -173,7 +173,7 @@ time. Operation counts are in [`hitori.csv`](../benchmarks/hitori.csv).
 
 Largest practical size (B1): easy 12x12, medium 12x12, hard 12x12, expert
 8x8. Rating a corpus puzzle takes at most 3.8 ms. In WebAssembly
-([`web/benchmark.mjs`](../../web/benchmark.mjs), 8x8), generation took 0.88
+([`web/benchmark.mjs`](https://github.com/emieks/pencil-puzzles/blob/main/web/benchmark.mjs), 8x8), generation took 0.88
 times the native time. Memory is O(N^2) for N cells.
 
 ## References

@@ -81,17 +81,19 @@ header { height: var(--header); position: sticky; top: 0; z-index: 3; display: f
 #trail .sep { color: var(--line); }
 #trail [aria-current] { color: var(--muted); }
 .site-name { font-weight: 600; }
-.site-tools { margin-left: auto; display: flex; align-items: center; gap: 2px; }
 :root[data-theme="dark"] #theme .moon, :root:not([data-theme="dark"]) #theme .sun { display: none; }
 #show-games { display: none; }
 
 /* Directory */
 aside { position: fixed; top: var(--header); bottom: 0; left: 0; width: var(--side-width); overflow-y: auto; border-right: 1px solid var(--line); padding: 18px 0; background: var(--bg); }
-#directory { display: flex; flex-direction: column; }
-#directory a { display: block; padding: 3px 16px 3px 14px; border-left: 2px solid transparent; text-decoration: none; }
-#directory a:hover { background: var(--subtle); }
-#directory a[aria-current="page"] { border-left-color: var(--text); font-weight: 600; }
-#directory .label { margin: 16px 16px 4px; font-size: 12px; color: var(--muted); }
+#directory, #project { display: flex; flex-direction: column; }
+aside nav a { display: block; padding: 3px 16px 3px 14px; border-left: 2px solid transparent; text-decoration: none; }
+aside nav a:hover { background: var(--subtle); }
+aside nav a[aria-current="page"] { border-left-color: var(--text); font-weight: 600; }
+aside .label { margin: 16px 16px 4px; font-size: 12px; color: var(--muted); }
+#project { margin-top: 12px; }
+#theme { display: flex; align-items: center; gap: 8px; width: 100%; height: auto; margin-top: 4px; padding: 3px 16px; border: 0; border-radius: 0; background: none; color: var(--muted); text-align: left; }
+#theme:hover { background: var(--subtle); color: var(--text); }
 #directory .modes a { padding-left: 30px; font-size: 14px; color: var(--muted); }
 #directory .modes a[aria-current="page"] { color: var(--text); }
 #directory .game.open > a { font-weight: 600; }

@@ -1,80 +1,85 @@
 # Contributing
 
-Contributions of every size are welcome. Everyone taking part follows the
-[code of conduct](CODE_OF_CONDUCT.md).
+Issues and pull requests of any kind are welcome: bug reports, fixes, new
+features, new genres, performance work and docs. A draft pull request is a
+good place for unfinished work or open questions.
 
-## Ways to help
+## Ideas
 
-- **Report a bug.** Include the command or code you ran, the puzzle (its text
-  or ID), what you expected, and what happened.
-- **Report a rating that seems wrong.** Include the puzzle, the rating it got,
-  the rating you'd expect, and why: for example, the step that seems harder or
-  easier than its level. See [how puzzles are rated](docs/difficulty.md).
-- **Make something faster.** Generating large grids is slow for some genres;
-  each genre page lists the largest size per level that generates in about a
+- **Bugs and ratings.** A puzzle's ID (the web app's share link contains it)
+  is enough to reproduce most problems, including a level that seems wrong.
+- **Performance.** Large grids are slow to generate in some genres. Each
+  genre page lists the largest size per level that generates in about a
   second.
-- **Add a genre.** Open an issue first, so that nobody else starts on the same
-  genre, then follow the
-  [checklist in the guidelines](docs/guidelines.md#adding-a-genre).
+- **New genres.** The [guidelines](docs/guidelines.md#adding-a-genre) have a
+  checklist, and [docs/genres/TEMPLATE.md](docs/genres/TEMPLATE.md) is a
+  starting point for the genre page. An issue lets others know a genre is
+  being worked on.
+- **Docs.** The docs site is built from the Markdown in `docs/`.
 
-Every genre follows the [guidelines](docs/guidelines.md) and rates puzzles on
-the shared [difficulty scale](docs/difficulty.md). Please read both before
-adding or changing a genre. The shared engine is described in
-[the framework design](docs/design/framework.md).
+## Running it
 
-## Getting started
-
-You need [Rust](https://rustup.rs). Then:
+With [Rust](https://rustup.rs) installed:
 
 ```sh
 cargo test --workspace --all-features
 ```
 
-Before opening a pull request, also run:
+`cargo fmt --all` formats the code. CI runs the tests on Linux, macOS and
+Windows, plus clippy and the WebAssembly and Python builds, on every pull
+request.
+
+The Python package builds with [maturin](https://www.maturin.rs):
 
 ```sh
-cargo fmt --all
-cargo clippy --workspace --all-targets --all-features -- -D warnings
+pip install maturin
+maturin build --release
+pip install target/wheels/pencil_puzzles-*.whl
+python -m unittest discover -s python/tests
 ```
 
-CI runs these on Linux, macOS and Windows, plus WebAssembly, Python wheel and
-Rust 1.88 checks.
+The docs site builds with Sphinx into `web/dist/docs/`, using the installed
+package for the API reference:
 
-## Layout
+```sh
+pip install . -r docs/requirements.txt
+sphinx-build -b dirhtml docs web/dist/docs
+```
+
+The web app needs Node.js; [web/README.md](web/README.md) shows how to run it
+locally.
+
+## Where things are
 
 ```text
 crates/
   core/            shared types, the human solve loop and the generator loop
-  genres/<genre>/  one library crate per genre, named pencil-puzzles-<genre>
-  pencil-puzzles/  umbrella crate with every genre behind a feature
-  cli/             the `pencil-puzzles` command, using the genre registry
+  genres/<genre>/  one crate per genre
+  pencil-puzzles/  umbrella crate with every genre
+  cli/             the pencil-puzzles command
   python/          the native module of the Python package
   web/             the WebAssembly engine of the web app
 python/            the Python package and its tests
-web/               the static web app
+web/               the web app
 corpus/            known puzzles per genre, used as regression tests
-docs/
-  guidelines.md    what every genre must guarantee
-  difficulty.md    how puzzles are rated
-  genres/          one page per genre, and the template for new ones
-  design/          the solving framework and the Python API
-  benchmarks/      recorded generator benchmarks
+docs/              the documentation site, one page per genre
 ```
 
-To see how a genre's generator performs after a change, run the shared
-benchmark. The last argument is the number of seeds per size and level:
+[How puzzles are rated](docs/difficulty.md) explains the difficulty scale, and
+[the framework design](docs/design/framework.md) the shared engine.
+
+## Handy commands
+
+Benchmark a genre's generator (the last number is seeds per size and level):
 
 ```sh
 cargo run --release -p pencil-puzzles --example benchmark -- kakurasu 20
 ```
 
-If a change alters generated puzzles or ratings, regenerate the genre's corpus
-and golden files:
+Regenerate a genre's corpus after a change to its puzzles or ratings:
 
 ```sh
 cargo run --release -p pencil-puzzles-<genre> --example <genre>_corpus -- --write
 ```
 
-The Python package builds with [maturin](https://www.maturin.rs); see
-[python/README.md](python/README.md). The web app needs Node.js; see
-[web/README.md](web/README.md).
+The project has a short [code of conduct](CODE_OF_CONDUCT.md).

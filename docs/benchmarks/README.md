@@ -25,7 +25,7 @@ cargo run --release -p pencil-puzzles --example benchmark -- <genre> 20
 ```
 
 Each genre's sizes are listed in
-[`benchmark.rs`](../../crates/pencil-puzzles/examples/benchmark.rs). For
+[`benchmark.rs`](https://github.com/emieks/pencil-puzzles/blob/main/crates/pencil-puzzles/examples/benchmark.rs). For
 each size and level, the benchmark generates seeds 0-19 with the
 command-line tool's limits (10,000 attempts and 100,000,000 operations),
 then rates every corpus puzzle. `<genre>.csv` has one row per size and level:

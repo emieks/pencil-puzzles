@@ -1,7 +1,7 @@
 # Difficulty
 
 Every genre rates puzzles by the human techniques they need, on one shared
-scale. The engine is described in [the framework design](design/framework.md),
+scale. The engine is described in [the framework design](https://github.com/emieks/pencil-puzzles/blob/main/docs/design/framework.md),
 and each genre lists its techniques on its own page.
 
 ## Terms
@@ -81,21 +81,3 @@ when it succeeds the puzzle is the same under any of them.
 **L24/V3.** Changes that affect ratings or generated puzzles bump the rater or
 generator version, and the code for the old version is deleted. A seed
 reproduces a puzzle within one generator version, so puzzles are shared by ID.
-
-## Checking a genre's rater
-
-**L23.** Every genre tests that:
-
-1. every technique keeps every solution of random partial states, compared
-   with a brute-force enumeration;
-2. its "broken" check does not fire while a solution remains, and is exact
-   on complete grids;
-3. ratings, step traces and generated puzzles are deterministic and match
-   the corpus and golden files;
-4. work budgets bound every operation.
-
-## What a genre page covers
-
-**L25.** Each genre page lists its techniques in profile order, each with a
-level and an example, defines its bookkeeping and describes its "broken"
-check.

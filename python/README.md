@@ -13,32 +13,16 @@ pip install pencil-puzzles
 ```python
 import pencil_puzzles as pp
 
-g = pp.generate("sudoku", (9, 9), difficulty="medium", seed=42)
-print(g.puzzle.clues)
+g = pp.generate("sudoku", difficulty="hard")
+print(g.puzzle)
 print(g.rating.level, g.rating.techniques)
 
 assert pp.solve(g.puzzle) == g.solution
-assert pp.rate(g.puzzle) == g.rating
-assert pp.check(g.puzzle, g.solution) == []
-print(pp.hint(g.puzzle))          # the first step a solver would take
-
-same = pp.Puzzle.from_id(g.puzzle.id)
+print(pp.hint(g.puzzle))  # the first step a solver would take
 ```
 
-The same seed and package version always give the same puzzle. To save or
-share a puzzle, use its ID. Every operation takes
-`limits=pp.Limits(work=..., attempts=...)` and `cancel=pp.CancellationToken()`;
-running out of a limit raises an error. Cancellation can come from another
-thread, and Ctrl-C raises `KeyboardInterrupt`.
-
-All public names are listed in
-[docs/design/python-api.md](https://github.com/emieks/pencil-puzzles/blob/main/docs/design/python-api.md).
-
-## Building
-
-```sh
-pip install maturin
-maturin build --release
-pip install target/wheels/pencil_puzzles-*.whl
-python -m unittest discover -s python/tests
-```
+Documentation: [quickstart](https://pencil-puzzles.org/docs/quickstart/),
+[user guide](https://pencil-puzzles.org/docs/guide/generating/),
+[API reference](https://pencil-puzzles.org/docs/api/) and
+[genres](https://pencil-puzzles.org/docs/). Source and issues are on
+[GitHub](https://github.com/emieks/pencil-puzzles).
