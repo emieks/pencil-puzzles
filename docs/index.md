@@ -1,3 +1,7 @@
+---
+description: Documentation for pencil-puzzles, a Python package that generates, solves and rates sudoku, kakuro, nurikabe and other pencil puzzles.
+---
+
 # pencil-puzzles
 
 pencil-puzzles generates, solves and rates pencil puzzles such as sudoku,
