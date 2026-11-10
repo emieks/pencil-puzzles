@@ -1,3 +1,7 @@
+---
+description: Save and load pencil-puzzles puzzles as IDs, text or JSON.
+---
+
 # Saving and loading puzzles
 
 A puzzle holds a genre's clues. Every puzzle has:

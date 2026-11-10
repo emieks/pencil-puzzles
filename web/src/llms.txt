@@ -1,0 +1,65 @@
+# pencil-puzzles
+
+> A Python package that generates, solves and rates pencil puzzles: fillomino, hashi, hitori, kakurasu, kakuro, nurikabe and sudoku. Every generated puzzle has exactly one solution, proven by a brute-force solver. A puzzle's difficulty (easy, medium, hard or expert) is the level of the hardest technique a person needs to solve it.
+
+Install with `pip install pencil-puzzles` (Python 3.10 or newer, on Windows, macOS and Linux). The import name is `pencil_puzzles`, usually imported as `pp`. The engine is written in Rust and is also available as a Rust crate (`pencil-puzzles`), a command-line tool (`pencil-puzzles-cli`) and a web app.
+
+The package has six functions:
+
+```python
+import pencil_puzzles as pp
+
+pp.generate(genre, shape=None, *, difficulty=None, seed=None)  # a new puzzle, its solution and rating
+pp.solve(puzzle)                                               # the solution, proven to be the only one
+pp.rate(puzzle)                                                # the level and the techniques it needs
+pp.check(puzzle, answer, *, finished=False)                    # every rule the answer breaks
+pp.hint(puzzle, answer=None)                                   # the next step from the answer so far
+pp.genres()                                                    # the genres you can use
+```
+
+- `genre` is a name from `pp.genres()`, such as `"sudoku"`.
+- `shape` is `(rows, columns)`. Without it, the genre's standard size is used.
+- `difficulty` is `"easy"`, `"medium"`, `"hard"` or `"expert"`. Without it, the puzzle can have any level.
+- `seed` is an integer. The same seed always gives the same puzzle.
+- Clues and solutions are tuples of rows, with 0 for an empty cell.
+- `puzzle.id` is a string such as `'sudoku:9x9:.1.4..5.6...'` that holds the whole puzzle. `pp.Puzzle.from_id(id)` reads it back.
+- Every function also takes `limits` and `cancel` to bound or stop long calls.
+
+## Docs
+
+- [Quickstart](https://pencil-puzzles.org/docs/quickstart/): install the package, generate a puzzle, read its clues, solution and rating
+- [Installation](https://pencil-puzzles.org/docs/install/): Python, Rust crate and command-line installs
+- [Generating puzzles](https://pencil-puzzles.org/docs/guide/generating/): `generate` and its genre, shape, difficulty and seed options
+- [Saving and loading puzzles](https://pencil-puzzles.org/docs/guide/saving/): puzzle IDs, text and JSON formats
+- [Solving puzzles](https://pencil-puzzles.org/docs/guide/solving/): `solve` and the `Solution` type
+- [Rating difficulty](https://pencil-puzzles.org/docs/guide/rating/): `rate`, levels and techniques
+- [Answers and hints](https://pencil-puzzles.org/docs/guide/answers/): `check` and `hint` for a player's partial or complete answer
+- [Long-running calls](https://pencil-puzzles.org/docs/guide/long-running/): limits, cancelling and threads
+- [API reference](https://pencil-puzzles.org/docs/api/): every public name in the `pencil_puzzles` package
+- [Difficulty](https://pencil-puzzles.org/docs/difficulty/): how the four levels are defined across genres
+
+## Genres
+
+Each genre page has the rules, techniques by level, parameters and formats.
+
+- [Fillomino](https://pencil-puzzles.org/docs/genres/fillomino/): divide the grid into regions whose cells hold the region's size; same-size regions never share a side. Standard size 10×10.
+- [Hashi](https://pencil-puzzles.org/docs/genres/hashi/): connect all islands with straight bridges that never cross, giving each island as many bridges as its number. Standard size 10×10.
+- [Hitori](https://pencil-puzzles.org/docs/genres/hitori/): shade cells so no unshaded number repeats in a row or column; shaded cells never share a side and unshaded cells stay connected. Standard size 8×8.
+- [Kakurasu](https://pencil-puzzles.org/docs/genres/kakurasu/): shade cells so each row and column clue is the sum of its shaded cells' positions. Standard size 7×7.
+- [Kakuro](https://pencil-puzzles.org/docs/genres/kakuro/): fill the white cells with digits 1–9 so each run adds up to its clue without repeating a digit. Standard size 10×10.
+- [Nurikabe](https://pencil-puzzles.org/docs/genres/nurikabe/): shade a connected sea, leaving islands the size of their numbers and no shaded 2×2 block. Standard size 10×10.
+- [Sudoku](https://pencil-puzzles.org/docs/genres/sudoku/): fill rows, columns and boxes with each digit exactly once. Standard size 9×9, also 4×4.
+
+## Web app
+
+- [Web app](https://pencil-puzzles.org/): play or solve every genre in the browser
+- `https://pencil-puzzles.org/<genre>/player/`: generate and play a puzzle
+- `https://pencil-puzzles.org/<genre>/solver/`: enter clues or paste a puzzle ID, text or JSON, and solve it
+- Add `?puzzle=<ID>` to either page to open a specific puzzle
+
+## Optional
+
+- [Benchmarks](https://pencil-puzzles.org/docs/benchmarks/README/): generation and rating times for every genre
+- [Changelog](https://pencil-puzzles.org/docs/changelog/): changes in each release
+- [Source code](https://github.com/emieks/pencil-puzzles): the Rust engine, Python bindings, web app and docs
+- [PyPI](https://pypi.org/project/pencil-puzzles/): the Python package

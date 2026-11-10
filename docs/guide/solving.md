@@ -1,3 +1,7 @@
+---
+description: Solve a puzzle with pencil-puzzles and get its solution, proven to be the only one.
+---
+
 # Solving puzzles
 
 `solve(puzzle)` returns the puzzle's solution as a `Solution`:

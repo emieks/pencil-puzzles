@@ -1,3 +1,7 @@
+---
+description: "Generate puzzles with pencil-puzzles: choose the genre, size, difficulty and seed."
+---
+
 # Generating puzzles
 
 ```python

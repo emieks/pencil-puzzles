@@ -36,7 +36,12 @@ copybutton_prompt_is_regexp = True
 copybutton_only_copy_prompt_lines = False
 
 html_theme = "furo"
-html_title = "pencil-puzzles"
+# docs/_templates/sidebar/brand.html shows the project name in the sidebar.
+templates_path = ["_templates"]
+html_title = "pencil-puzzles documentation"
+html_favicon = "../web/src/favicon.svg"
+# The documentation's address. Pages get canonical links and link previews, and the build writes a sitemap.
+html_baseurl = "https://pencil-puzzles.org/docs/"
 html_static_path = ["_static"]
 html_css_files = ["site.css"]
 html_copy_source = False
@@ -91,5 +96,62 @@ def _hide_puzzle_signature(app, what, name, obj, options, signature, return_anno
     return None
 
 
+def _description(app, pagename, doctree):
+    """A page's description: `description` in its front matter, or its first paragraph, cut at a sentence end within 160 characters."""
+    given = app.env.metadata.get(pagename, {}).get("description")
+    if given:
+        return given
+    if doctree is None:
+        return ""
+    from docutils import nodes
+
+    for paragraph in doctree.findall(nodes.paragraph):
+        if isinstance(paragraph.parent, (nodes.section, nodes.document)):
+            text = " ".join(paragraph.astext().split())
+            if len(text) <= 160:
+                return text
+            cut = text[:160]
+            end = cut.rfind(". ")
+            return cut[: end + 1] if end > 40 else cut.rsplit(" ", 1)[0] + "…"
+    return ""
+
+
+def _page_meta(app, pagename, templatename, context, doctree):
+    """Adds the page's description and its link preview tags."""
+    from html import escape
+
+    description = _description(app, pagename, doctree)
+    title = context.get("title", "")
+    title = app.config.html_title if pagename == app.config.root_doc else f"{title} - {app.config.html_title}"
+    url = app.config.html_baseurl + app.builder.get_target_uri(pagename)
+    tags = [
+        '<meta property="og:type" content="website">',
+        '<meta property="og:site_name" content="pencil-puzzles">',
+        f'<meta property="og:title" content="{escape(title)}">',
+        f'<meta property="og:url" content="{escape(url)}">',
+        '<meta property="og:image" content="https://pencil-puzzles.org/social-preview.png">',
+        '<meta name="twitter:card" content="summary_large_image">',
+    ]
+    if description:
+        tags[:0] = [f'<meta name="description" content="{escape(description)}">']
+        tags.append(f'<meta property="og:description" content="{escape(description)}">')
+    context["metatags"] = context.get("metatags", "") + "\n".join(tags) + "\n"
+
+
+def _sitemap(app, exception):
+    """Writes sitemap.xml with every page of the documentation."""
+    if exception or app.builder.format != "html":
+        return
+    from pathlib import Path
+
+    urls = sorted(app.config.html_baseurl + app.builder.get_target_uri(name) for name in app.env.found_docs)
+    lines = ['<?xml version="1.0" encoding="UTF-8"?>', '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
+    lines += [f"  <url><loc>{url}</loc></url>" for url in urls]
+    lines += ["</urlset>", ""]
+    Path(app.outdir, "sitemap.xml").write_text("\n".join(lines), encoding="utf-8")
+
+
 def setup(app):
     app.connect("autodoc-process-signature", _hide_puzzle_signature)
+    app.connect("html-page-context", _page_meta)
+    app.connect("build-finished", _sitemap)

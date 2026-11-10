@@ -1,3 +1,7 @@
+---
+description: Install pencil-puzzles, generate a puzzle, read its clues, solution and rating, and solve or check a puzzle in a few lines of Python.
+---
+
 # Quickstart
 
 Install the package:

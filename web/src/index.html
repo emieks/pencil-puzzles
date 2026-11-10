@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="description" content="Players and solvers for pencil puzzles.">
   <title>pencil-puzzles</title>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M1.5 1.5h13v13h-13zM6 1.5v13M10.5 1.5v13M1.5 6h13M1.5 10.5h13' fill='none' stroke='%23222' stroke-width='1'/%3E%3Crect x='6' y='6' width='4.5' height='4.5' fill='%23222'/%3E%3C/svg%3E">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <script>try { document.documentElement.dataset.theme = localStorage.getItem('pencil-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); } catch { document.documentElement.dataset.theme = 'light'; }</script>
   <link rel="stylesheet" href="style.css">
   <script type="module" src="app.js"></script>
@@ -16,18 +16,21 @@
   <header>
     <button id="show-games" type="button" aria-controls="sidebar" aria-expanded="false">Menu</button>
     <nav id="trail" aria-label="Breadcrumb"><a class="site-name" href="./">pencil-puzzles</a></nav>
+    <a class="header-link" href="docs/" target="_blank" rel="noopener">Documentation</a>
+    <button id="theme" type="button"><svg class="sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3"/><path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3.05 3.05l1.06 1.06M11.89 11.89l1.06 1.06M3.05 12.95l1.06-1.06M11.89 4.11l1.06-1.06"/></svg><svg class="moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.5A5.5 5.5 0 0 1 6.5 2.5a5.5 5.5 0 1 0 7 7z"/></svg><span id="theme-text"></span></button>
   </header>
   <aside id="sidebar" aria-label="Site">
     <nav id="directory" aria-label="Games"><a href="./">Overview</a></nav>
-    <nav id="project" aria-label="Project">
-      <p class="label">Project</p>
-      <a href="docs/">Documentation</a>
-      <a href="https://github.com/emieks/pencil-puzzles" target="_blank" rel="noopener noreferrer">Source on GitHub</a>
-      <a href="https://github.com/emieks/pencil-puzzles/issues" target="_blank" rel="noopener noreferrer">Report a problem</a>
-      <button id="theme" type="button"><svg class="sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3"/><path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3.05 3.05l1.06 1.06M11.89 11.89l1.06 1.06M3.05 12.95l1.06-1.06M11.89 4.11l1.06-1.06"/></svg><svg class="moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.5A5.5 5.5 0 0 1 6.5 2.5a5.5 5.5 0 1 0 7 7z"/></svg><span id="theme-text"></span></button>
-    </nav>
   </aside>
   <main id="main" tabindex="-1"><p role="status">Loading…</p></main>
+  <footer>
+    <span>pencil-puzzles is open source under the MIT license.</span>
+    <nav aria-label="Project">
+      <a href="docs/" target="_blank" rel="noopener">Documentation</a>
+      <a href="https://github.com/emieks/pencil-puzzles" target="_blank" rel="noopener noreferrer">Source on GitHub</a>
+      <a href="https://github.com/emieks/pencil-puzzles/issues" target="_blank" rel="noopener noreferrer">Report a problem</a>
+    </nav>
+  </footer>
   <noscript><p>JavaScript is required to play and solve puzzles.</p></noscript>
 </body>
 </html>

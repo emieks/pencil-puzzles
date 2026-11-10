@@ -1,3 +1,7 @@
+---
+description: Install pencil-puzzles for Python, the command-line tool or Rust, or build it from source.
+---
+
 # Installation
 
 ## Python
