@@ -4,6 +4,14 @@ export function route(pathname, catalogue) {
   const game = catalogue.find(g => g.metadata.id === parts[0]);
   return game && parts.length === 2 && ['player','solver'].includes(parts[1]) ? {page:parts[1],game} : {page:'missing'};
 }
+/** The title and description of a page, for the browser tab, search results and link previews. Without a game it is the home page. */
+export function pageMeta(game, page) {
+  if (!game) return {title:'pencil-puzzles: play and solve pencil puzzles online',description:'Play sudoku, kakuro, nurikabe and more in your browser. Every puzzle has one solution and a level from easy to expert.'};
+  const name = game.metadata.name, lower = name.toLowerCase();
+  return page === 'solver'
+    ? {title:`${name} solver · pencil-puzzles`,description:`Enter ${lower} clues or paste a puzzle ID to get the solution.`}
+    : {title:`${name}: play online · pencil-puzzles`,description:`Play ${lower} online from easy to expert. ${game.metadata.summary}`};
+}
 const same = (a, b) => a.length === b.length && a.every((v, i) => v === b[i]);
 /** Undoable cell values plus per-cell notes; notes default to empty strings. */
 export class History {

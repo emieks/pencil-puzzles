@@ -5,6 +5,20 @@ and versions follow [Semantic Versioning](https://semver.org/). Changes that
 alter generated puzzles are marked **(new puzzles)**, and changes that alter
 ratings **(new ratings)**.
 
+## [Unreleased]
+
+### Changed
+
+- Web app: new layout. The list of genres shows an example board for each
+  genre. Puzzle pages keep the title, board and controls in the same place
+  on every genre and in both modes, and the rules, keyboard shortcuts and
+  loading a puzzle are in the side column.
+- Web app: pages change without reloading.
+- Web app: New puzzle asks for a second press once a game has moves.
+- Web app: sudoku offers 4x4 and 9x9 with no custom size.
+- Web app and documentation: new site icon, page titles and descriptions,
+  link previews and sitemaps.
+
 ## [0.4.0] - 2026-11-09
 
 ### Added

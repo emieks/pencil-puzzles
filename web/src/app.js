@@ -1,4 +1,4 @@
-import {route,History,toggleNote,removeNote,formatTime,combinations,remember} from './model.js';
+import {route,pageMeta,History,toggleNote,removeNote,formatTime,combinations,remember} from './model.js';
 const $ = (selector,root=document) => root.querySelector(selector);
 const main = $('#main');
 const escape = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -7,6 +7,13 @@ const link = (text,href,current) => {const a=element('a',text);a.href=href;if(cu
 const readSaved = key => {try{return JSON.parse(localStorage.getItem(key));}catch{return null;}};
 const save = (key,value) => {try{localStorage.setItem(key,JSON.stringify(value));}catch{/* Playing remains available without browser storage. */}};
 const forget = key => {try{localStorage.removeItem(key);}catch{/* Nothing to remove without browser storage. */}};
+/** What the page being shown must undo when another page replaces it: its listeners on the window and document, and its timers. */
+const cleanups = [];
+const onLeave = run => {cleanups.push(run);};
+const listen = (target,type,listener,options) => {target.addEventListener(type,listener,options);onLeave(()=>target.removeEventListener(type,listener,options));};
+const every = (run,ms) => {const id=setInterval(run,ms);onLeave(()=>clearInterval(id));};
+/** Sets the tab title and the description from the page's entry in `pageMeta`. */
+function setMeta(game,page){const meta=pageMeta(game,page);document.title=meta.title;$('meta[name="description"]')?.setAttribute('content',meta.description);}
 const icons = {
   undo:'<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 7h6a3 3 0 0 1 0 6H8M6.5 4.5 4 7l2.5 2.5"/></svg>',
   redo:'<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M12 7H6a3 3 0 0 0 0 6h2M9.5 4.5 12 7l-2.5 2.5"/></svg>',
@@ -27,6 +34,8 @@ class Engine {
     return new Promise((resolve,reject)=>{const id=++this.next;const timer=setTimeout(()=>this.stop('This puzzle took too long. Try a smaller size or another puzzle.'),15000);this.pending.set(id,{resolve,reject,timer});this.worker.postMessage({id,request});});
   }
   stop(message){this.worker?.terminate();this.worker=null;for(const p of this.pending.values()){clearTimeout(p.timer);p.reject(new Error(message));}this.pending.clear();}
+  /** Abandons the calls a page that is being left is still waiting for. Their promises never settle. */
+  drop(){if(!this.pending.size)return;this.worker?.terminate();this.worker=null;for(const p of this.pending.values())clearTimeout(p.timer);this.pending.clear();}
 }
 const engine=new Engine();
 function errorMessage(error){return /budget/i.test(error.message)?'This puzzle needs more work than the site allows. Try a smaller size, a lower difficulty or another puzzle.':error.message;}
@@ -161,51 +170,52 @@ function directory(catalogue,current) {
   nav.replaceChildren(link('Overview','./',current.page==='home'),element('p','Games','label'));
   for(const game of catalogue){
     const id=game.metadata.id,open=current.game===game,wrap=element('div',undefined,'game'+(open?' open':''));
-    wrap.append(link(game.metadata.name,`${id}/${current.page==='solver'?'solver':'player'}/`,false));
-    if(open){const modes=element('div',undefined,'modes');modes.append(link('Player',`${id}/player/`,current.page==='player'),link('Solver',`${id}/solver/`,current.page==='solver'));wrap.append(modes);}
+    wrap.append(link(game.metadata.name,`${id}/player/`,open));
     nav.append(wrap);
   }
   if(current.game){const sep=()=>element('span','/','sep'),here=element('span',current.page==='solver'?'Solver':'Player');here.setAttribute('aria-current','page');$('#trail').append(sep(),link(current.game.metadata.name,`${current.game.metadata.id}/player/`,false),sep(),here);}
   const toggle=$('#show-games'),isOpen=()=>document.body.classList.contains('directory-open');
   const setOpen=open=>{document.body.classList.toggle('directory-open',open);toggle.setAttribute('aria-expanded',String(open));};
   toggle.onclick=()=>setOpen(!isOpen());
-  document.addEventListener('click',e=>{if(isOpen()&&!e.target.closest('#sidebar,#show-games'))setOpen(false);});
-  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&isOpen()){setOpen(false);toggle.focus();}});
+  listen(document,'click',e=>{if(isOpen()&&!e.target.closest('#sidebar,#show-games'))setOpen(false);});
+  listen(document,'keydown',e=>{if(e.key==='Escape'&&isOpen()){setOpen(false);toggle.focus();}});
 }
 function home(catalogue){
-  document.title='pencil-puzzles';
-  const repo='https://github.com/emieks/pencil-puzzles';
+  setMeta();
   main.innerHTML=`<h1>pencil-puzzles</h1>
-<div class="prose"><p>Players and solvers for the genres in the pencil-puzzles project.</p>
-<p>The player generates a puzzle at a chosen size and level, from easy to expert, and checks your answer. Every generated puzzle has exactly one solution, and its level is the level of the hardest technique it needs. The solver solves a puzzle you enter or paste as an ID, text or JSON.</p>
-<p>The <a href="docs/">documentation</a> covers the Python package, the command-line tool, and each genre's rules, techniques and formats.</p></div>
-<h2>Games</h2><table class="overview"><thead><tr><th>Game</th><th class="description">Goal</th><th>Open</th></tr></thead><tbody id="games"></tbody></table>
+<p class="lede">Generate and play pencil puzzles from easy to expert, or solve one of your own.</p>
+<div class="game-grid" id="games"></div>
 <h2>About</h2>
-<div class="prose"><p>pencil-puzzles is an open-source engine for generating, solving and rating pencil puzzles, available as a Python package and a command-line tool. This site runs the same engine in the browser.</p>
-<p class="link-row"><a href="docs/">Documentation</a><a href="${repo}/issues" target="_blank" rel="noopener noreferrer">Report a problem</a><a href="${repo}" target="_blank" rel="noopener noreferrer">Source on GitHub</a></p></div>`;
-  for(const game of catalogue){const m=game.metadata;const row=document.createElement('tr');row.innerHTML=`<td class="game-name"><a href="${m.id}/player/">${escape(m.name)}</a></td><td class="description">${escape(m.summary)}</td><td class="tools"><a href="${m.id}/player/">Player</a><a href="${m.id}/solver/">Solver</a></td>`;$('#games').append(row);}
+<div class="prose"><p>pencil-puzzles is an open-source engine for generating, solving and rating pencil puzzles, available as a Python package and a command-line tool. This site runs the same engine in the browser. Every generated puzzle has exactly one solution, and its level, from easy to expert, is the level of the hardest technique needed to solve it.</p></div>`;
+  // Each game is a tile: its solved example board, which the build stores in the catalogue, above its name.
+  for(const game of catalogue){
+    const m=game.metadata,tile=element('a',undefined,'game-tile'),picture=element('div',undefined,'game-picture');
+    tile.href=`${m.id}/player/`;picture.setAttribute('aria-hidden','true');picture.inert=true;if(game.picture)picture.append(board(game.picture));
+    tile.append(picture,element('span',m.name,'game-name'));$('#games').append(tile);
+  }
 }
-function heading(game,page){const id=game.metadata.id;main.innerHTML=`<div class="title-row"><h1>${escape(game.metadata.name)}</h1><nav class="mode-links" aria-label="Game mode"><a id="tab-player" href="${id}/player/" ${page==='player'?'aria-current="page"':''}>Player</a><a id="tab-solver" href="${id}/solver/" ${page==='solver'?'aria-current="page"':''}>Solver</a></nav></div>`;document.title=`${game.metadata.name} ${page} · pencil-puzzles`;}
+function heading(game,page){const id=game.metadata.id;main.innerHTML=`<div class="title-row"><h1>${escape(game.metadata.name)}</h1><nav class="mode-links" aria-label="Game mode"><a id="tab-player" href="${id}/player/" ${page==='player'?'aria-current="page"':''}>Player</a><a id="tab-solver" href="${id}/solver/" ${page==='solver'?'aria-current="page"':''}>Solver</a></nav></div>`;setMeta(game,page);}
 function status(message,kind=''){const box=$('#status');box.className='status'+(kind?' '+kind:'');box.textContent=message;}
 function keyList(rows){return rows.flatMap(([keys,action])=>{const dt=element('dt');keys.split(' / ').forEach((k,i)=>{if(i)dt.append(' ');dt.append(element('kbd',k));});return [dt,element('dd',action)];});}
 const capitalize=s=>s.charAt(0).toUpperCase()+s.slice(1);
 function player(game){
   heading(game,'player');
   const id=game.metadata.id,sizes=game.sizes?.length?game.sizes:[game.params];
+  const sizeOptions=sizes.map(s=>`<option value="${escape(s)}"${s===game.params?' data-standard':''}>${escape(s)}</option>`).join('')+(game.custom===false?'':'<option value="">Custom…</option>');
   main.insertAdjacentHTML('beforeend',`<section aria-label="Puzzle player"><fieldset id="controls" class="player-layout">
-<div class="toolbar"><div class="field"><label for="size">Size</label><select id="size">${sizes.map(s=>`<option value="${escape(s)}">${escape(s)}</option>`).join('')}<option value="">Custom…</option></select><input id="params" value="${escape(game.params)}" spellcheck="false" autocomplete="off" aria-label="Custom size" hidden></div><div class="field"><label for="difficulty">Difficulty</label><select id="difficulty"><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option><option value="expert">Expert</option></select></div><button id="new-game" type="button">New puzzle</button></div>
+<div class="toolbar"><div class="field"><label for="size">Size</label><select id="size">${sizeOptions}</select><input id="params" value="${escape(game.params)}" spellcheck="false" autocomplete="off" aria-label="Custom size" hidden></div><div class="field"><label for="difficulty">Difficulty</label><select id="difficulty"><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option><option value="expert">Expert</option></select></div><button id="new-game" type="button">New puzzle</button></div>
 <div class="board-block"><div class="board-area"><div id="board"></div><button id="resume" type="button" hidden>Resume</button></div>
 <div class="board-caption"><span class="stats"><span id="timer">0:00</span> · <span id="progress"></span><span id="rating"></span></span><span class="caption-tools"><button id="pause" class="link-button" type="button">Pause</button><button id="share" class="link-button" type="button">Copy link</button></span></div></div>
 <div class="side">
 <div id="legend" class="legend"></div>
 <p id="combos" class="combos" aria-live="polite" hidden></p>
 <p id="finish-note" class="finish-note"></p>
-<div class="board-tools"><span class="group"><button id="undo" class="square" type="button" aria-label="Undo" title="Undo (Ctrl+Z)">${icons.undo}</button><button id="redo" class="square" type="button" aria-label="Redo" title="Redo (Ctrl+Y)">${icons.redo}</button></span><button id="clear" type="button" title="Clear all marks (undo restores them)">Clear</button><button id="check" class="primary push" type="button">Check</button></div>
+<div class="board-tools"><span class="group"><button id="undo" class="square" type="button" aria-label="Undo" title="Undo (Ctrl+Z)">${icons.undo}<span class="key-hint" aria-hidden="true">Z</span></button><button id="redo" class="square" type="button" aria-label="Redo" title="Redo (Ctrl+Y)">${icons.redo}<span class="key-hint" aria-hidden="true">Y</span></button></span><button id="clear" type="button" title="Clear all marks (undo restores them)">Clear</button><button id="check" class="primary push" type="button">Check</button></div>
 <div class="assist"><label class="check"><input id="mistakes" type="checkbox">Show mistakes</label><button id="reveal" class="link-button" type="button" title="Undo returns to your marks">Show solution</button></div>
 <p id="status" class="status" role="status" aria-live="polite">Loading…</p>
-<dl id="keys" class="keys"></dl>
-</div></fieldset></section>
-<details id="rules-box"><summary>Rules</summary><ul id="rules" class="rules"></ul></details><details><summary>Load puzzle</summary><label for="load-input">ID, text, or JSON</label><textarea id="load-input" maxlength="1000000" spellcheck="false" placeholder="${escape(game.example)}"></textarea><button id="load" type="button">Load</button></details>`);
+<div class="side-more"><details id="rules-box"><summary>Rules</summary><ul id="rules" class="rules"></ul></details><details class="keys-box"><summary>Keyboard shortcuts</summary><dl id="keys" class="keys"></dl></details><details><summary>Load puzzle</summary><label for="load-input">ID, text, or JSON</label><textarea id="load-input" maxlength="1000000" spellcheck="false" placeholder="${escape(game.example)}"></textarea><button id="load" type="button">Load</button></details></div>
+</div></fieldset></section>`);
+  customMenu($('#size'));customMenu($('#difficulty'));
   const key='pencil-game:'+id,saveKey=puzzle=>`pencil-save:${id}:${puzzle}`,listKey='pencil-saves:'+id,stepsKey='pencil-history:'+id;
   let current=null,history=null,busy=false,entry=false,mode='none',selected=-1,selection=new Set(),notesMode=false,drag=null,linkDrag=null,solvedTime=null,checkTimer=0,checkSeq=0,ends=new Map();
   let tool=null,paused=false,revealed=false,rating=null,solution=null,showMistakes=readSaved('pencil-mistakes')===true;
@@ -228,8 +238,8 @@ function player(game){
   const elapsed=()=>clock.elapsed+(clock.since===null?0:performance.now()-clock.since);
   function startClock(){if(current&&clock.since===null&&solvedTime===null&&!paused&&!document.hidden)clock.since=performance.now();}
   function pauseClock(){if(clock.since!==null){clock.elapsed+=performance.now()-clock.since;clock.since=null;}}
-  const tick=()=>{const t=$('#timer');t.textContent=(solvedTime===null?'':revealed?'Shown · ':'Solved · ')+formatTime(solvedTime??elapsed());t.classList.toggle('solved',solvedTime!==null);};setInterval(tick,1000);
-  document.addEventListener('visibilitychange',()=>{if(document.hidden){pauseClock();persist();}else startClock();});addEventListener('pagehide',()=>persist());
+  const tick=()=>{const t=$('#timer');t.textContent=(solvedTime===null?'':revealed?'Shown · ':'Solved · ')+formatTime(solvedTime??elapsed());t.classList.toggle('solved',solvedTime!==null);};every(tick,1000);
+  listen(document,'visibilitychange',()=>{if(document.hidden){pauseClock();persist();}else startClock();});listen(window,'pagehide',()=>persist());onLeave(()=>{clearTimeout(checkTimer);persist();});
   function sync(){
     const ready=!!current&&!busy&&!paused;
     $('#undo').disabled=!ready||!history?.past.length;$('#redo').disabled=!ready||!history?.future.length;
@@ -320,7 +330,7 @@ function player(game){
     const target=e.button===2?secondary():primary();if(!editable(i)||target===undefined){draw(undefined,true);return;}
     drag={value:target===blank()?target:toggled(i,target),values:[...history.values]};drag.values[i]=drag.value;draw(drag.values,true);
   });
-  addEventListener('pointermove',e=>{
+  listen(window,'pointermove',e=>{
     if(!drag)return;const cell=document.elementFromPoint(e.clientX,e.clientY)?.closest?.('#board .cell');if(!cell)return;const i=Number(cell.dataset.index);
     if(drag.select){if(!selection.has(i)&&!current.view.cells[i].block){selection.add(i);selected=i;draw();}return;}
     if(editable(i)&&drag.values[i]!==drag.value){drag.values[i]=drag.value;draw(drag.values);}
@@ -329,8 +339,8 @@ function player(game){
     if(linkDrag){const d=linkDrag;linkDrag=null;const dx=e.clientX-d.x,dy=e.clientY-d.y;if(e.type==='pointerup'&&Math.hypot(dx,dy)>d.size*.5)linkToward(d.from,Math.abs(dx)>Math.abs(dy)?[0,Math.sign(dx)]:[Math.sign(dy),0],d.step);}
     if(!drag)return;const done=drag;drag=null;if(!done.select)commit(done.values);
   };
-  addEventListener('pointerup',endDrag);addEventListener('pointercancel',endDrag);
-  document.addEventListener('keydown',e=>{
+  listen(window,'pointerup',endDrag);listen(window,'pointercancel',endDrag);
+  listen(document,'keydown',e=>{
     if(!current||busy||e.target.closest?.('input,textarea,select'))return;
     const mod=e.ctrlKey||e.metaKey,k=e.key.toLowerCase(),view=current.view,inBoard=boardBox.contains(e.target);
     if(mod&&(k==='z'||k==='y')){e.preventDefault();k==='y'||e.shiftKey?redo():undo();return;}
@@ -394,12 +404,12 @@ function player(game){
     else if(entry){
       const notesButton=legendButton('Notes','Notes mode',()=>setNotes(!notesMode));notesButton.id='notes';
       const pad=element('div',undefined,'keypad');pad.style.setProperty('--keypad-cols',String(Math.ceil(Math.sqrt(marks.length-1))));pad.append(...marks.slice(1).map(m=>{const b=legendButton(m.symbol,`Enter ${m.name}`,()=>enter(m.value,notesMode));b.dataset.value=m.value;return b;}));
-      const tools=element('div',undefined,'keypad-tools');tools.append(notesButton,legendButton('Erase','Erase cell',()=>enter(blank(),false)));
+      const tools=element('div',undefined,'keypad-tools');const eraseButton=legendButton('Erase','Erase cell',()=>enter(blank(),false));notesButton.append(keyHint('N'));eraseButton.append(keyHint('Del'));tools.append(notesButton,eraseButton);
       $('#legend').replaceChildren(pad,tools);
     }
     else{
       const group=element('div',undefined,'mark-tools');group.setAttribute('role','group');group.setAttribute('aria-label','Mark placed by a click');
-      group.append(...marks.map(m=>{const b=legendButton('',m.name,()=>{tool=m.value;draw();});b.dataset.tool=m.value;b.append(swatch(m),document.createTextNode(m.name));return b;}));
+      group.append(...marks.map(m=>{const b=legendButton('',m.name,()=>{tool=m.value;draw();});b.dataset.tool=m.value;b.append(swatch(m),document.createTextNode(m.name));const key=m.shaded?'Q':m===marks[0]?'R':m===marks.find((x,i)=>i>0&&!x.shaded)?'E':'';if(key){const hint=element('kbd',key);hint.setAttribute('aria-hidden','true');b.append(hint);}return b;}));
       $('#legend').replaceChildren(group);
     }
     setNotes(false);
@@ -412,7 +422,10 @@ function player(game){
   }
   const load=(puzzle,push)=>action('Loading…',async()=>accept(await engine.call({operation:'load',genre:id,puzzle}),{push}));
   async function newGame(){await action('Loading…',async()=>{const bytes=new Uint32Array(2);crypto.getRandomValues(bytes);const seed=((BigInt(bytes[0])<<32n)|BigInt(bytes[1])).toString();accept(await engine.call({operation:'generate',genre:id,params:$('#params').value,difficulty:$('#difficulty').value,seed}),{push:true});});}
-  $('#new-game').onclick=newGame;
+  // A game with moves in it is only replaced on a second press within three seconds.
+  let armed=0;const newButton=$('#new-game'),disarm=()=>{clearTimeout(armed);armed=0;newButton.textContent='New puzzle';newButton.classList.remove('confirm');};
+  newButton.onclick=()=>{const started=solvedTime===null&&history&&(history.past.length||history.future.length);if(started&&!armed){newButton.textContent='Press again';newButton.classList.add('confirm');armed=setTimeout(disarm,3000);return;}disarm();newGame();};
+  newButton.onblur=disarm;onLeave(()=>clearTimeout(armed));
   $('#size').onchange=()=>{const size=$('#size').value;$('#params').hidden=!!size;if(size)$('#params').value=size;else{$('#params').focus();$('#params').select();}};
   $('#params').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();newGame();}});
   $('#undo').onclick=undo;$('#redo').onclick=redo;
@@ -428,10 +441,10 @@ function player(game){
     status(s.unique?'Solution shown. Undo returns to your marks.':'One of several solutions shown. Undo returns to your marks.');
   });
   $('#load').onclick=()=>load($('#load-input').value,true);
-  addEventListener('popstate',()=>{const puzzle=new URLSearchParams(location.search).get('puzzle');if(puzzle&&puzzle!==current?.id)load(puzzle,false);});
+  listen(window,'popstate',()=>{const puzzle=new URLSearchParams(location.search).get('puzzle');if(puzzle&&puzzle!==current?.id)load(puzzle,false);});
   let shareTimer=0;
   $('#share').onclick=async()=>{const button=$('#share');try{await navigator.clipboard.writeText(location.href);button.textContent='Copied';clearTimeout(shareTimer);shareTimer=setTimeout(()=>{button.textContent='Copy link';},1500);}catch{status('Copy the URL from the address bar.');}};
-  const rulesBox=$('#rules-box'),rulesKey='pencil-rules:'+id,rulesOpen=readSaved(rulesKey);rulesBox.open=rulesOpen===null?true:!!rulesOpen;rulesBox.ontoggle=()=>save(rulesKey,rulesBox.open);
+  const rulesBox=$('#rules-box'),rulesKey='pencil-rules:'+id,rulesOpen=readSaved(rulesKey);rulesBox.open=!!rulesOpen;rulesBox.ontoggle=()=>save(rulesKey,rulesBox.open);
   const saved=readSaved(key);showSize(saved?.params||game.params);if(saved?.difficulty&&[...$('#difficulty').options].some(o=>o.value===saved.difficulty))$('#difficulty').value=saved.difficulty;
   const supplied=new URLSearchParams(location.search).get('puzzle')||saved?.id;
   if(supplied)load(supplied,false);else newGame();
@@ -439,17 +452,18 @@ function player(game){
 }
 function solver(game){
   heading(game,'solver');
-  const id=game.metadata.id;
+  const id=game.metadata.id,sizes=game.sizes?.length?game.sizes:[game.params];
+  const sizeOptions=sizes.map(s=>`<option value="${escape(s)}"${s===game.params?' data-standard':''}>${escape(s)}</option>`).join('')+(game.custom===false?'':'<option value="">Custom…</option>');
   main.insertAdjacentHTML('beforeend',`<section aria-label="Puzzle solver"><fieldset id="solver-controls" class="solver-layout">
-<div class="toolbar"><div class="field"><label for="editor-shape">Size</label><input id="editor-shape" value="${escape(game.params)}" spellcheck="false" autocomplete="off"></div><button id="new-grid" type="button">New grid</button><button id="example" type="button">Example</button></div>
+<div class="toolbar"><div class="field"><label for="editor-size">Size</label><select id="editor-size">${sizeOptions}</select><input id="editor-shape" value="${escape(game.params)}" spellcheck="false" autocomplete="off" aria-label="Custom size" hidden></div><button id="example" type="button">Example</button></div>
 <div id="editor-grid" class="board-area"></div>
-<div class="actions"><button id="clear-clues" type="button">Clear clues</button><button id="solve" class="primary" type="button">Solve</button></div>
+<div class="actions"><button id="clear-clues" type="button">Clear</button><button id="solve" class="primary" type="button">Solve</button></div>
 <p id="status" class="status" role="status" aria-live="polite"></p>
 <div class="result-head result-part"><h2 id="result-title"></h2><a id="play-link" href="${id}/player/">Play this puzzle</a></div>
 <div id="solutions" class="result-boards result-part" aria-label="Solver result"></div>
 <p id="result-id" class="puzzle-id result-part"></p>
-</fieldset></section>
-<details><summary>Import ID or text</summary><label for="puzzle-input">ID, text, or JSON</label><textarea id="puzzle-input" maxlength="1000000" spellcheck="false" placeholder="${escape(game.example)}"></textarea><button id="import" type="button">Import</button></details>`);
+<div class="side-more solver-more"><details><summary>Import ID or text</summary><label for="puzzle-input">ID, text, or JSON</label><textarea id="puzzle-input" maxlength="1000000" spellcheck="false" placeholder="${escape(game.example)}"></textarea><button id="import" type="button">Import</button></details></div>
+</fieldset></section>`);
   let editor=null;let busy=false;let fields=[];
   const showResult=on=>{$('#solver-controls').classList.toggle('has-result',on);if(!on)$('#tab-player').href=`${id}/player/`;};
   function invalidate(){showResult(false);status('');}
@@ -464,7 +478,7 @@ function solver(game){
     e.preventDefault();if(best){best.focus();try{best.select();}catch{/* Not every input type supports select(). */}}
   }
   function drawEditor(value){
-    editor=value;$('#editor-shape').value=value.shape;
+    editor=value;$('#editor-shape').value=value.shape;syncSize();
     const table=board(value.view);table.setAttribute('aria-label','Puzzle clues');table.addEventListener('keydown',moveBetweenFields);
     fields=value.fields.map((field,i)=>{
       const input=document.createElement('input');if(field.pattern){input.type='text';input.pattern=field.pattern;input.maxLength=5;input.spellcheck=false;input.autocomplete='off';}else{input.type='number';input.inputMode='numeric';input.min=String(field.min);input.max=String(field.max);input.step='1';}input.required=!field.optional;input.value=field.value;input.className='clue-input';input.setAttribute('aria-label',label(field.place));input.dataset.field=String(i);input.oninput=invalidate;
@@ -478,7 +492,11 @@ function solver(game){
   }
   async function action(message,run){if(busy)return;busy=true;$('#solver-controls').disabled=true;$('#import').disabled=true;status(message);try{await run();}catch(e){status(errorMessage(e),'error');}finally{busy=false;$('#solver-controls').disabled=false;$('#import').disabled=false;}}
   async function open(puzzle){await action('Loading…',async()=>{drawEditor(await engine.call({operation:'editor',genre:id,shape:$('#editor-shape').value,puzzle:puzzle||null}));status('');});}
-  $('#new-grid').onclick=()=>open(null);$('#example').onclick=()=>open(game.example);
+  // The size menu opens an empty grid of the chosen size. Custom shows the text box, which Enter applies.
+  customMenu($('#editor-size'));
+  const syncSize=()=>{const shape=$('#editor-shape').value,preset=[...$('#editor-size').options].some(o=>o.value&&o.value===shape);$('#editor-size').value=preset?shape:'';$('#editor-shape').hidden=preset;};
+  $('#editor-size').onchange=()=>{const size=$('#editor-size').value;$('#editor-shape').hidden=!!size;if(size){$('#editor-shape').value=size;open(null);}else{$('#editor-shape').focus();$('#editor-shape').select();}};
+  $('#example').onclick=()=>open(game.example);
   $('#editor-shape').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();open(null);}});
   $('#clear-clues').onclick=()=>{for(const input of fields)input.value='';invalidate();fields[0]?.focus();};
   $('#import').onclick=()=>open($('#puzzle-input').value);
@@ -496,7 +514,60 @@ function solver(game){
   open(new URLSearchParams(location.search).get('puzzle'));
 }
 
+/** Replaces a select with a button and a list drawn by the page. The select stays in the document, hidden, and still holds the value and fires `change`. */
+function customMenu(select){
+  const wrap=element('div',undefined,'menu'),button=element('button',undefined,'menu-button'),list=element('div',undefined,'menu-list');
+  const name=document.querySelector(`label[for="${select.id}"]`)?.textContent||'',native=Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value');
+  button.type='button';button.setAttribute('aria-haspopup','listbox');button.setAttribute('aria-expanded','false');
+  list.setAttribute('role','listbox');list.setAttribute('aria-label',name);list.hidden=true;
+  for(const option of select.options){
+    const item=element('div',option.textContent,'menu-item');item.setAttribute('role','option');item.dataset.value=option.value;item.tabIndex=-1;
+    if(option.hasAttribute('data-standard'))item.append(element('span','standard','menu-tag'));
+    list.append(item);
+  }
+  const items=[...list.children];
+  const sync=()=>{const value=native.get.call(select),text=select.selectedOptions[0]?.textContent||'';button.textContent=text;button.setAttribute('aria-label',name?`${name}: ${text}`:text);for(const item of items)item.setAttribute('aria-selected',String(item.dataset.value===value));};
+  // The page sets the select's value in code, which fires no event, so the setter updates the button.
+  Object.defineProperty(select,'value',{configurable:true,get(){return native.get.call(select);},set(value){native.set.call(select,value);sync();}});
+  const open=on=>{list.hidden=!on;button.setAttribute('aria-expanded',String(on));if(on)(list.querySelector('[aria-selected="true"]')||items[0]).focus();};
+  const choose=item=>{select.value=item.dataset.value;open(false);button.focus();select.dispatchEvent(new Event('change',{bubbles:true}));};
+  button.onclick=()=>open(list.hidden);
+  list.onclick=e=>{const item=e.target.closest('.menu-item');if(item)choose(item);};
+  wrap.addEventListener('keydown',e=>{
+    e.stopPropagation();
+    const at=items.indexOf(document.activeElement);
+    if(list.hidden){if(['ArrowDown','ArrowUp'].includes(e.key)){e.preventDefault();open(true);}return;}
+    if(e.key==='Escape'){e.preventDefault();open(false);button.focus();}
+    else if(e.key==='Enter'||e.key===' '){e.preventDefault();if(at>=0)choose(items[at]);}
+    else if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();items[Math.max(0,Math.min(items.length-1,at+(e.key==='ArrowDown'?1:-1)))].focus();}
+    else if(e.key==='Home'||e.key==='End'){e.preventDefault();items.at(e.key==='Home'?0:-1).focus();}
+  });
+  wrap.addEventListener('focusout',e=>{if(!wrap.contains(e.relatedTarget))open(false);});
+  select.hidden=true;wrap.append(button,list);select.after(wrap);sync();
+}
+/** A button's shortcut key, shown dim in its bottom right corner. */
+function keyHint(text){const hint=element('span',text,'key-hint');hint.setAttribute('aria-hidden','true');return hint;}
+
 try{
   const response=await fetch('catalogue.json');if(!response.ok)throw new Error('Could not load the list of games.');const catalogue=await response.json();
-  const current=route(location.pathname.slice(new URL(document.baseURI).pathname.length-1),catalogue);directory(catalogue,current);if(current.page==='home')home(catalogue);else if(current.page==='player')player(current.game);else if(current.page==='solver')solver(current.game);else{document.title='Page not found · pencil-puzzles';main.innerHTML='<h1>Page not found</h1><p>That game or page does not exist.</p><p><a href="./">Back to all games</a></p>';}
+  const base=new URL(document.baseURI).pathname;let shown=null;
+  /** Shows the page for the current address in place of the one on screen. */
+  const show=()=>{
+    for(const run of cleanups.splice(0))run();
+    engine.drop();
+    [...$('#trail').children].slice(1).forEach(node=>node.remove());
+    document.body.classList.remove('directory-open');$('#show-games').setAttribute('aria-expanded','false');
+    shown=location.pathname;
+    const current=route(location.pathname.slice(base.length-1),catalogue);directory(catalogue,current);if(current.page==='home')home(catalogue);else if(current.page==='player')player(current.game);else if(current.page==='solver')solver(current.game);else{document.title='Page not found · pencil-puzzles';main.innerHTML='<h1>Page not found</h1><p>That game or page does not exist.</p><p><a href="./">Back to all games</a></p>';}
+  };
+  // Links between pages of the app change the address and show the page without loading a new document.
+  document.addEventListener('click',e=>{
+    if(e.defaultPrevented||e.button||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey)return;
+    const a=e.target.closest?.('a[href]');if(!a||a.target||a.hasAttribute('download'))return;
+    const url=new URL(a.href),path=url.pathname.slice(base.length);
+    if(url.origin!==location.origin||!url.pathname.startsWith(base)||path.startsWith('docs/')||/\.[a-z0-9]+$/i.test(path)||(url.pathname===location.pathname&&url.hash))return;
+    e.preventDefault();if(url.href!==location.href)history.pushState(null,'',url);show();scrollTo(0,0);
+  });
+  addEventListener('popstate',()=>{if(location.pathname!==shown)show();});
+  show();
 }catch(e){main.replaceChildren(element('h1','Could not load the list of games'),element('p',errorMessage(e)));}
