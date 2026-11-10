@@ -7,6 +7,11 @@ ratings **(new ratings)**.
 
 ## [Unreleased]
 
+### Added
+
+- `llms.txt` at https://pencil-puzzles.org/llms.txt, describing the package
+  and linking to the documentation.
+
 ### Changed
 
 - Web app: new layout. The list of genres shows an example board for each
