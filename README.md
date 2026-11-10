@@ -18,7 +18,7 @@ that needs a technique such as an X-wing.
   </picture>
 </p>
 
-**[Play them in your browser →](https://pencil-puzzles.org/)** ·
+**[Play them in your browser](https://pencil-puzzles.org/)** ·
 **[Documentation](https://pencil-puzzles.org/docs/)**
 
 ## Quick start
