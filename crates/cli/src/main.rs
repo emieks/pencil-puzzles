@@ -2,7 +2,8 @@
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 use anyhow::{Result, anyhow, bail};
-use clap::{Args, Parser, Subcommand, ValueEnum};
+use clap::{Args, CommandFactory, Parser, Subcommand, ValueEnum};
+use clap_complete::{Shell, generate};
 use pencil_puzzles::{Budget, Difficulty, Input, Rating, Solutions, find, genres, read};
 use std::{
     fs,
@@ -72,6 +73,11 @@ enum Command {
         input: InputArgs,
         #[arg(long)]
         answer: Option<PathBuf>,
+    },
+    /// Print a shell completion script to standard output.
+    Completions {
+        /// The shell to generate a script for.
+        shell: Shell,
     },
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq, ValueEnum)]
@@ -387,6 +393,14 @@ fn run(cli: Cli, selected: Option<&str>) -> Result<bool> {
                 }
             }
             print_all(outputs, args.format)?;
+        }
+        Command::Completions { shell } => {
+            generate(
+                shell,
+                &mut Cli::command(),
+                "pencil-puzzles",
+                &mut io::stdout(),
+            );
         }
     }
     Ok(true)
