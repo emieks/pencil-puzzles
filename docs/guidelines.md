@@ -319,7 +319,7 @@ See [the framework design](design/framework.md).
 
 ## Adding a genre
 
-1. Open an issue proposing the genre, with its rules and origin.
+1. Open an issue proposing the genre, with its rules.
 2. Create `crates/genres/<id>/` (N3) and add it to `pencil-puzzles` (K4).
 3. Copy [the template](genres/TEMPLATE.md) to `docs/genres/<id>.md` and write
    the rules, variables, rule instances and techniques first (D1).
