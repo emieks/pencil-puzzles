@@ -21,6 +21,7 @@ Requires Rust 1.88 or newer.
 | `rate` | Rates puzzles from easy to expert |
 | `check` | Checks an answer against the rules |
 | `hint` | Gives the next step from a partial answer |
+| `completions <shell>` | Prints a completion script for bash, zsh, fish, PowerShell or elvish |
 
 `solve`, `rate`, `check` and `hint` read a file, standard input, or a puzzle
 ID with `--id`. Output is text by default; `--format pretty` prints a grid and

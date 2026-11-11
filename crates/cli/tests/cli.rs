@@ -267,3 +267,12 @@ fn sudoku_aliases_work_as_generic_subcommands() {
     let json: serde_json::Value = serde_json::from_str(&stdout(&s)).unwrap();
     assert_eq!(json["genre"], "sudoku");
 }
+
+#[test]
+fn completions_print_a_bash_script() {
+    let o = run(&["completions", "bash"], "");
+    success(&o);
+    let script = stdout(&o);
+    assert!(!script.is_empty());
+    assert!(script.contains("generate"));
+}
