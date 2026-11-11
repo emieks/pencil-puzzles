@@ -147,7 +147,6 @@ footer a:hover { color: var(--text); text-decoration: underline; }
   main:has(.player-layout, .solver-layout) { --slot: min(526px, calc(var(--page) - 320px)); --frame: var(--slot); grid-template-columns: minmax(0, 1112px); }
   .title-row, .player-layout { width: 100%; max-width: var(--frame); }
   .player-layout, .solver-layout { --avail: calc(var(--slot) - 6px); }
-  .player-layout > .board-block, .solver-layout > #editor-grid { min-width: min(var(--slot), 100%); }
 }
 @media (min-width: 900px) {
   main:has(.player-layout, .solver-layout) { --slot: min(526px, calc(var(--page) - 612px)); --frame: calc(var(--slot) + 292px); }
@@ -340,25 +339,24 @@ button.cell:hover:not(:disabled) { background: var(--subtle); border: 0; }
 .game-picture .cell:not(.given):not(.block):not(.shaded):not(.labelled), .game-picture .cell.dot, .game-picture .cell.cross { color: var(--accent); }
 .game-picture .cell.circled::after { border-color: var(--accent); }
 
-/* Solver: the editor is in the board's column, at the player's board size. The import box is a closed row in a side column.
-   From 1400px the result sits beside the editor, where the player's controls are, and the import box moves under it. */
-.solver-layout { display: grid; justify-content: start; grid-template-columns: auto; grid-template-areas: "toolbar" "editor" "actions" "status" "head" "result" "id" "more"; }
+/* Solver: the editor is in the board's column, at the player's board size, with its buttons, status and import box under it at its own width.
+   From 1400px the result sits beside the editor, where the player's controls are. */
+.solver-layout { display: grid; justify-content: start; grid-template-columns: auto; grid-template-areas: "toolbar" "editor" "head" "result" "id"; }
 .solver-layout > .toolbar { grid-area: toolbar; }
-.solver-layout > #editor-grid { grid-area: editor; }
-.solver-layout > .actions { grid-area: actions; }
-.solver-layout > .status { grid-area: status; margin-top: 12px; }
+.solver-layout > .editor-block { grid-area: editor; width: fit-content; max-width: 100%; }
 .solver-layout > .result-head { grid-area: head; }
 .solver-layout > #solutions { grid-area: result; }
 /* The puzzle ID wraps within the result column. */
 .solver-layout > #result-id { grid-area: id; contain: inline-size; }
-.solver-layout > .solver-more { grid-area: more; width: 100%; max-width: 252px; margin-top: 28px; align-self: start; }
 .solver-layout:not(.has-result) > .result-part { display: none; }
 @media (min-width: 1400px) {
-  .solver-layout { grid-template-columns: minmax(var(--slot), max-content) 252px; grid-template-areas: "toolbar ." "editor more" "actions ." "status ."; column-gap: 40px; }
-  .solver-layout.has-result { grid-template-columns: minmax(var(--slot), max-content) auto; grid-template-areas: "toolbar head" "editor result" "actions id" "status more"; }
-  .solver-layout > .solver-more { margin-top: 2px; }
-  .solver-layout.has-result > .solver-more { margin-top: 20px; }
+  .solver-layout { grid-template-columns: minmax(var(--slot), max-content) auto; grid-template-areas: "toolbar head" "editor result" "editor id"; column-gap: 40px; align-items: start; }
 }
+/* The buttons, status and import box keep to the editor's width. */
+.editor-block > .actions, .editor-block > .status, .editor-block > .solver-more { contain: inline-size; }
+.editor-block > .status { margin-top: 12px; }
+.editor-block > .status:empty { display: none; }
+.solver-more { margin-top: 20px; }
 .actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 14px; padding: 0 2px; }
 .result-head { display: flex; align-items: baseline; gap: 20px; margin-bottom: 18px; min-height: 32px; align-self: center; }
 .result-head h2 { margin: 0; }

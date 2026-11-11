@@ -456,13 +456,13 @@ function solver(game){
   const sizeOptions=sizes.map(s=>`<option value="${escape(s)}"${s===game.params?' data-standard':''}>${escape(s)}</option>`).join('')+(game.custom===false?'':'<option value="">Custom…</option>');
   main.insertAdjacentHTML('beforeend',`<section aria-label="Puzzle solver"><fieldset id="solver-controls" class="solver-layout">
 <div class="toolbar"><div class="field"><label for="editor-size">Size</label><select id="editor-size">${sizeOptions}</select><input id="editor-shape" value="${escape(game.params)}" spellcheck="false" autocomplete="off" aria-label="Custom size" hidden></div><button id="example" type="button">Example</button></div>
-<div id="editor-grid" class="board-area"></div>
+<div class="editor-block"><div id="editor-grid" class="board-area"></div>
 <div class="actions"><button id="clear-clues" type="button">Clear</button><button id="solve" class="primary" type="button">Solve</button></div>
 <p id="status" class="status" role="status" aria-live="polite"></p>
+<div class="side-more solver-more"><details><summary>Import ID or text</summary><label for="puzzle-input">ID, text, or JSON</label><textarea id="puzzle-input" maxlength="1000000" spellcheck="false" placeholder="${escape(game.example)}"></textarea><button id="import" type="button">Import</button></details></div></div>
 <div class="result-head result-part"><h2 id="result-title"></h2><a id="play-link" href="${id}/player/">Play this puzzle</a></div>
 <div id="solutions" class="result-boards result-part" aria-label="Solver result"></div>
 <p id="result-id" class="puzzle-id result-part"></p>
-<div class="side-more solver-more"><details><summary>Import ID or text</summary><label for="puzzle-input">ID, text, or JSON</label><textarea id="puzzle-input" maxlength="1000000" spellcheck="false" placeholder="${escape(game.example)}"></textarea><button id="import" type="button">Import</button></details></div>
 </fieldset></section>`);
   let editor=null;let busy=false;let fields=[];
   const showResult=on=>{$('#solver-controls').classList.toggle('has-result',on);if(!on)$('#tab-player').href=`${id}/player/`;};
