@@ -4,8 +4,6 @@ use crate::human::{PROFILE, analyze_state, initial_masks};
 use crate::*;
 use pencil_puzzles_core::human;
 use std::{error::Error, fmt};
-/// Nurikabe rating version. Version 2 uses human techniques.
-pub const RATER_VERSION: u32 = 2;
 /// Value `v` (0 land, 1 sea) of cell `i`, as players write it.
 fn literal(p: &Puzzle, i: usize, v: usize) -> Literal {
     Literal {
@@ -28,7 +26,7 @@ fn rate_inner(p: &Puzzle, budget: &Budget) -> Result<(Rating, Vec<Step>), RateEr
         return Err(RateError::Unrated);
     }
     let steps = human::public_steps(&trace, initial_masks(p), |i, v| literal(p, i, v));
-    Ok((human::rating(&trace, &PROFILE, RATER_VERSION), steps))
+    Ok((human::rating(&trace, &PROFILE), steps))
 }
 /// Rate a uniquely solvable puzzle by the human techniques it needs, or
 /// report it unrated if they cannot finish it.

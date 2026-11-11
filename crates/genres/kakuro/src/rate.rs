@@ -4,9 +4,6 @@ use crate::*;
 use pencil_puzzles_core::human;
 use std::{error::Error, fmt};
 
-/// Kakuro rater version.
-pub const RATER_VERSION: u32 = 1;
-
 /// Candidate `v` of white cell `i`: digit `v + 1`.
 fn literal(p: &Puzzle, grid: &Grid, i: usize, v: usize) -> Literal {
     Literal {
@@ -33,7 +30,7 @@ fn rate_inner(p: &Puzzle, budget: &Budget) -> Result<(Rating, Vec<Step>), RateEr
         return Err(RateError::Unrated);
     }
     let steps = human::public_steps(&trace, start, |i, v| literal(p, &grid, i, v));
-    Ok((human::rating(&trace, &PROFILE, RATER_VERSION), steps))
+    Ok((human::rating(&trace, &PROFILE), steps))
 }
 
 /// Rate a uniquely solvable puzzle by the human techniques it needs, or

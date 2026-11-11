@@ -13,7 +13,7 @@ fn main() {
         ("expert", "8x8", Difficulty::Expert, 0),
         ("largest", "16x16", Difficulty::Easy, 5),
     ];
-    let mut golden = String::from("# params difficulty seed id generator_version\n");
+    let mut golden = String::from("# params difficulty seed id\n");
     for (name, shape, level, seed) in cases {
         let mut options = GenerateOptions::new(shape.parse().unwrap(), seed);
         options.difficulty = Some(level);
@@ -25,14 +25,8 @@ fn main() {
         record.shared.params = Some(shape.into());
         record.shared.difficulty = Some(level);
         record.shared.seed = Some(seed);
-        record.shared.generator_version = Some(g.generator_version);
-        record.shared.rater_version = Some(g.rating.rater_version);
         record.shared.rating = Some((g.rating.level, g.rating.score));
-        golden.push_str(&format!(
-            "{shape} {level} {seed} {} {}\n",
-            g.puzzle.id(),
-            g.generator_version
-        ));
+        golden.push_str(&format!("{shape} {level} {seed} {}\n", g.puzzle.id()));
         println!("{name}: {} {:?}", g.puzzle.id(), g.rating);
         if write {
             fs::create_dir_all(root.join("corpus/kakuro")).unwrap();

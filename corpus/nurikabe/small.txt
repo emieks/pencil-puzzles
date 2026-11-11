@@ -5,12 +5,10 @@ grid:
 ...
 ...
 5.1
-generator_version: 3
 params: 3x3
 difficulty: easy
 seed: 0
 rating: easy 19
-rater_version: 2
 solution:
 ---
 -##

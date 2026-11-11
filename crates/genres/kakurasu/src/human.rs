@@ -233,7 +233,6 @@ static TECHNIQUES: [Technique<Lines>; 7] = [
 /// The canonical Kakurasu human profile.
 pub(crate) static PROFILE: Profile<Lines> = Profile {
     id: "kakurasu-human",
-    version: 1,
     techniques: &TECHNIQUES,
     broken,
 };

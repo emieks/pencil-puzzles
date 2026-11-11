@@ -341,7 +341,6 @@ pub(crate) static TECHNIQUES: [Technique<Layout>; 8] = [
 /// The canonical Hashi human profile.
 pub(crate) static PROFILE: Profile<Layout> = Profile {
     id: "hashi-human",
-    version: 1,
     techniques: &TECHNIQUES,
     broken,
 };

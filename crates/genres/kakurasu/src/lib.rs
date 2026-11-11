@@ -50,13 +50,13 @@ mod solver;
 
 pub use answer::{Answer, Mark};
 pub use check::check;
-pub use generate::{GENERATOR_VERSION, GenerateError, GenerateOptions, Generated, generate};
+pub use generate::{GenerateError, GenerateOptions, Generated, generate};
 pub use pencil_puzzles_core::{
     Budget, BudgetExceeded, Difficulty, Hint, Literal, ParseError, Place, RateError, Rating, Step,
     Violation,
 };
 pub use puzzle::{Puzzle, parse_records, write_record};
-pub use rate::{HintError, RATER_VERSION, hint, rate, rate_with_steps};
+pub use rate::{HintError, hint, rate, rate_with_steps};
 pub use shape::{MAX_SIZE, Params, Shape};
 pub use solver::{Solutions, count_solutions, solve};
 

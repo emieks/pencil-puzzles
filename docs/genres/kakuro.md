@@ -19,8 +19,7 @@ every run has its sum. The first row and column hold only blocks.
 
 ## Example
 
-Generator version 2, shape `5x5`, easy, seed `0` produces
-`kakuro:5x5:HbBcAcBbB/7.5.8.3.3.6.8.6`:
+Shape `5x5`, easy, seed `0` produces `kakuro:5x5:HbBcAcBbB/7.5.8.3.3.6.8.6`:
 
 ```text
 Puzzle                     Solution
@@ -55,7 +54,7 @@ With one candidate everywhere, the check is exactly "some run breaks R1".
 
 ## Techniques
 
-Rater version 1 uses the profile `kakuro-human` version 1.
+The rater uses the profile `kakuro-human`.
 
 | Technique | Level | What it does |
 | --- | --- | --- |
@@ -93,21 +92,21 @@ grid, including the first row and column; a grid with fewer than 3 rows or
 columns holds only blocks. Sums go from 1 to 45. Sums that no
 digits can reach still parse and have no solution.
 
-Generator version 2 starts from white cells everywhere below the first row
-and right of the first column and makes cells blocks in pairs that are
-symmetric under a half turn of that inner area. First every run longer than
-the level's limit (4 cells up to medium and for any level, 5 at hard and
-expert) is broken by a block inside it; then random cells become blocks
-until the level's share of the inner cells is blocked (32% easy, 30% medium
-and any level, 28% hard, 26% expert). A new block also blocks any white
-cell left in a run of one cell; a placement is skipped if it would change
-more than 6 cells, leave an inner row or column without white cells, or
-split the white cells, and one that changes only the pair is preferred. If
-no block can break a long run, the layout starts over; after 256 failed
-layouts, runs one cell longer are allowed. Digits are filled in row-major
-order by backtracking, each run preferring low or high digits at random,
-more strictly at lower levels, never completing a 2x2 block of white cells
-whose digits could be swapped; the layout starts over after 20,000 steps.
+The generator starts from white cells everywhere below the first row and right
+of the first column and makes cells blocks in pairs that are symmetric under a
+half turn of that inner area. First every run longer than the level's limit (4
+cells up to medium and for any level, 5 at hard and expert) is broken by a
+block inside it; then random cells become blocks until the level's share of
+the inner cells is blocked (32% easy, 30% medium and any level, 28% hard, 26%
+expert). A new block also blocks any white cell left in a run of one cell; a
+placement is skipped if it would change more than 6 cells, leave an inner row
+or column without white cells, or split the white cells, and one that changes
+only the pair is preferred. If no block can break a long run, the layout
+starts over; after 256 failed layouts, runs one cell longer are allowed.
+Digits are filled in row-major order by backtracking, each run preferring low
+or high digits at random, more strictly at lower levels, never completing a
+2x2 block of white cells whose digits could be swapped; the layout starts over
+after 20,000 steps.
 
 The sums follow from the digits. Each candidate is screened with the
 techniques up to the requested level, at most Medium; if they do not solve

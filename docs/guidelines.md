@@ -26,8 +26,8 @@ required. To add a genre, see [Adding a genre](#adding-a-genre).
 ## What a genre provides
 
 - **P1. Metadata.** Id, display name and aliases ([Naming](#naming)), a
-  one-sentence summary of the rules, generator and rater versions, and the
-  number and short name of each rule (R1 "row totals", ...).
+  one-sentence summary of the rules, and the number and short name of each
+  rule (R1 "row totals", ...).
 - **P2. Shape and parameters.** Types that validate against the size limits,
   have defaults and have stable text encodings, used in
   [puzzle IDs](#puzzle-ids), the `params` key (F6) and the command-line tool.
@@ -44,8 +44,8 @@ required. To add a genre, see [Adding a genre](#adding-a-genre).
   or an error if the puzzle does not have exactly one solution or the
   techniques cannot finish it. Accepts a work budget.
 - **P7. Generate.** Takes parameters, an optional difficulty, a seed, limits
-  and a work budget. Returns the puzzle, solution, rating, seed, generator
-  version and number of candidates tried, or an error saying why it stopped.
+  and a work budget. Returns the puzzle, solution, rating, seed and number of
+  candidates tried, or an error saying why it stopped.
 - **P8. Check.** Takes a puzzle and an answer and returns every violation:
   rule number, location and any numbers involved. Violations contain data
   only, so tools can build and translate the messages. A finished answer is
@@ -69,16 +69,16 @@ required. To add a genre, see [Adding a genre](#adding-a-genre).
   the rater returns for the same puzzle.
 - **G4. Rated levels only.** Every generated puzzle is rated easy to expert
   ([L21](difficulty.md#generating-by-difficulty)).
-- **G5. Reproducible generation.** Output depends only on the generator
-  version, parameters, difficulty and seed. When generation succeeds, the
+- **G5. Reproducible generation.** Within a release, output depends only on
+  the parameters, difficulty and seed. When generation succeeds, the
   puzzle is the same under any limits and budgets. Random numbers
   come from `pencil_puzzles_core::SplitMix64` seeded with the given seed.
   Output does not depend on `HashMap`/`HashSet` order, unstable sorts, memory
   addresses, time, threads, the platform or floating point, and uses
   fixed-width integers where the width could matter (`usize` is 32 bits in
   WebAssembly).
-- **G6. Reproducible ratings.** A rating depends only on the puzzle and the
-  rater version ([L15-L16](difficulty.md#rating-procedure)).
+- **G6. Reproducible ratings.** Within a release, a rating depends only on
+  the puzzle ([L15-L16](difficulty.md#rating-procedure)).
 - **G7. No panics.** Parsing, validation, solving, rating, checking, hinting
   and generation do not panic on any input; integer overflow counts as a
   panic. Recursion depth is at most proportional to the number of variables,
@@ -120,9 +120,10 @@ All genres share these, so tools can read any genre's files.
   region label.
 - **F6. Shared keys.** These mean the same in every genre: `title`, `author`,
   `source`, `license` (C3), `solution` (a grid block), `rating` (level and
-  score, such as `hard 42`), `rater_version`, `generator_version`, `params`,
-  `difficulty`, `seed`. Readers accept them, check their format and keep them
-  for writing back (F8), without solving or rating while parsing.
+  score, such as `hard 42`), `params`, `difficulty`, `seed`. Readers accept
+  them, check their format and keep them for writing back (F8), without
+  solving or rating while parsing. Readers also accept `rater_version` and
+  `generator_version`, which releases up to 0.4.0 wrote, and drop them.
 - **F7. Strict parsing.** Parsing accepts the documented format and rejects
   anything else with an error naming the line. A genre MAY accept documented
   alternatives but always writes its canonical form.
@@ -182,9 +183,9 @@ Each genre has T1-T9 and follows T10 and T11.
 - **T3. Generator.** For several sizes, including non-square, and every
   level: exactly one solution (G2), the rating matches the rater (G3), the
   same seed gives the same puzzle (G5).
-- **T4. Golden puzzles.** A file of parameters, difficulties, seeds, the IDs
-  they generate and the generator version. Changed output with an unchanged
-  version fails.
+- **T4. Golden puzzles.** A file of parameters, difficulties, seeds and the
+  IDs they generate. Changed output fails until the file is updated and the
+  change is marked in the changelog (V3).
 - **T5. Formats.** Round trips (F8, F11), every parse error and its position,
   and at least 10,000 mutated texts, IDs and JSON inputs, none of which may
   panic (G7).
@@ -224,16 +225,17 @@ check.
 ## Corpus
 
 - **C1. Files.** Each genre has `corpus/<id>/` in the text format, with a
-  `solution:` block, `rating:`, `rater_version`, `source:` and `license:` for
-  each puzzle (F6).
+  `solution:` block, `rating:`, `source:` and `license:` for each puzzle
+  (F6).
 - **C2. Coverage.** At least one puzzle at each level the genre generates at
   a practical size (B1), plus edge cases such as the smallest size and
   non-square grids.
 - **C3. Sources.** Each corpus puzzle comes from the generator (recorded with
-  its generator version, parameters, difficulty and seed), from a contributor
+  its parameters, difficulty and seed), from a contributor
   under the project's license, or from a publication whose license allows
   including it.
-- **C4. Recorded ratings** change only with a rater version bump (V3).
+- **C4. Recorded ratings** change only with a change marked **(new ratings)**
+  (V3).
 
 ## Benchmarks
 
@@ -277,14 +279,14 @@ the command-line tool and the web app.
   public Python API.
 - **V2. Old files keep working.** Text, IDs and JSON written by any released
   version stay readable within the same major version.
-- **V3. Generator and rater versions.** The generator version increases
-  whenever the same parameters, difficulty and seed could give a different
-  puzzle; the rater version whenever a rating could change. Both are noted in
-  `CHANGELOG.md` as **(new puzzles)** or **(new ratings)**. The code for older
-  versions is deleted.
-- **V4. Patch releases** do not change any generator or rater version.
-- **V5. Sharing puzzles.** Seeds reproduce a puzzle only within one generator
-  version, so docs and tools share puzzles by ID.
+- **V3. New puzzles and ratings.** A change that can give a different puzzle
+  for the same parameters, difficulty and seed is marked **(new puzzles)** in
+  `CHANGELOG.md`, and a change that can change a rating is marked
+  **(new ratings)**. Only the current generator and rater of each genre are
+  kept.
+- **V4. Patch releases** do not change generated puzzles or ratings.
+- **V5. Sharing puzzles.** A seed gives the same puzzle until a release marked
+  **(new puzzles)** for that genre, so docs and tools share puzzles by ID.
 
 ## Naming
 

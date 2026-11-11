@@ -554,7 +554,6 @@ static TECHNIQUES: [Technique<Grid>; 12] = [
 /// The canonical Fillomino human profile.
 pub(crate) static PROFILE: Profile<Grid> = Profile {
     id: "fillomino-human",
-    version: 1,
     techniques: &TECHNIQUES,
     broken,
 };

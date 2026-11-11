@@ -11,12 +11,10 @@ grid:
 ..5.9...3
 .7...65..
 49.3....8
-generator_version: 6
 params: 9x9
 difficulty: medium
 seed: 0
 rating: medium 813
-rater_version: 3
 solution:
 248563917
 351947862

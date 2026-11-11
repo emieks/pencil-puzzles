@@ -300,8 +300,9 @@ impl Document {
                 }
             }
         }
-        shared.rater_version = self.take_number("rater_version")?;
-        shared.generator_version = self.take_number("generator_version")?;
+        // Older records carry these keys. Their values are not used.
+        let _: Option<u32> = self.take_number("rater_version")?;
+        let _: Option<u32> = self.take_number("generator_version")?;
         shared.seed = self.take_number("seed")?;
         if let Some((value, line)) = self.take_text("difficulty")? {
             shared.difficulty = Some(
@@ -363,10 +364,6 @@ pub struct SharedKeys {
     pub solution: Option<GridBlock>,
     /// The recorded level and score.
     pub rating: Option<(Difficulty, u64)>,
-    /// The rater version that produced `rating`.
-    pub rater_version: Option<u32>,
-    /// The generator version that made the puzzle.
-    pub generator_version: Option<u32>,
     /// The parameters the puzzle was generated with, as written. The genre
     /// checks them.
     pub params: Option<String>,
@@ -438,9 +435,6 @@ impl Writer {
     /// rating, and its solution. Canonical text puts these after the genre's
     /// own keys.
     pub fn shared_record(&mut self, shared: &SharedKeys) {
-        if let Some(version) = shared.generator_version {
-            self.text("generator_version", &version.to_string());
-        }
         if let Some(params) = &shared.params {
             self.text("params", params);
         }
@@ -452,9 +446,6 @@ impl Writer {
         }
         if let Some((level, score)) = shared.rating {
             self.text("rating", &format!("{level} {score}"));
-        }
-        if let Some(version) = shared.rater_version {
-            self.text("rater_version", &version.to_string());
         }
         if let Some(solution) = &shared.solution {
             self.grid("solution", &solution.rows);
@@ -524,7 +515,7 @@ mod tests {
 
     #[test]
     fn shared_keys_round_trip() {
-        let text = "genre: a\ntitle: T\nlicense: CC0\nx: 1\ngenerator_version: 1\nparams: 5x5\ndifficulty: hard\nseed: 7\nrating: hard 42\nrater_version: 3\nsolution:\n#-";
+        let text = "genre: a\ntitle: T\nlicense: CC0\nx: 1\nparams: 5x5\ndifficulty: hard\nseed: 7\nrating: hard 42\nsolution:\n#-";
         let mut document = parse(text).unwrap().remove(0);
         let shared = document.take_shared().unwrap();
         let (x, _) = document.require_text("x").unwrap();
@@ -535,6 +526,19 @@ mod tests {
         writer.text("x", &x);
         writer.shared_record(&shared);
         assert_eq!(writer.finish(), text);
+    }
+
+    #[test]
+    fn old_version_keys_are_read_and_dropped() {
+        let text = "genre: a\ngenerator_version: 1\nseed: 7\nrating: hard 42\nrater_version: 3";
+        let mut document = parse(text).unwrap().remove(0);
+        let shared = document.take_shared().unwrap();
+        document.finish().unwrap();
+        let mut writer = Writer::new("a");
+        writer.shared_record(&shared);
+        assert_eq!(writer.finish(), "genre: a\nseed: 7\nrating: hard 42");
+        let mut bad = parse("genre: a\nrater_version: x").unwrap().remove(0);
+        assert!(bad.take_shared().is_err());
     }
 
     #[test]

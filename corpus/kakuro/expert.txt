@@ -10,12 +10,10 @@ grid:
 /20 . . . . 17/15 . .
 /6 . . /15 . . . .
 /4 . . # /19 . . .
-generator_version: 2
 params: 8x8
 difficulty: expert
 seed: 0
 rating: expert 288
-rater_version: 1
 solution:
 ########
 #537##59

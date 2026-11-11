@@ -19,8 +19,7 @@ never needs it.
 
 ## Example
 
-Generator version 1, shape `4x4`, easy, seed `2` produces
-`hitori:4x4:3222134241131133`:
+Shape `4x4`, easy, seed `2` produces `hitori:4x4:3222134241131133`:
 
 ```text
 Puzzle     Solution
@@ -54,8 +53,8 @@ every cell decided, it is exactly "some rule is broken".
 
 ## Techniques
 
-Rater version 1 uses the profile `hitori-human` version 1. The peers of a
-cell are the other cells in its row and column with the same number.
+The rater uses the profile `hitori-human`. The peers of a cell are the other
+cells in its row and column with the same number.
 
 | Technique | Level | What it does |
 | --- | --- | --- |
@@ -94,17 +93,17 @@ The shape is written `<rows>x<columns>`, such as `8x8`. Numbers go from 1 to
 the larger of the two sizes. Puzzles with no solution or several solutions
 still parse.
 
-Generator version 1 starts from a cyclic Latin square with its rows, columns
-and symbols shuffled, cut to the shape. It shades a random quarter to two
-fifths of the cells, keeping shaded cells apart and the unshaded cells
-connected, and each shaded cell copies the number of an unshaded cell in its
-row or column. The puzzle is screened with the exact solver and then with the
-techniques up to the requested level. Changes near the cells left undecided
-(or anywhere, if the puzzle was too easy) give a shaded cell another number,
-unshade it, or shade a cell or its neighbour; a newly shaded cell's lines get
-new copies where a shaded cell lost its number. A solved puzzle keeps a
-change if its level rises or its rating score does not fall. A candidate is
-rebuilt after twice as many changes as it has cells.
+The generator starts from a cyclic Latin square with its rows, columns and
+symbols shuffled, cut to the shape. It shades a random quarter to two fifths
+of the cells, keeping shaded cells apart and the unshaded cells connected, and
+each shaded cell copies the number of an unshaded cell in its row or column.
+The puzzle is screened with the exact solver and then with the techniques up
+to the requested level. Changes near the cells left undecided (or anywhere, if
+the puzzle was too easy) give a shaded cell another number, unshade it, or
+shade a cell or its neighbour; a newly shaded cell's lines get new copies
+where a shaded cell lost its number. A solved puzzle keeps a change if its
+level rises or its rating score does not fall. A candidate is rebuilt after
+twice as many changes as it has cells.
 
 A 1x2 or 2x1 grid has no puzzle with exactly one solution. Single rows and
 columns and 2x2 grids are always easy, and 3x3 grids are at most medium.

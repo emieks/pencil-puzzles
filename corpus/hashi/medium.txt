@@ -9,12 +9,10 @@ grid:
 3..2.3.
 ......2
 2.2..3.
-generator_version: 1
 params: 7x7
 difficulty: medium
 seed: 0
 rating: medium 50
-rater_version: 1
 solution:
 4=6===2
 H.H....

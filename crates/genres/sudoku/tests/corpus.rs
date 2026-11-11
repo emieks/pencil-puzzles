@@ -9,7 +9,6 @@ fn corpus_solutions_ratings_and_reproduction() {
         for r in parse_records(&text).unwrap() {
             let rating = rate(&r.puzzle, &Budget::unlimited()).unwrap();
             assert_eq!(r.shared.rating, Some((rating.level, rating.score)));
-            assert_eq!(r.shared.rater_version, Some(RATER_VERSION));
             assert_eq!(
                 solve(&r.puzzle, &Budget::unlimited()).unwrap(),
                 Solutions::Unique(r.solution.unwrap())
@@ -19,7 +18,6 @@ fn corpus_solutions_ratings_and_reproduction() {
                 r.shared.seed.unwrap(),
             );
             options.difficulty = r.shared.difficulty;
-            options.version = r.shared.generator_version.unwrap();
             assert_eq!(
                 generate(&options, &Budget::unlimited()).unwrap().puzzle,
                 r.puzzle
@@ -33,7 +31,7 @@ fn corpus_solutions_ratings_and_reproduction() {
 fn golden_generation_is_stable() {
     let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/golden.txt");
     let text = fs::read_to_string(&path).unwrap();
-    let mut actual = String::from("# params difficulty seed id generator_version\n");
+    let mut actual = String::from("# params difficulty seed id\n");
     for line in text
         .lines()
         .filter(|l| !l.is_empty() && !l.starts_with('#'))
@@ -41,16 +39,8 @@ fn golden_generation_is_stable() {
         let f: Vec<_> = line.split_whitespace().collect();
         let mut o = GenerateOptions::new(f[0].parse().unwrap(), f[2].parse().unwrap());
         o.difficulty = Some(f[1].parse().unwrap());
-        o.version = f[4].parse().unwrap();
         let g = generate(&o, &Budget::unlimited()).unwrap();
-        actual.push_str(&format!(
-            "{} {} {} {} {}\n",
-            f[0],
-            f[1],
-            g.seed,
-            g.puzzle.id(),
-            g.generator_version
-        ));
+        actual.push_str(&format!("{} {} {} {}\n", f[0], f[1], g.seed, g.puzzle.id()));
     }
     if std::env::var_os("BLESS").is_some() {
         fs::write(path, &actual).unwrap();

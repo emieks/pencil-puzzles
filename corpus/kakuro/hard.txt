@@ -10,12 +10,10 @@ grid:
 # 11/ 8/ 9/23 . . . .
 /28 . . . . /7 . .
 /6 . . . # /17 . .
-generator_version: 2
 params: 8x8
 difficulty: hard
 seed: 0
 rating: hard 169
-rater_version: 1
 solution:
 ########
 #98##172

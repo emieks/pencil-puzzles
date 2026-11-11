@@ -107,11 +107,10 @@ fn nine_by_nine_limits_and_hints() {
 }
 
 #[test]
-fn current_generator_is_sparse_symmetric_and_retires_older_versions() {
+fn generator_is_sparse_and_symmetric() {
     for seed in 0..8 {
         let o = GenerateOptions::new("9x9".parse().unwrap(), seed);
         let g = generate(&o, &Budget::new(2_000_000)).unwrap();
-        assert_eq!(g.generator_version, GENERATOR_VERSION);
         assert!(g.puzzle.givens().iter().filter(|&&v| v > 0).count() < 40);
         for i in 0..81 {
             assert_eq!(g.puzzle.givens()[i] == 0, g.puzzle.givens()[80 - i] == 0);
@@ -131,13 +130,5 @@ fn current_generator_is_sparse_symmetric_and_retires_older_versions() {
                 Err(RateError::MultipleSolutions | RateError::Unrated)
             ));
         }
-    }
-    let mut o = GenerateOptions::new("4x4".parse().unwrap(), 0);
-    for version in [1, 2, 99] {
-        o.version = version;
-        assert_eq!(
-            generate(&o, &Budget::new(0)),
-            Err(GenerateError::UnsupportedVersion(version))
-        );
     }
 }

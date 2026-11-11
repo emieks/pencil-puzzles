@@ -241,7 +241,7 @@ mod tests {
             3
         }
         fn certify(&self, p: &u8, _: &Budget) -> Result<Option<Rating>, BudgetExceeded> {
-            Ok(Some(Rating::new(Difficulty::ALL[usize::from(*p)], 1)))
+            Ok(Some(Rating::new(Difficulty::ALL[usize::from(*p)])))
         }
     }
 

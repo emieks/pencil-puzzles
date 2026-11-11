@@ -10,8 +10,6 @@ static METADATA: Metadata = {
         "kakurasu",
         "Kakurasu",
         "Shade cells so each row and column clue is the sum of its shaded cells' positions.",
-        GENERATOR_VERSION,
-        RATER_VERSION,
     );
     m.rules = RULES;
     m.aliases = &["index-sums"];
@@ -83,8 +81,6 @@ impl Genre for Kakurasu {
         record.shared.params = Some(params.to_string());
         record.shared.difficulty = difficulty;
         record.shared.seed = Some(seed);
-        record.shared.generator_version = Some(g.generator_version);
-        record.shared.rater_version = Some(g.rating.rater_version);
         record.shared.rating = Some((g.rating.level, g.rating.score));
         Ok(Generation::new(record, g.rating, g.attempts))
     }

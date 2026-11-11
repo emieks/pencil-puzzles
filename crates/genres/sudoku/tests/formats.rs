@@ -2,7 +2,7 @@ use pencil_puzzles_core::{Position, SplitMix64};
 use pencil_puzzles_sudoku::*;
 #[test]
 fn canonical_records_ids_and_answers_round_trip() {
-    let text = "genre: sudoku\nsource: project\nlicense: MIT\ngrid:\n1..4\n.4..\n..4.\n4..1\ngenerator_version: 1\nparams: 4x4\ndifficulty: easy\nseed: 18446744073709551615\nrating: easy 1\nrater_version: 1\nsolution:\n1234\n3412\n2143\n4321";
+    let text = "genre: sudoku\nsource: project\nlicense: MIT\ngrid:\n1..4\n.4..\n..4.\n4..1\nparams: 4x4\ndifficulty: easy\nseed: 18446744073709551615\nrating: easy 1\nsolution:\n1234\n3412\n2143\n4321";
     let record = parse_records(text).unwrap().remove(0);
     assert_eq!(write_record(&record), text);
     assert_eq!(Puzzle::from_id(&record.puzzle.id()).unwrap(), record.puzzle);

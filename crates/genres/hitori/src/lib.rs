@@ -32,12 +32,12 @@ mod rate;
 mod shape;
 pub use answer::{Answer, Mark};
 pub use board::{check, count_solutions, solve};
-pub use generate::{GENERATOR_VERSION, GenerateError, GenerateOptions, Generated, generate};
+pub use generate::{GenerateError, GenerateOptions, Generated, generate};
 pub use genre::Hitori;
 pub use model::{Puzzle, Record, parse_records, write_record};
 pub use pencil_puzzles_core::{
     Budget, BudgetExceeded, Difficulty, Hint, Literal, ParseError, Place, RateError, Rating,
     Solutions, Step, Violation,
 };
-pub use rate::{HintError, RATER_VERSION, hint, rate, rate_with_steps};
+pub use rate::{HintError, hint, rate, rate_with_steps};
 pub use shape::{MAX_SIZE, Params, Shape};

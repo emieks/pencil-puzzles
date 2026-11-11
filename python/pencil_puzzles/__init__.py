@@ -127,13 +127,12 @@ class Rating:
     techniques: tuple[str, ...]
     steps: int
     score: int
-    """Total size of the step explanations. It changes between rater versions and does not measure solving time."""
-    rater_version: int
+    """Total size of the step explanations. It changes between releases and does not measure solving time."""
 
     @classmethod
     def _read(cls, data: dict[str, Any]) -> Rating:
         return cls(Difficulty(data["level"]), tuple(data["techniques"]), data["steps"],
-                   data["score"], data["rater_version"])
+                   data["score"])
 
 
 @dataclass(frozen=True)
@@ -350,7 +349,6 @@ class Generated:
     solution: Solution
     rating: Rating
     seed: int
-    generator_version: int
     attempts: int
 
 
@@ -381,10 +379,10 @@ def generate(genre: str, shape: tuple[int, int] | None = None, *,
     _integer(seed, "seed", _U64)
     level = Difficulty(difficulty) if difficulty is not None else None
     handle, data = _call(_native.generate, genre, size, level.value if level else None,
-                         seed, limits.attempts, limits.work, None, cancel or CancellationToken())
+                         seed, limits.attempts, limits.work, cancel or CancellationToken())
     puzzle = _puzzle(handle)
     return Generated(puzzle, Solution._read(puzzle.genre, data["solution"]), Rating._read(data["rating"]),
-                     seed, data["generator_version"], data["attempts"])
+                     seed, data["attempts"])
 
 
 def _operate(puzzle: Puzzle, operation: str, limits: Limits, cancel: CancellationToken | None,

@@ -9,13 +9,11 @@ mod human;
 mod model;
 mod rate;
 pub use board::{check, count_solutions, solve};
-pub use generate::{GENERATOR_VERSION, GenerateError, GenerateOptions, Generated, generate};
+pub use generate::{GenerateError, GenerateOptions, Generated, generate};
 pub use genre::Sudoku;
 pub use model::{Answer, MAX_SIZE, Params, Puzzle, Record, Shape, parse_records, write_record};
 pub use pencil_puzzles_core::{
     Budget, BudgetExceeded, Difficulty, Hint, Literal, ParseError, Place, RateError, Rating,
     Solutions, Step, Violation,
 };
-pub use rate::{
-    Analysis, HintError, RATER_VERSION, analyze, hint, rate, rate_version, rate_with_steps,
-};
+pub use rate::{Analysis, HintError, analyze, hint, rate, rate_with_steps};

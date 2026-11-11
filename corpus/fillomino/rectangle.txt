@@ -6,12 +6,10 @@ grid:
 44559.
 ..9...
 6...9.
-generator_version: 1
 params: 4x6
 difficulty: medium
 seed: 0
 rating: medium 153
-rater_version: 1
 solution:
 445559
 445599

@@ -14,15 +14,12 @@ pub struct Rating {
     /// The level of the hardest technique needed, Easy to Expert.
     pub level: Difficulty,
     /// The total size of the step explanations. Unstable: it may change
-    /// between rater versions and is not a calibrated estimate of solving
-    /// time.
+    /// between releases and is not a calibrated estimate of solving time.
     pub score: u64,
     /// The techniques used, excluding routine bookkeeping, in sorted order.
     pub techniques: Vec<String>,
     /// The number of steps, excluding routine bookkeeping.
     pub steps: u32,
-    /// The rater version of the genre that produced this rating.
-    pub rater_version: u32,
     /// Research measurements of the solution path, for evaluation tools.
     /// Unstable.
     #[cfg_attr(
@@ -34,13 +31,12 @@ pub struct Rating {
 
 impl Rating {
     /// A rating at `level` with no techniques, steps or metrics.
-    pub fn new(level: Difficulty, rater_version: u32) -> Self {
+    pub fn new(level: Difficulty) -> Self {
         Self {
             level,
             score: 0,
             techniques: Vec::new(),
             steps: 0,
-            rater_version,
             metrics: None,
         }
     }
@@ -54,8 +50,6 @@ impl Rating {
 pub struct Metrics {
     /// The genre's technique profile, such as `sudoku-human`.
     pub profile: String,
-    /// The profile's version.
-    pub profile_version: u32,
     /// Direct placements available before each step; zero for bookkeeping.
     /// Empty when not measured.
     pub available_moves: Vec<u32>,
@@ -77,24 +71,15 @@ pub enum RateError {
     BudgetExceeded,
     /// The supported human techniques could not complete a unique puzzle.
     Unrated,
-    /// A requested historical algorithm is retired or unavailable.
-    UnsupportedVersion(u32),
 }
 
 impl fmt::Display for RateError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if let Self::UnsupportedVersion(version) = self {
-            return write!(
-                f,
-                "rater version {version} is retired or unsupported; use the current rater version"
-            );
-        }
         f.write_str(match self {
             Self::NoSolution => "the puzzle has no solution",
             Self::MultipleSolutions => "the puzzle has more than one solution",
             Self::BudgetExceeded => "the work budget ran out before the rating finished",
             Self::Unrated => "the puzzle is unique but the supported human techniques did not solve it; no difficulty is assigned",
-            Self::UnsupportedVersion(_) => unreachable!(),
         })
     }
 }

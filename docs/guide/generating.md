@@ -69,8 +69,9 @@ True
 ```
 
 Without `seed`, the seed is random. It is kept in `Generated.seed`, so any
-puzzle can be generated again. A genre's generator version changes only in a
-minor or major release, and `Generated.generator_version` records it.
+puzzle can be generated again. Puzzles for a seed change only in a minor or
+major release, and the [changelog](../changelog.md) marks those changes
+**(new puzzles)**.
 
 To make a set of puzzles, use a range of seeds:
 
@@ -89,7 +90,6 @@ puzzles = [pp.generate("hitori", (6, 6), difficulty="easy", seed=s).puzzle
 | `solution` | The only solution, as a `Solution` |
 | `rating` | The `Rating` |
 | `seed` | The seed used, including a random one |
-| `generator_version` | The genre's generator version |
 | `attempts` | How many candidate puzzles were tried |
 
 ```pycon

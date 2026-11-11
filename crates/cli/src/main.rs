@@ -134,10 +134,7 @@ fn record_output(
             convert(input.genre.id(&input.text))?,
             convert(input.genre.render(&input.text, solution))?,
             rating
-                .map(|r| format!(
-                    "\n{} (score {}, rater {})",
-                    r.level, r.score, r.rater_version
-                ))
+                .map(|r| format!("\n{} (score {})", r.level, r.score))
                 .unwrap_or_default()
         ),
         Format::Json => serde_json::to_string(&convert(input.genre.to_json(&input.text, rating))?)?,

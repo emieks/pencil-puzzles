@@ -9,8 +9,6 @@ use pencil_puzzles_core::SplitMix64;
 use pencil_puzzles_core::search::{Construct, Move, Outcome, SearchError, search};
 use std::cell::RefCell;
 use std::{error::Error, fmt};
-/// Generator version (V3).
-pub const GENERATOR_VERSION: u32 = 3;
 /// Reproducible generator inputs.
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[non_exhaustive]
@@ -47,8 +45,6 @@ pub struct Generated {
     pub rating: Rating,
     /// Reproduction seed.
     pub seed: u64,
-    /// Generator version.
-    pub generator_version: u32,
     /// Candidates tried.
     pub attempts: u32,
 }
@@ -537,7 +533,6 @@ pub fn generate(options: &GenerateOptions, budget: &Budget) -> Result<Generated,
                 solution,
                 rating: found.rating,
                 seed: options.seed,
-                generator_version: GENERATOR_VERSION,
                 attempts: found.attempts,
             })
         }

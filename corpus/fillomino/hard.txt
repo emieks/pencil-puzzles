@@ -9,12 +9,10 @@ grid:
 3.4777.
 .4.....
 7..7.4.
-generator_version: 1
 params: 7x7
 difficulty: hard
 seed: 0
 rating: hard 461
-rater_version: 1
 solution:
 8866666
 8899916

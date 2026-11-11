@@ -24,6 +24,21 @@ ratings **(new ratings)**.
 - Web app and documentation: new site icon, page titles and descriptions,
   link previews and sitemaps.
 
+### Removed
+
+- Per-genre generator and rater version numbers. Text records and JSON no
+  longer contain `generator_version` or `rater_version`. Records that have
+  them still load, and the values are dropped. The package version identifies
+  the generator and rater, and the changelog marks releases that change them.
+- Python: `Generated.generator_version` and `Rating.rater_version`.
+- Rust: `Metadata::generator_version`, `Metadata::rater_version`,
+  `Generated::generator_version`, `Rating::rater_version`,
+  `Metrics::profile_version`, `Profile::version`, the `GENERATOR_VERSION` and
+  `RATER_VERSION` constants of each genre, `RateError::UnsupportedVersion`,
+  and sudoku's `GenerateOptions::version`, `GenerateError::UnsupportedVersion`
+  and `rate_version`. `Rating::new` takes only the level.
+- Command line: the rater version after a rating.
+
 ## [0.4.0] - 2026-11-09
 
 ### Added

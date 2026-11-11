@@ -427,7 +427,7 @@ where
     };
     let g = G::generate(&params, difficulty, seed, attempts, budget).map_err(|e| error(&e))?;
     let value = json!({"solution":g.record.solution, "rating":g.rating,
-        "attempts":g.attempts, "work":budget.spent(), "generator_version":G::metadata().generator_version});
+        "attempts":g.attempts, "work":budget.spent()});
     Ok((g.record.puzzle, value))
 }
 
@@ -441,17 +441,11 @@ fn generate(
     seed: u64,
     attempts: u32,
     work: u64,
-    version: Option<u32>,
     cancel: CancellationToken,
 ) -> PyResult<(NativePuzzle, Py<PyAny>)> {
     let g = pencil_puzzles::find(&genre)
         .ok_or_else(|| Failure::new("unsupported", "unknown genre").py())?;
     let name = g.metadata().id;
-    if version.is_some_and(|v| v != g.metadata().generator_version) {
-        return Err(
-            Failure::new("unsupported", "generator version is retired or unsupported").py(),
-        );
-    }
     let level = difficulty
         .map(|d| d.parse::<Difficulty>())
         .transpose()

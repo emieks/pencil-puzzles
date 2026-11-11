@@ -9,10 +9,6 @@ use pencil_puzzles_core::{Budget, BudgetExceeded, Difficulty, RateError, Rating,
 use crate::human::{analyze_state, initial_masks};
 use crate::{Answer, Mark, Params, Puzzle};
 
-/// The generator version (V3). It changes whenever the same options could
-/// give a different puzzle.
-pub const GENERATOR_VERSION: u32 = 3;
-
 /// What to generate (P7).
 ///
 /// ```
@@ -64,8 +60,6 @@ pub struct Generated {
     pub rating: Rating,
     /// The seed it was generated from.
     pub seed: u64,
-    /// The generator version that made it.
-    pub generator_version: u32,
     /// How many candidate puzzles were tried, including this one.
     pub attempts: u32,
 }
@@ -206,7 +200,6 @@ pub fn generate(options: &GenerateOptions, budget: &Budget) -> Result<Generated,
             solution: found.candidate,
             rating: found.rating,
             seed: options.seed,
-            generator_version: GENERATOR_VERSION,
             attempts: found.attempts,
         }),
         Err(SearchError::BudgetExceeded) => Err(GenerateError::BudgetExceeded),

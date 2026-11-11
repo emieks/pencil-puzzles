@@ -5,8 +5,6 @@ use crate::{
 };
 use pencil_puzzles_core::human::{self, Trace};
 use std::{error::Error, fmt};
-/// Current human rater version. Versions 1 and 2 are retired.
-pub const RATER_VERSION: u32 = 3;
 /// A unique puzzle's human analysis, including an explicit unrated outcome.
 #[derive(Clone, Debug)]
 pub struct Analysis {
@@ -53,9 +51,7 @@ pub fn analyze(puzzle: &Puzzle, budget: &Budget) -> Result<Analysis, RateError> 
         .filter(|(_, m)| m.count_ones() != 1)
         .map(|(i, _)| i)
         .collect();
-    let rating = a
-        .solved
-        .then(|| human::rating(&a, &crate::human::PROFILE, RATER_VERSION));
+    let rating = a.solved.then(|| human::rating(&a, &crate::human::PROFILE));
     Ok(Analysis {
         rating,
         steps,
@@ -65,13 +61,6 @@ pub fn analyze(puzzle: &Puzzle, budget: &Budget) -> Result<Analysis, RateError> 
 /// Rate a unique Sudoku, or return Unrated if supported human techniques stall.
 pub fn rate(puzzle: &Puzzle, budget: &Budget) -> Result<Rating, RateError> {
     analyze(puzzle, budget)?.rating.ok_or(RateError::Unrated)
-}
-/// Explicitly reject retired rater versions rather than emulating them.
-pub fn rate_version(puzzle: &Puzzle, version: u32, budget: &Budget) -> Result<Rating, RateError> {
-    if version != RATER_VERSION {
-        return Err(RateError::UnsupportedVersion(version));
-    }
-    rate(puzzle, budget)
 }
 /// Rate with the canonical, replayable human explanation trace.
 pub fn rate_with_steps(puzzle: &Puzzle, budget: &Budget) -> Result<(Rating, Vec<Step>), RateError> {
@@ -148,18 +137,6 @@ pub fn hint(puzzle: &Puzzle, answer: &Answer, budget: &Budget) -> Result<Hint, H
 #[cfg(test)]
 mod human_rating_tests {
     use super::*;
-    #[test]
-    fn retired_versions_fail_before_spending_work() {
-        let p = Puzzle::new("1x1".parse().unwrap(), vec![0]).unwrap();
-        let budget = Budget::new(0);
-        for version in [1, 2] {
-            assert_eq!(
-                rate_version(&p, version, &budget),
-                Err(RateError::UnsupportedVersion(version))
-            );
-        }
-        assert_eq!(budget.spent(), 0);
-    }
     #[test]
     fn public_trace_replays_and_hints_respect_partial_marks() {
         let p = Puzzle::new(

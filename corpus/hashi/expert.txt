@@ -9,12 +9,10 @@ grid:
 3...2.4
 .......
 1.2...3
-generator_version: 1
 params: 7x7
 difficulty: expert
 seed: 0
 rating: expert 127
-rater_version: 1
 solution:
 2==3--3
 ......H

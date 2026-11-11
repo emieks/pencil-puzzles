@@ -123,7 +123,6 @@ class PackageTests(unittest.TestCase):
         again = pp.generate("sudoku", (4, 4), difficulty="easy", seed=(1 << 64) - 1)
         self.assertEqual(first, again)
         self.assertEqual(first.seed, (1 << 64) - 1)
-        self.assertGreater(first.generator_version, 0)
 
     def test_ratings_hints_and_violations(self):
         g = pp.generate("sudoku", (9, 9), difficulty="medium", seed=3)

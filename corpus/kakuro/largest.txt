@@ -18,12 +18,10 @@ grid:
 # 17/ 4/19 . . . 16/4 . . 16/14 . . /22 . . .
 /18 . . . /14 . . /30 . . . . # /9 . .
 /11 . . # /15 . . /8 . . # # # /8 . .
-generator_version: 2
 params: 16x16
 difficulty: easy
 seed: 5
 rating: easy 510
-rater_version: 1
 solution:
 ################
 #31####12#98##92

@@ -5,9 +5,6 @@ use crate::*;
 use pencil_puzzles_core::human;
 use std::{error::Error, fmt};
 
-/// Hashi rater version.
-pub const RATER_VERSION: u32 = 1;
-
 /// Candidate `v` of slot `s`: `v` bridges between its islands.
 fn literal(l: &Layout, s: usize, v: usize) -> Literal {
     Literal {
@@ -35,7 +32,7 @@ fn rate_inner(p: &Puzzle, budget: &Budget) -> Result<(Rating, Vec<Step>), RateEr
         return Err(RateError::Unrated);
     }
     let steps = human::public_steps(&trace, start, |s, v| literal(&l, s, v));
-    Ok((human::rating(&trace, &PROFILE, RATER_VERSION), steps))
+    Ok((human::rating(&trace, &PROFILE), steps))
 }
 
 /// Rate a uniquely solvable puzzle by the human techniques it needs, or

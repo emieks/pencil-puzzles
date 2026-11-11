@@ -12,12 +12,10 @@ grid:
 2.........
 .2...4.6..
 ..........
-generator_version: 3
 params: 10x10
 difficulty: medium
 seed: 0
 rating: medium 245
-rater_version: 2
 solution:
 ----#-#---
 ##########

@@ -10,12 +10,10 @@ grid:
 # 12/7 . . . 7/ 4/ 14/
 /16 . . /24 . . . .
 /13 . . # /8 . . .
-generator_version: 2
 params: 8x8
 difficulty: easy
 seed: 0
 rating: easy 104
-rater_version: 1
 solution:
 ########
 #124##27

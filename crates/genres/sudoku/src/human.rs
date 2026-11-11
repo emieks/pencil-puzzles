@@ -953,7 +953,6 @@ fn broken(grid: &Grid, masks: &[u16]) -> bool {
 /// The canonical Sudoku human profile.
 pub(crate) static PROFILE: Profile<Grid> = Profile {
     id: "sudoku-human",
-    version: 2,
     techniques: &TECHNIQUES,
     broken,
 };

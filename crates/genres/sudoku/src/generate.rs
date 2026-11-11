@@ -4,14 +4,10 @@ use crate::{Answer, Budget, BudgetExceeded, Difficulty, Params, Puzzle, Rating};
 use pencil_puzzles_core::SplitMix64;
 use pencil_puzzles_core::search::{Construct, Move, Outcome, SearchError, search};
 use std::{error::Error, fmt};
-/// Generator version (V3).
-pub const GENERATOR_VERSION: u32 = 6;
 /// Reproducible generator inputs.
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[non_exhaustive]
 pub struct GenerateOptions {
-    /// Current generator version; historical versions are retired.
-    pub version: u32,
     /// Shape and generator parameters.
     pub params: Params,
     /// Exact requested level, or any level below Extreme.
@@ -25,7 +21,6 @@ impl GenerateOptions {
     /// Options accepting Easy through Expert, at most 10,000 candidates.
     pub fn new(params: Params, seed: u64) -> Self {
         Self {
-            version: GENERATOR_VERSION,
             params,
             difficulty: None,
             seed,
@@ -45,8 +40,6 @@ pub struct Generated {
     pub rating: Rating,
     /// Reproduction seed.
     pub seed: u64,
-    /// Generator version.
-    pub generator_version: u32,
     /// Candidates tried.
     pub attempts: u32,
 }
@@ -56,8 +49,6 @@ pub struct Generated {
 pub enum GenerateError {
     /// The shape or human reasoning repertoire cannot deliver this request.
     UnsupportedRequest(&'static str),
-    /// The requested generator version is retired or unavailable.
-    UnsupportedVersion(u32),
     /// No puzzle was found within the attempt limit.
     AttemptsExhausted {
         /// Candidates screened.
@@ -70,10 +61,6 @@ impl fmt::Display for GenerateError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::UnsupportedRequest(reason) => f.write_str(reason),
-            Self::UnsupportedVersion(v) => write!(
-                f,
-                "Sudoku generator version {v} is retired or unsupported; use version {GENERATOR_VERSION}"
-            ),
             Self::AttemptsExhausted { attempts } => write!(
                 f,
                 "no Sudoku of the requested level found in {attempts} attempts; try another size or level"
@@ -279,11 +266,8 @@ impl Construct for Digger {
 /// clue was tried and the puzzle is still too easy, a few clues (or pairs)
 /// go back into the best candidate so far and removal starts over in a new
 /// order, up to `ROUNDS` times before a new grid. Extreme has no supported
-/// human repertoire. Only the current generator version is supported.
+/// human repertoire.
 pub fn generate(options: &GenerateOptions, budget: &Budget) -> Result<Generated, GenerateError> {
-    if options.version != GENERATOR_VERSION {
-        return Err(GenerateError::UnsupportedVersion(options.version));
-    }
     if options.difficulty == Some(Difficulty::Extreme) {
         return Err(GenerateError::UnsupportedRequest(
             "Extreme Sudoku generation is unavailable: no Extreme human technique profile is supported",
@@ -314,7 +298,6 @@ pub fn generate(options: &GenerateOptions, budget: &Budget) -> Result<Generated,
             solution: found.candidate.solution,
             rating: found.rating,
             seed: options.seed,
-            generator_version: GENERATOR_VERSION,
             attempts: found.attempts,
         }),
         Err(SearchError::BudgetExceeded) => Err(GenerateError::BudgetExceeded),

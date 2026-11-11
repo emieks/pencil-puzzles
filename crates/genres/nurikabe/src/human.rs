@@ -360,7 +360,6 @@ static TECHNIQUES: [Technique<Grid>; 10] = [
 /// The canonical Nurikabe human profile.
 pub(crate) static PROFILE: Profile<Grid> = Profile {
     id: "nurikabe-human",
-    version: 1,
     techniques: &TECHNIQUES,
     broken,
 };

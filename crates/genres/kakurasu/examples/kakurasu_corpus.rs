@@ -5,7 +5,7 @@ use std::{fs, path::Path};
 fn main() {
     let write = std::env::args().any(|arg| arg == "--write");
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
-    let mut golden = String::from("# params difficulty seed id generator_version\n");
+    let mut golden = String::from("# params difficulty seed id\n");
     for (name, shape, level) in [
         ("smallest", "1x1", Difficulty::Easy),
         ("line", "1x7", Difficulty::Easy),
@@ -24,15 +24,8 @@ fn main() {
         record.shared.params = Some(shape.into());
         record.shared.difficulty = Some(level);
         record.shared.seed = Some(g.seed);
-        record.shared.generator_version = Some(g.generator_version);
-        record.shared.rater_version = Some(g.rating.rater_version);
         record.shared.rating = Some((g.rating.level, g.rating.score));
-        golden.push_str(&format!(
-            "{shape} {level} {} {} {}\n",
-            g.seed,
-            g.puzzle.id(),
-            g.generator_version
-        ));
+        golden.push_str(&format!("{shape} {level} {} {}\n", g.seed, g.puzzle.id()));
         println!(
             "{name}: {} {:?}, attempts {}",
             g.puzzle.id(),

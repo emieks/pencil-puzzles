@@ -29,28 +29,16 @@ pub struct Metadata {
     pub aliases: &'static [&'static str],
     /// One sentence explaining the goal.
     pub summary: &'static str,
-    /// Version determining seeded generation (V3).
-    pub generator_version: u32,
-    /// Version determining ratings (V3).
-    pub rater_version: u32,
     /// Stable rule numbers and short names.
     pub rules: &'static [Rule],
 }
 impl Metadata {
     /// Creates metadata with no aliases or rules. Set those fields as needed.
-    pub const fn new(
-        id: &'static str,
-        name: &'static str,
-        summary: &'static str,
-        generator_version: u32,
-        rater_version: u32,
-    ) -> Self {
+    pub const fn new(id: &'static str, name: &'static str, summary: &'static str) -> Self {
         Self {
             id,
             name,
             summary,
-            generator_version,
-            rater_version,
             aliases: &[],
             rules: &[],
         }

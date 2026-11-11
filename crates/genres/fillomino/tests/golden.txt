@@ -1,9 +1,9 @@
-# params difficulty seed id generator_version
-1x1 easy 0 fillomino:1x1:a 1
-3x3 easy 0 fillomino:3x3:a2b234b 1
-4x6 medium 0 fillomino:4x6:f44559c9c6c9a 1
-7x7 easy 0 fillomino:7x7:a86b6b8a9916b8g899a3a477c47a4b7b7a47 1
-7x7 medium 0 fillomino:7x7:a86e8c16b8g899a3a4777b4e7b7a4a 1
-7x7 hard 0 fillomino:7x7:b6e8c16b8g899a3a4777b4e7b7a4a 1
-7x7 expert 0 fillomino:7x7:b6e8c16b8g899a3a4a77b4h7a47 1
-10x10 medium 0 fillomino:10x10:b3a8g5b5484b1b5b6c6a6a1a6a4a766b1c2c19b97b5a5a9a6c3b46f25a5c1c85a7b 1
+# params difficulty seed id
+1x1 easy 0 fillomino:1x1:a
+3x3 easy 0 fillomino:3x3:a2b234b
+4x6 medium 0 fillomino:4x6:f44559c9c6c9a
+7x7 easy 0 fillomino:7x7:a86b6b8a9916b8g899a3a477c47a4b7b7a47
+7x7 medium 0 fillomino:7x7:a86e8c16b8g899a3a4777b4e7b7a4a
+7x7 hard 0 fillomino:7x7:b6e8c16b8g899a3a4777b4e7b7a4a
+7x7 expert 0 fillomino:7x7:b6e8c16b8g899a3a4a77b4h7a47
+10x10 medium 0 fillomino:10x10:b3a8g5b5484b1b5b6c6a6a1a6a4a766b1c2c19b97b5a5a9a6c3b46f25a5c1c85a7b

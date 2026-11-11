@@ -19,8 +19,7 @@ sets the level.
 | `level` | The `Difficulty`: easy, medium, hard or expert |
 | `techniques` | The techniques used, by name |
 | `steps` | The number of deductions |
-| `score` | The total size of the step explanations. It changes between rater versions and does not measure solving time. |
-| `rater_version` | The genre's rater version |
+| `score` | The total size of the step explanations. It changes between releases and does not measure solving time. |
 
 The technique names are listed on each genre page under Techniques. Puzzles
 from `generate` already carry their rating in `Generated.rating`.

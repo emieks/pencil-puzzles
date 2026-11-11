@@ -73,7 +73,7 @@ pub trait DynGenre: Sync {
     fn with_solution(&self, text: &str, answer: Option<&str>) -> Result<String, RegistryError>;
     /// The optional complete solution in a text record.
     fn solution(&self, text: &str) -> Result<Option<String>, RegistryError>;
-    /// Set the record's level, score and rater version.
+    /// Set the record's level and score.
     fn with_rating(&self, text: &str, rating: &Rating) -> Result<String, RegistryError>;
     /// Build a blank editor or populate it from an existing puzzle.
     fn editor(
@@ -184,8 +184,9 @@ mod typed {
         rating: Option<Rating>,
         #[serde(skip_serializing_if = "Option::is_none", default)]
         seed: Option<String>,
-        #[serde(skip_serializing_if = "Option::is_none", default)]
-        generator_version: Option<u32>,
+        /// Read from older envelopes and not used.
+        #[serde(rename = "generator_version", skip_serializing, default)]
+        _generator_version: Option<u32>,
         #[serde(skip_serializing_if = "Option::is_none", default)]
         params: Option<String>,
         #[serde(skip_serializing_if = "Option::is_none", default)]
@@ -208,7 +209,7 @@ mod typed {
                 solution: record.solution.as_ref(),
                 rating: rating.cloned(),
                 seed: record.shared.seed.map(|s| s.to_string()),
-                generator_version: record.shared.generator_version,
+                _generator_version: None,
                 params: record.shared.params.clone(),
                 difficulty: record.shared.difficulty,
             })?)
@@ -222,12 +223,10 @@ mod typed {
             let mut record = Record::new(envelope.puzzle);
             record.solution = envelope.solution;
             record.shared.seed = envelope.seed.map(|s| s.parse::<u64>()).transpose()?;
-            record.shared.generator_version = envelope.generator_version;
             record.shared.params = envelope.params;
             record.shared.difficulty = envelope.difficulty;
             if let Some(r) = &envelope.rating {
                 record.shared.rating = Some((r.level, r.score));
-                record.shared.rater_version = Some(r.rater_version);
             }
             // Reuse the genre's validation of solution shape/completeness, without solving.
             let record = one::<G>(&G::write_record(&record))?;
@@ -340,7 +339,6 @@ mod typed {
         fn with_rating(&self, text: &str, rating: &Rating) -> Result<String, RegistryError> {
             let mut r = one::<G>(text)?;
             r.shared.rating = Some((rating.level, rating.score));
-            r.shared.rater_version = Some(rating.rater_version);
             Ok(G::write_record(&r))
         }
         fn editor(
