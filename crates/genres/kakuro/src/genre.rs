@@ -15,8 +15,6 @@ static METADATA: Metadata = {
         "kakuro",
         "Kakuro",
         "Fill the white cells with digits 1–9 so each run adds up to its clue without repeating a digit.",
-        GENERATOR_VERSION,
-        RATER_VERSION,
     );
     m.aliases = &["cross-sums"];
     m.rules = &[Rule::new(1, "runs"), Rule::new(2, "every cell filled")];
@@ -115,9 +113,7 @@ impl Genre for Kakuro {
         record.shared.params = Some(params.to_string());
         record.shared.difficulty = difficulty;
         record.shared.seed = Some(seed);
-        record.shared.generator_version = Some(g.generator_version);
         record.shared.rating = Some((g.rating.level, g.rating.score));
-        record.shared.rater_version = Some(g.rating.rater_version);
         Ok(Generation::new(record, g.rating, g.attempts))
     }
     fn check(

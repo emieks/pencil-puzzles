@@ -3,7 +3,7 @@ use pencil_puzzles_kakurasu::{Answer, Puzzle, parse_records, write_record};
 
 #[test]
 fn formats_round_trip_with_shared_keys() {
-    let text = "genre: kakurasu\ntitle: A\nsource: project\nlicense: MIT\nrows: 1 2\ncols: 1 2\ngenerator_version: 1\nparams: 2x2\ndifficulty: easy\nseed: 18446744073709551615\nrating: easy 4\nrater_version: 1\nsolution:\n#-\n-#";
+    let text = "genre: kakurasu\ntitle: A\nsource: project\nlicense: MIT\nrows: 1 2\ncols: 1 2\nparams: 2x2\ndifficulty: easy\nseed: 18446744073709551615\nrating: easy 4\nsolution:\n#-\n-#";
     let record = parse_records(text).unwrap().remove(0);
     assert_eq!(write_record(&record), text);
     assert_eq!(Puzzle::from_id(&record.puzzle.id()).unwrap(), record.puzzle);

@@ -18,8 +18,7 @@ several printed numbers or none.
 
 ## Example
 
-Generator version 1, shape `3x3`, easy, seed `0` produces
-`fillomino:3x3:a2b234b`:
+Shape `3x3`, easy, seed `0` produces `fillomino:3x3:a2b234b`:
 
 ```text
 Clues     Solution
@@ -56,9 +55,8 @@ not its number".
 
 ## Techniques
 
-Rater version 1 uses the profile `fillomino-human` version 1. The room of
-a group is the set of cells connected to it through cells that still allow
-its size.
+The rater uses the profile `fillomino-human`. The room of a group is the set
+of cells connected to it through cells that still allow its size.
 
 | Technique | Level | What it does |
 | --- | --- | --- |
@@ -100,16 +98,15 @@ too_big            only_exit
 The shape is written `<rows>x<columns>`, such as `6x6`. Clues go from 1 to the number
 of cells. Contradictory clues still parse and have no solution.
 
-Generator version 1 grows a random partition: it visits the cells in a
-seeded order and grows a region from each free one toward a size drawn
-from 1 to 9 (weights 1, 3, 5, 6, 6, 5, 3, 2, 1). A region that touches a
-finished region of its size takes one more cell or joins a neighbouring
-region if that removes the clash; otherwise the partition starts over. Every
-cell starts as a clue. Clues are then removed in a random order, keeping
-each removal while the techniques up to the requested level still solve
-the puzzle. If the puzzle is still too easy when no clue is left to try, a
-few clues go back into the best clue set so far and a new order starts, up
-to 24 times before a new partition.
+The generator grows a random partition: it visits the cells in a seeded order
+and grows a region from each free one toward a size drawn from 1 to 9 (weights
+1, 3, 5, 6, 6, 5, 3, 2, 1). A region that touches a finished region of its
+size takes one more cell or joins a neighbouring region if that removes the
+clash; otherwise the partition starts over. Every cell starts as a clue. Clues
+are then removed in a random order, keeping each removal while the techniques
+up to the requested level still solve the puzzle. If the puzzle is still too
+easy when no clue is left to try, a few clues go back into the best clue set
+so far and a new order starts, up to 24 times before a new partition.
 
 ## Formats
 

@@ -5,12 +5,10 @@ grid:
 # 17/ 3/
 /11 . .
 /9 . .
-generator_version: 2
 params: 3x3
 difficulty: easy
 seed: 0
 rating: easy 4
-rater_version: 1
 solution:
 ###
 #92

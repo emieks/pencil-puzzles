@@ -10,12 +10,10 @@ grid:
 # 16/16 . . . 6/4 . .
 /17 . . /11 . . . .
 /12 . . # /15 . . .
-generator_version: 2
 params: 8x8
 difficulty: medium
 seed: 0
 rating: medium 113
-rater_version: 1
 solution:
 ########
 #512##92

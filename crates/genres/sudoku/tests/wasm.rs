@@ -15,10 +15,8 @@ fn largest_shape_solve_rate_generate_and_golden() {
         let f: Vec<_> = line.split_whitespace().collect();
         let mut o = GenerateOptions::new(f[0].parse().unwrap(), f[2].parse().unwrap());
         o.difficulty = Some(f[1].parse().unwrap());
-        o.version = f[4].parse().unwrap();
         let g = generate(&o, &Budget::unlimited()).unwrap();
         assert_eq!(g.puzzle.id(), f[3]);
-        assert_eq!(g.generator_version.to_string(), f[4]);
         assert_eq!(rate(&g.puzzle, &Budget::unlimited()).unwrap(), g.rating);
         assert!(solve(&g.puzzle, &Budget::unlimited()).unwrap().is_unique());
     }

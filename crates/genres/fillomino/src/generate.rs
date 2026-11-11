@@ -8,9 +8,6 @@ use pencil_puzzles_core::grid::neighbours;
 use pencil_puzzles_core::search::{Construct, Move, Outcome, SearchError, search};
 use std::{error::Error, fmt};
 
-/// Generator version (V3).
-pub const GENERATOR_VERSION: u32 = 1;
-
 /// Largest region the generator builds.
 const LARGEST: usize = 9;
 /// Weights of region sizes 1 to 9 when growing a partition; they add up to
@@ -57,8 +54,6 @@ pub struct Generated {
     pub rating: Rating,
     /// The seed it was generated from.
     pub seed: u64,
-    /// The generator version.
-    pub generator_version: u32,
     /// Candidates screened.
     pub attempts: u32,
 }
@@ -398,7 +393,6 @@ pub fn generate(options: &GenerateOptions, budget: &Budget) -> Result<Generated,
                 solution,
                 rating: found.rating,
                 seed: options.seed,
-                generator_version: GENERATOR_VERSION,
                 attempts: found.attempts,
             })
         }

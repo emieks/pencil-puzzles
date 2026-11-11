@@ -9,7 +9,6 @@ fn corpus_solutions_ratings_and_generation_match() {
         for record in parse_records(&text).unwrap() {
             let r = rate(&record.puzzle, &Budget::unlimited()).unwrap();
             assert_eq!(record.shared.rating, Some((r.level, r.score)));
-            assert_eq!(record.shared.rater_version, Some(RATER_VERSION));
             assert_eq!(
                 solve(&record.puzzle, &Budget::unlimited()).unwrap(),
                 Solutions::Unique(record.solution.clone().unwrap())
@@ -38,7 +37,7 @@ fn corpus_solutions_ratings_and_generation_match() {
 fn golden_generation_is_stable() {
     let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/golden.txt");
     let text = fs::read_to_string(&path).unwrap();
-    let mut output = String::from("# params difficulty seed id generator_version\n");
+    let mut output = String::from("# params difficulty seed id\n");
     for line in text
         .lines()
         .filter(|l| !l.starts_with('#') && !l.is_empty())
@@ -49,12 +48,11 @@ fn golden_generation_is_stable() {
         options.difficulty = Some(fields[1].parse().unwrap());
         let g = generate(&options, &Budget::unlimited()).unwrap();
         output.push_str(&format!(
-            "{} {} {} {} {}\n",
+            "{} {} {} {}\n",
             fields[0],
             fields[1],
             g.seed,
-            g.puzzle.id(),
-            g.generator_version
+            g.puzzle.id()
         ));
     }
     if std::env::var_os("BLESS").is_some() {

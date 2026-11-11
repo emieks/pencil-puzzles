@@ -162,8 +162,6 @@ impl<C> Technique<C> {
 pub struct Profile<C: 'static> {
     /// Stable profile name, such as `sudoku-human`.
     pub id: &'static str,
-    /// Version of the profile and its policy.
-    pub version: u32,
     /// Techniques in policy order.
     pub techniques: &'static [Technique<C>],
     /// Whether the candidates already break a rule. It must never be true
@@ -496,7 +494,7 @@ impl<C> Profile<C> {
 /// The public rating of a solved trace: its level is the hardest step's,
 /// its score the total proof size, and it lists the skill techniques used,
 /// the number of skill steps and the recorded metrics.
-pub fn rating<C>(trace: &Trace, profile: &Profile<C>, rater_version: u32) -> Rating {
+pub fn rating<C>(trace: &Trace, profile: &Profile<C>) -> Rating {
     let level = trace
         .steps
         .iter()
@@ -508,7 +506,7 @@ pub fn rating<C>(trace: &Trace, profile: &Profile<C>, rater_version: u32) -> Rat
         .iter()
         .filter(|s| s.kind != Kind::Bookkeeping)
         .collect();
-    let mut rating = Rating::new(level, rater_version);
+    let mut rating = Rating::new(level);
     rating.score = trace.steps.iter().map(|s| u64::from(s.proof_nodes)).sum();
     rating.techniques = skill
         .iter()
@@ -519,7 +517,6 @@ pub fn rating<C>(trace: &Trace, profile: &Profile<C>, rater_version: u32) -> Rat
     rating.steps = skill.len() as u32;
     rating.metrics = Some(Metrics {
         profile: profile.id.into(),
-        profile_version: profile.version,
         available_moves: trace.placements.clone(),
         productive_choices: trace.choices.clone(),
         solved_cells: trace.fixed.clone(),
@@ -669,7 +666,6 @@ mod tests {
 
     static PROFILE: Profile<Line> = Profile {
         id: "line",
-        version: 1,
         techniques: &TECHNIQUES,
         broken,
     };

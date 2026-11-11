@@ -20,8 +20,7 @@ written in this project's formats.
 
 ## Example
 
-Generator version 1, shape `5x5`, easy, seed `2` produces
-`hashi:5x5:2a1a3e4a2a6e3c3`:
+Shape `5x5`, easy, seed `2` produces `hashi:5x5:2a1a3e4a2a6e3c3`:
 
 ```text
 Clues    Solution
@@ -59,7 +58,7 @@ broken".
 
 ## Techniques
 
-Rater version 1 uses the profile `hashi-human` version 1.
+The rater uses the profile `hashi-human`.
 
 | Technique | Level | What it does |
 | --- | --- | --- |
@@ -96,13 +95,13 @@ island_bounds          isolated_pair
 
 The shape is written `<rows>x<columns>`, such as `7x7`.
 
-Generator version 1 grows a random network: starting from an island in a
-random cell, it repeatedly runs one or two bridges from a random island to a
-new island at a free cell in line with it, never next to another island,
-until a third of the cells are islands or it has made 20 tries per island
-wanted. It then adds single bridges between islands that see each other, one
-in eight free slots (one in three for hard and expert), so that the network
-has loops. The numbers come from the bridges.
+The generator grows a random network: starting from an island in a random
+cell, it repeatedly runs one or two bridges from a random island to a new
+island at a free cell in line with it, never next to another island, until a
+third of the cells are islands or it has made 20 tries per island wanted. It
+then adds single bridges between islands that see each other, one in eight
+free slots (one in three for hard and expert), so that the network has loops.
+The numbers come from the bridges.
 
 Screening runs the exact solver first. If the puzzle has two solutions, the
 slots where they differ count as unresolved; otherwise the techniques up to

@@ -10,10 +10,8 @@ fn generation_provenance_round_trips_for_every_genre() {
         let value = genre
             .to_json(&generated.text, Some(&generated.rating))
             .unwrap();
-        assert_eq!(
-            value["generator_version"],
-            genre.metadata().generator_version
-        );
+        assert!(value.get("generator_version").is_none());
+        assert!(value["rating"].get("rater_version").is_none());
         assert_eq!(value["params"], "1x1");
         assert_eq!(value["difficulty"], level.as_str());
         assert_eq!(value["seed"], u64::MAX.to_string());
@@ -24,13 +22,14 @@ fn generation_provenance_round_trips_for_every_genre() {
             value
         );
 
-        // Historical versions are provenance, not a request to run a generator.
-        let mut historical = value.clone();
-        historical["generator_version"] = 42.into();
-        let input = genre.read_json(historical.clone()).unwrap();
+        // Older envelopes carry version numbers, which are read and dropped.
+        let mut old = value.clone();
+        old["generator_version"] = 42.into();
+        old["rating"]["rater_version"] = 3.into();
+        let input = genre.read_json(old).unwrap();
         assert_eq!(
             genre.to_json(&input.text, input.rating.as_ref()).unwrap(),
-            historical
+            value
         );
 
         for (key, invalid) in [
@@ -47,8 +46,8 @@ fn generation_provenance_round_trips_for_every_genre() {
                 genre.metadata().id
             );
         }
-        // Old envelopes, and requests without an exact level, remain supported.
-        for key in ["generator_version", "params", "difficulty"] {
+        // Requests without parameters or an exact level remain supported.
+        for key in ["params", "difficulty"] {
             let mut absent = value.clone();
             absent.as_object_mut().unwrap().remove(key);
             let input = genre.read_json(absent.clone()).unwrap();

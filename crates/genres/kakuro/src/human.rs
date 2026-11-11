@@ -363,7 +363,6 @@ pub(crate) static TECHNIQUES: [Technique<Grid>; 7] = [
 /// The canonical Kakuro human profile.
 pub(crate) static PROFILE: Profile<Grid> = Profile {
     id: "kakuro-human",
-    version: 1,
     techniques: &TECHNIQUES,
     broken,
 };

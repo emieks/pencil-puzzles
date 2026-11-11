@@ -49,16 +49,16 @@ the genre's answer format.
 **L14. Canonical solving.** From the printed puzzle, the solver repeatedly
 applies the first step of the first technique, in the profile's order, that
 makes progress. Bookkeeping comes first. A puzzle's level is the level of the
-hardest technique on this path. The level is exact for this rater version; a
-person using other strategies may find a puzzle easier or harder.
+hardest technique on this path. The level is exact for this rater; a person
+using other strategies may find a puzzle easier or harder.
 
 **L15-L16. Determinism.** Optimizations must not change results, and a
 budget that runs out is an error. A deduction cannot depend on randomness, a
 time limit, the solution or an assumption that the puzzle is unique.
 
 **L17-L18. Score.** The score is the total size of the step explanations. It
-changes between rater versions and does not estimate solving time. Ratings
-can also include research metrics, which may change in any version.
+changes between releases and does not estimate solving time. Ratings can
+also include research metrics, which may change in any release.
 
 ## Rating results
 
@@ -74,10 +74,12 @@ do not use the solution.
 **L21.** A puzzle generated at a requested level has exactly that rating. With
 no level requested, any level from easy to expert is accepted.
 
-**L22.** Changing an internal search limit changes the generator version.
-Attempt limits, work budgets and cancellation can make generation fail, and
-when it succeeds the puzzle is the same under any of them.
+**L22.** Changing an internal search limit counts as a change to generated
+puzzles (V3). Attempt limits, work budgets and cancellation can make
+generation fail, and when it succeeds the puzzle is the same under any of
+them.
 
-**L24/V3.** Changes that affect ratings or generated puzzles bump the rater or
-generator version, and the code for the old version is deleted. A seed
-reproduces a puzzle within one generator version, so puzzles are shared by ID.
+**L24/V3.** Changes that affect ratings or generated puzzles are marked
+**(new ratings)** or **(new puzzles)** in the changelog, and only the current
+rater and generator are kept. A seed gives the same puzzle until a release
+marked **(new puzzles)** for that genre, so puzzles are shared by ID.

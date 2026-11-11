@@ -7,12 +7,10 @@ grid:
 ..5.3
 .....
 2....
-generator_version: 3
 params: 5x5
 difficulty: expert
 seed: 0
 rating: expert 199
-rater_version: 2
 solution:
 ---#-
 -###-

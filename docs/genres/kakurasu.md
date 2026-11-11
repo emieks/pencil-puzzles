@@ -14,8 +14,7 @@ A zero clue means its line has no shaded cells.
 
 ## Example
 
-Generator version 3, shape `3x5`, easy, seed `0` produces
-`kakurasu:3x5:8.12.3/0.0.6.2.3`:
+Shape `3x5`, easy, seed `0` produces `kakurasu:3x5:8.12.3/0.0.6.2.3`:
 
 ```text
 genre: kakurasu
@@ -47,8 +46,8 @@ Each cell is a variable, shaded (`#`) or unshaded (`-`), ordered row-major.
 
 ## Techniques
 
-Rater version 3 uses the profile `kakurasu-human` version 1. Within a line,
-"need" is the clue minus the shaded cells' weights.
+The rater uses the profile `kakurasu-human`. Within a line, "need" is the clue
+minus the shaded cells' weights.
 
 | Technique | Level | What it does |
 | --- | --- | --- |
@@ -71,8 +70,8 @@ Shorter contradiction chains are tried first.
 
 The shape is written `<rows>x<columns>`, such as `5x7`.
 
-Generator version 3 shades 35% to 65% of the cells at random, and the clues
-follow from the shading. The puzzle is screened with the techniques up to the
+The generator shades 35% to 65% of the cells at random, and the clues follow
+from the shading. The puzzle is screened with the techniques up to the
 requested level. A cell they could not decide (or any cell, if the puzzle was
 too easy) is flipped, and the flip is kept unless the puzzle moved further
 from the requested level. After 2 x (rows + columns) rejected flips it starts

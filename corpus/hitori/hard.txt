@@ -10,12 +10,10 @@ grid:
 81134548
 65253854
 64668713
-generator_version: 1
 params: 8x8
 difficulty: hard
 seed: 0
 rating: hard 163
-rater_version: 1
 solution:
 ----#--#
 #--#-#--

@@ -13,8 +13,6 @@ static METADATA: Metadata = {
         "sudoku",
         "Sudoku",
         "Fill rows, columns and boxes with each digit exactly once.",
-        GENERATOR_VERSION,
-        RATER_VERSION,
     );
     m.aliases = &["number-place", "nanpure"];
     m.rules = &[
@@ -99,9 +97,7 @@ impl Genre for Sudoku {
         record.shared.params = Some(params.to_string());
         record.shared.difficulty = difficulty;
         record.shared.seed = Some(seed);
-        record.shared.generator_version = Some(g.generator_version);
         record.shared.rating = Some((g.rating.level, g.rating.score));
-        record.shared.rater_version = Some(g.rating.rater_version);
         Ok(Generation::new(record, g.rating, g.attempts))
     }
     fn check(

@@ -24,8 +24,7 @@ they do not change once the genre is released. -->
 <!-- A small generated puzzle, with its ID, solution and a sentence on how
 the rules apply. -->
 
-Generator version <n>, shape `<shape>`, <level>, seed `<seed>` produces
-`<id>:<shape>:<description>`:
+Shape `<shape>`, <level>, seed `<seed>` produces `<id>:<shape>:<description>`:
 
 ```text
 <Puzzle and solution, drawn.>

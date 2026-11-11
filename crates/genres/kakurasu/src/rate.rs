@@ -7,9 +7,6 @@ use crate::human::{PROFILE, SHADED, UNSHADED, analyze_state, initial_masks};
 use crate::solver::solve;
 use crate::{Answer, Mark, Puzzle, Solutions};
 
-/// The rater version (V3). Version 3 uses human techniques.
-pub const RATER_VERSION: u32 = 3;
-
 /// Rates a puzzle by the human techniques it needs.
 ///
 /// ```
@@ -45,7 +42,7 @@ fn rate_inner(puzzle: &Puzzle, budget: &Budget) -> Result<(Rating, Vec<Step>), R
         return Err(RateError::Unrated);
     }
     let steps = human::public_steps(&trace, initial_masks(puzzle), |i, v| literal(puzzle, i, v));
-    Ok((human::rating(&trace, &PROFILE, RATER_VERSION), steps))
+    Ok((human::rating(&trace, &PROFILE), steps))
 }
 
 /// Value `v` (0 shaded, 1 unshaded) of cell `i`, as players write it.

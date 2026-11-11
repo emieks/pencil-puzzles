@@ -7,12 +7,10 @@ grid:
 /11 . . . . 4/3 . .
 /17 . . /16 . . . .
 /9 . . /7 . . # #
-generator_version: 2
 params: 5x8
 difficulty: medium
 seed: 0
 rating: medium 70
-rater_version: 1
 solution:
 ########
 ###72#92

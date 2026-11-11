@@ -9,9 +9,6 @@ use pencil_puzzles_core::search::{Construct, Move, Outcome, SearchError, search}
 use std::cell::RefCell;
 use std::{error::Error, fmt};
 
-/// Generator version (V3).
-pub const GENERATOR_VERSION: u32 = 2;
-
 /// The longest run the generator builds, by level: any, easy, medium,
 /// hard, expert.
 const LONGEST: [usize; 5] = [4, 4, 4, 5, 5];
@@ -87,8 +84,6 @@ pub struct Generated {
     pub rating: Rating,
     /// The seed it was generated from.
     pub seed: u64,
-    /// The generator version.
-    pub generator_version: u32,
     /// Candidates screened.
     pub attempts: u32,
 }
@@ -746,7 +741,6 @@ pub fn generate(options: &GenerateOptions, budget: &Budget) -> Result<Generated,
                 solution,
                 rating: found.rating,
                 seed: options.seed,
-                generator_version: GENERATOR_VERSION,
                 attempts: found.attempts,
             })
         }

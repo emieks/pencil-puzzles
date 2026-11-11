@@ -11,12 +11,10 @@ grid:
 ..57....3
 1....6...
 49...16..
-generator_version: 6
 params: 9x9
 difficulty: expert
 seed: 0
 rating: expert 886
-rater_version: 3
 solution:
 248563917
 351947862

@@ -11,8 +11,7 @@ Fill rows, columns and boxes with each digit exactly once.
 
 ## Example
 
-Generator version 6, shape `4x4`, easy, seed `0` produces
-`sudoku:4x4:....2.3..3.4....`:
+Shape `4x4`, easy, seed `0` produces `sudoku:4x4:....2.3..3.4....`:
 
 ```text
 Puzzle    Solution
@@ -39,7 +38,7 @@ the rater does not use it.
 
 ## Techniques
 
-Rater version 3 uses the profile `sudoku-human` version 2, in this order:
+The rater uses the profile `sudoku-human`, in this order:
 
 | Level | Techniques |
 | --- | --- |
@@ -83,8 +82,8 @@ need them are unrated.
 Boxes are 1x1, 2x2 and 3x3 respectively. 6x6 grids with 2x3 boxes are not
 supported yet.
 
-Generator version 6 fills a grid in seeded order, then removes clues while
-the puzzle stays unique and solvable at the requested level. Below expert it
+The generator fills a grid in seeded order, then removes clues while the
+puzzle stays unique and solvable at the requested level. Below expert it
 removes clues in 180-degree rotational pairs; expert removes single clues.
 Each removal is checked for uniqueness with the brute-force solver before the
 techniques run. When every clue has been tried and the puzzle is still too

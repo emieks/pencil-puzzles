@@ -364,7 +364,6 @@ static TECHNIQUES: [Technique<Grid>; 8] = [
 /// The canonical Hitori human profile.
 pub(crate) static PROFILE: Profile<Grid> = Profile {
     id: "hitori-human",
-    version: 1,
     techniques: &TECHNIQUES,
     broken,
 };

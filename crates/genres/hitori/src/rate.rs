@@ -4,9 +4,6 @@ use crate::*;
 use pencil_puzzles_core::human;
 use std::{error::Error, fmt};
 
-/// Hitori rater version.
-pub const RATER_VERSION: u32 = 1;
-
 /// Candidate `v` of cell `i` as players write it: `-` for unshaded, `#`
 /// for shaded.
 fn literal(p: &Puzzle, i: usize, v: usize) -> Literal {
@@ -32,7 +29,7 @@ fn rate_inner(p: &Puzzle, budget: &Budget) -> Result<(Rating, Vec<Step>), RateEr
         return Err(RateError::Unrated);
     }
     let steps = human::public_steps(&trace, start, |i, v| literal(p, i, v));
-    Ok((human::rating(&trace, &PROFILE, RATER_VERSION), steps))
+    Ok((human::rating(&trace, &PROFILE), steps))
 }
 
 /// Rate a uniquely solvable puzzle by the human techniques it needs, or

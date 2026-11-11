@@ -17,12 +17,10 @@ grid:
 2..2...........
 ..2......1.5..2
 .4.4.1..2.3..2.
-generator_version: 1
 params: 15x15
 difficulty: medium
 seed: 0
 rating: medium 207
-rater_version: 1
 solution:
 2--3==========4
 |4==6===6====4H

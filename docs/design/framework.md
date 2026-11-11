@@ -41,7 +41,7 @@ also proves the puzzle has one solution; the brute-force solver checks every
 generated puzzle as well.
 
 **Rating and hints.** A rating lists the level, the skill techniques used, the
-number of skill steps and the rater version. A hint applies bookkeeping from
+number of skill steps and the score. A hint applies bookkeeping from
 the player's marks and returns the first skill step.
 
 ## Generating
@@ -59,7 +59,8 @@ One loop for every genre:
 5. **Search** when the result is too easy: keep the best candidate so far,
    perturb it, and restart after a fixed number of tries.
 
-Seeds, attempt counts and restart limits are part of the generator version.
+Changing how seeds, attempt counts or restart limits are used changes
+generated puzzles (V3).
 Apart from the level, the only constraint on generated puzzles so far is
 symmetric clues in sudoku below expert.
 

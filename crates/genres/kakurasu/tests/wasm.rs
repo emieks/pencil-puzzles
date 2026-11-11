@@ -27,6 +27,5 @@ fn golden_ids_on_32_bits() {
         options.difficulty = Some(f[1].parse().unwrap());
         let g = generate(&options, &Budget::unlimited()).unwrap();
         assert_eq!(g.puzzle.id(), f[3]);
-        assert_eq!(g.generator_version.to_string(), f[4]);
     }
 }
