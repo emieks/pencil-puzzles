@@ -11,6 +11,8 @@ ratings **(new ratings)**.
 
 - `llms.txt` at https://pencil-puzzles.org/llms.txt, describing the package
   and linking to the documentation.
+- CLI: `completions <shell>` prints a completion script for bash, zsh, fish,
+  PowerShell or elvish.
 
 ### Changed
 
