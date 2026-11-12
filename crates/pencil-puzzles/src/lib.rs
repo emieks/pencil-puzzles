@@ -32,6 +32,10 @@ pub use pencil_puzzles_core::*;
 #[cfg(feature = "aquarium")]
 pub use pencil_puzzles_aquarium as aquarium;
 
+/// Binairo: 0s and 1s with balanced, different lines and no three in a row.
+#[cfg(feature = "binairo")]
+pub use pencil_puzzles_binairo as binairo;
+
 /// Fillomino: regions numbered with their sizes, same sizes never touching.
 #[cfg(feature = "fillomino")]
 pub use pencil_puzzles_fillomino as fillomino;

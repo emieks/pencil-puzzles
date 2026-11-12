@@ -304,6 +304,9 @@ button.cell:hover:not(:disabled) { background: var(--subtle); border: 0; }
 .cell.circled::after { content: ''; position: absolute; width: calc(var(--size) * .7); height: calc(var(--size) * .7); border: 2px solid currentColor; border-radius: 50%; box-sizing: border-box; }
 .cell.shaded, button.cell.shaded:hover:not(:disabled) { background: var(--shaded); color: var(--bg); }
 .cell.shaded.tone-water, button.cell.shaded.tone-water:hover:not(:disabled) { background: var(--water); }
+/* Blue marks: dots, and circles around numbers. */
+.cell.tone-blue:not(.labelled):not(.wrong) { color: var(--accent); }
+.cell.circled.tone-blue:not(.wrong)::after { border-color: var(--accent); }
 /* Marks in the text colour, such as aquarium's crosses. */
 .cell.tone-text:not(.wrong) { color: var(--text); }
 .board.paint .cell.same:not(.shaded) { background: var(--same); }

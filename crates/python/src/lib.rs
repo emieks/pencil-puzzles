@@ -1,7 +1,9 @@
 //! The native module behind the Python package; the public API is in
 //! `python/pencil_puzzles/__init__.py`.
 #![forbid(unsafe_code)]
-use pencil_puzzles::{aquarium, fillomino, hashi, hitori, kakurasu, kakuro, nurikabe, sudoku};
+use pencil_puzzles::{
+    aquarium, binairo, fillomino, hashi, hitori, kakurasu, kakuro, nurikabe, sudoku,
+};
 use pencil_puzzles_core::{Budget, Difficulty, Genre, RateError, Record, Solutions};
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList};
@@ -96,6 +98,11 @@ fn error(error: &(dyn Error + 'static)) -> Failure {
         aquarium::GenerateError,
         aquarium::GenerateError::AttemptsExhausted,
         aquarium::GenerateError::BudgetExceeded
+    );
+    generation!(
+        binairo::GenerateError,
+        binairo::GenerateError::AttemptsExhausted,
+        binairo::GenerateError::BudgetExceeded
     );
     generation!(
         hitori::GenerateError,
@@ -216,6 +223,7 @@ enum PuzzleData {
     Hitori(hitori::Puzzle),
     Kakuro(kakuro::Puzzle),
     Aquarium(aquarium::Puzzle),
+    Binairo(binairo::Puzzle),
 }
 #[pyclass(frozen, module = "pencil_puzzles._native")]
 #[derive(Clone)]
@@ -232,6 +240,7 @@ macro_rules! dispatch {
         PuzzleData::Hitori(p) => $fun::<hitori::Hitori>(p $(, $arg)*),
         PuzzleData::Kakuro(p) => $fun::<kakuro::Kakuro>(p $(, $arg)*),
         PuzzleData::Aquarium(p) => $fun::<aquarium::Aquarium>(p $(, $arg)*),
+        PuzzleData::Binairo(p) => $fun::<binairo::Binairo>(p $(, $arg)*),
     } };
 }
 fn puzzle_value<G: Genre>(p: &G::Puzzle) -> Value
@@ -370,6 +379,9 @@ fn from_id(id: &str) -> PyResult<NativePuzzle> {
         "aquarium" => {
             PuzzleData::Aquarium(aquarium::Puzzle::from_id(&canonical).map_err(|e| error(&e).py())?)
         }
+        "binairo" => {
+            PuzzleData::Binairo(binairo::Puzzle::from_id(&canonical).map_err(|e| error(&e).py())?)
+        }
         _ => unreachable!(),
     };
     Ok(NativePuzzle { data })
@@ -400,6 +412,9 @@ fn from_json(genre: &str, puzzle: &str) -> PyResult<NativePuzzle> {
             serde_json::from_str(puzzle).map_err(|e| Failure::new("parse", e).py())?,
         ),
         "aquarium" => PuzzleData::Aquarium(
+            serde_json::from_str(puzzle).map_err(|e| Failure::new("parse", e).py())?,
+        ),
+        "binairo" => PuzzleData::Binairo(
             serde_json::from_str(puzzle).map_err(|e| Failure::new("parse", e).py())?,
         ),
         _ => return Err(Failure::new("unsupported", "unknown genre").py()),
@@ -481,6 +496,7 @@ fn generate(
             "hitori" => go!(hitori::Hitori, PuzzleData::Hitori),
             "kakuro" => go!(kakuro::Kakuro, PuzzleData::Kakuro),
             "aquarium" => go!(aquarium::Aquarium, PuzzleData::Aquarium),
+            "binairo" => go!(binairo::Binairo, PuzzleData::Binairo),
             _ => unreachable!(),
         }
     })?;

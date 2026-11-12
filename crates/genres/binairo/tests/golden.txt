@@ -1,0 +1,9 @@
+# params difficulty seed id
+2x2 easy 0 binairo:2x2:c1
+4x4 medium 0 binairo:4x4:0b0a1a0f0a
+6x10 hard 0 binairo:6x10:f1e1c1a0b1j0e11b0a00d0g0a
+10x10 easy 0 binairo:10x10:1e1c11e1d0a1e0d0b0m00i0d111d11g11c0a1b1b0b
+10x10 medium 0 binairo:10x10:1e1c11e1d0g0d0b0g0c1a00c1a1c0d111d1h11c0c0c0b
+10x10 hard 0 binairo:10x10:1e1c11e1d0g0d0b0g0c1a00c1a1c0d111c0i11c0c0c0b
+10x10 expert 0 binairo:10x10:c1b0b1h0c0d1a1d0e1a1i0a0f0f01b11c1a1c0b0e0c0c
+16x16 medium 0 binairo:16x16:h1c00a011a1b0a0b1a0g0a1a0k0g0b01f10i0b1b0b1c1b01e1f1d0i1d1c1a00f1c10c1b1b1d1b0f1c1c0h0a1p1a1c00a0b1f1d0a0b00c1a00e

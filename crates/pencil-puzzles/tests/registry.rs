@@ -4,15 +4,21 @@ use pencil_puzzles::*;
 fn generation_provenance_round_trips_for_every_genre() {
     for genre in genres() {
         let level = Difficulty::Easy;
+        // The smallest grid: Binairo needs even sides.
+        let shape = if genre.params_for_shape("1x1").is_ok() {
+            "1x1"
+        } else {
+            "2x2"
+        };
         let generated = genre
-            .generate("1x1", Some(level), u64::MAX, 100, &Budget::new(100_000))
+            .generate(shape, Some(level), u64::MAX, 100, &Budget::new(100_000))
             .unwrap();
         let value = genre
             .to_json(&generated.text, Some(&generated.rating))
             .unwrap();
         assert!(value.get("generator_version").is_none());
         assert!(value["rating"].get("rater_version").is_none());
-        assert_eq!(value["params"], "1x1");
+        assert_eq!(value["params"], shape);
         assert_eq!(value["difficulty"], level.as_str());
         assert_eq!(value["seed"], u64::MAX.to_string());
         let input = genre.read_json(value.clone()).unwrap();

@@ -56,6 +56,10 @@ guide](quickstart.md) shows how they fit together.
 .. autoclass:: AquariumClues
    :members: rows, cols, tanks
 
+.. autoclass:: BinairoPuzzle
+   :members: clues
+   :undoc-members:
+
 .. autoclass:: KakurasuPuzzle
    :members: clues
    :undoc-members:

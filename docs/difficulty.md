@@ -31,6 +31,7 @@ need not take the same time.
 | Genre | Easy | Medium | Hard | Expert |
 | --- | --- | --- | --- | --- |
 | [Aquarium](genres/aquarium.md) | tanks too big for a line, tanks a line needs | ways to make up a row | contradiction chains of up to 6 steps | up to 20 steps |
+| [Binairo](genres/binairo.md) | pairs, gaps | the last digit of a kind in a line, copies of finished lines | contradiction chains of up to 6 steps | up to 20 steps |
 | [Fillomino](genres/fillomino.md) | wall-offs, single exits, room counting, enclosed pairs | cells a region needs, ways to finish a region, small pockets, immediate rule breaks | contradiction chains of up to 6 steps | up to 20 steps |
 | [Hashi](genres/hashi.md) | island bounds, isolated pairs | only connections, immediate rule breaks | contradiction chains of up to 6 steps | up to 20 steps |
 | [Hitori](genres/hitori.md) | sandwiches, pairs, corners, cut cells | two rounds of routine consequences breaking a rule | contradiction chains of up to 6 steps | up to 20 steps |
