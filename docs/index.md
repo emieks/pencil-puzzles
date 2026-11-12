@@ -31,6 +31,7 @@ part of the package, and the [API reference](api.md) lists every name.
 | Genre | Goal | Standard size | Largest |
 | --- | --- | --- | --- |
 | [Aquarium](genres/aquarium.md) | Fill tanks with water to match the row and column clues; the water in a tank is level. | 8×8 | 15×15 |
+| [Binairo](genres/binairo.md) | Fill the grid with 0s and 1s: no three alike in a row, as many 0s as 1s in each line, no two lines the same. | 10×10 | 16×16 |
 | [Fillomino](genres/fillomino.md) | Divide the grid into regions whose cells hold the region's size; same-size regions never share a side. | 10×10 | 10×10 |
 | [Hashi](genres/hashi.md) | Connect all islands with straight bridges that never cross, giving each island as many bridges as its number. | 10×10 | 15×15 |
 | [Hitori](genres/hitori.md) | Shade cells so no unshaded number repeats in a row or column; shaded cells never share a side and unshaded cells stay connected. | 8×8 | 12×12 |
@@ -66,6 +67,7 @@ Long-running calls <guide/long-running>
 :caption: Genres
 
 genres/aquarium
+genres/binairo
 genres/fillomino
 genres/hashi
 genres/hitori

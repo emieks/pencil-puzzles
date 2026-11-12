@@ -40,11 +40,11 @@ class Engine {
 const engine=new Engine();
 function errorMessage(error){return /budget/i.test(error.message)?'This puzzle needs more work than the site allows. Try a smaller size, a lower difficulty or another puzzle.':error.message;}
 
-/** How selecting a cell highlights others, read from the view: boards with blocks (Kakuro) use runs, digit boards with regions (Sudoku) use rows, columns and regions, labelled boards (Hitori) use rows and columns, other number boards (Fillomino) use the connected group of equal numbers. */
+/** How selecting a cell highlights others, read from the view: boards with blocks (Kakuro) use runs, digit boards with regions (Sudoku) use rows, columns and regions, boards whose editable cells have labels (Hitori) use rows and columns, other number boards (Fillomino) use the connected group of equal numbers. */
 function highlightMode(view){
   if(view.cells.some(c=>c.block))return 'runs';
   if(view.marks.length>3&&view.cells.some(c=>c.region!==null&&c.region!==undefined))return 'regions';
-  if(view.cells.some(c=>c.label))return 'lines';
+  if(view.cells.some(c=>c.label&&c.editable))return 'lines';
   return view.marks.length>3?'group':'none';
 }
 /** Whether the board has walls between regions, as Aquarium has. Such a board has no selected cell: a ring would lie on the walls. */

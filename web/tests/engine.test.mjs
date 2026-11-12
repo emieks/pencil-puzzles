@@ -117,3 +117,17 @@ test('Aquarium tanks are view regions and are entered as letters',()=>{
   assert.ok(floating.violations.some(v=>v.rule===3&&v.place.region===0));
   assert.equal(call({operation:'compose',genre,shape:'2x2',values:['1','2','2','1','b','a','a','b']}).ok,false);
 });
+
+test('Binairo givens are fixed cells and digits are entered as marks',()=>{
+  const genre='binairo';
+  assert.deepEqual(call({operation:'levels',genre,params:'4x4'}).value,['easy','medium']);
+  assert.deepEqual(call({operation:'levels',genre,params:'6x6'}).value,['easy','medium','hard','expert']);
+  const puzzle=call({operation:'load',genre:'takuzu',puzzle:'binairo:2x2:1c'}).value;
+  assert.deepEqual(puzzle.view.cells.map(c=>[c.value,c.editable]),[['1',false],['.',true],['.',true],['.',true]]);
+  assert.deepEqual(puzzle.view.marks.map(m=>m.value),['.','1','0']);
+  const solved=call({operation:'solve',genre,puzzle:puzzle.id});
+  assert.deepEqual(solved.value.views[0].cells.map(c=>c.value),['1','0','0','1']);
+  const same=call({operation:'check',genre,puzzle:puzzle.id,marks:['1','0','1','0'],finished:true}).value;
+  assert.ok(same.violations.some(v=>v.rule===3&&v.place.row===1));
+  assert.equal(call({operation:'check',genre,puzzle:puzzle.id,marks:['1','.','.','1'],finished:true}).value.solved,true);
+});

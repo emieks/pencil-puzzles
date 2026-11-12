@@ -1,6 +1,6 @@
 # pencil-puzzles
 
-> A Python package that generates, solves and rates pencil puzzles: aquarium, fillomino, hashi, hitori, kakurasu, kakuro, nurikabe and sudoku. Every generated puzzle has exactly one solution, proven by a brute-force solver. A puzzle's difficulty (easy, medium, hard or expert) is the level of the hardest technique a person needs to solve it.
+> A Python package that generates, solves and rates pencil puzzles: aquarium, binairo, fillomino, hashi, hitori, kakurasu, kakuro, nurikabe and sudoku. Every generated puzzle has exactly one solution, proven by a brute-force solver. A puzzle's difficulty (easy, medium, hard or expert) is the level of the hardest technique a person needs to solve it.
 
 Install with `pip install pencil-puzzles` (Python 3.10 or newer, on Windows, macOS and Linux). The import name is `pencil_puzzles`, usually imported as `pp`. The engine is written in Rust and is also available as a Rust crate (`pencil-puzzles`), a command-line tool (`pencil-puzzles-cli`) and a web app.
 
@@ -43,6 +43,7 @@ pp.genres()                                                    # the genres you 
 Each genre page has the rules, techniques by level, parameters and formats.
 
 - [Aquarium](https://pencil-puzzles.org/docs/genres/aquarium/): fill tanks with water to match the row and column clues; the water in a tank is level. Standard size 8×8.
+- [Binairo](https://pencil-puzzles.org/docs/genres/binairo/): fill the grid with 0s and 1s: no three alike in a row, as many 0s as 1s in each line, no two lines the same. Also called Takuzu. Standard size 10×10.
 - [Fillomino](https://pencil-puzzles.org/docs/genres/fillomino/): divide the grid into regions whose cells hold the region's size; same-size regions never share a side. Standard size 10×10.
 - [Hashi](https://pencil-puzzles.org/docs/genres/hashi/): connect all islands with straight bridges that never cross, giving each island as many bridges as its number. Standard size 10×10.
 - [Hitori](https://pencil-puzzles.org/docs/genres/hitori/): shade cells so no unshaded number repeats in a row or column; shaded cells never share a side and unshaded cells stay connected. Standard size 8×8.

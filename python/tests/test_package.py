@@ -12,7 +12,7 @@ class PackageTests(unittest.TestCase):
     def test_all_genres_generate_solve_rate_check_and_round_trip(self):
         for genre, shape in (("sudoku", (4, 4)), ("nurikabe", (3, 3)), ("kakurasu", (3, 4)),
                              ("fillomino", (3, 4)), ("hashi", (5, 5)), ("hitori", (4, 5)), ("kakuro", (5, 6)),
-                             ("aquarium", (4, 5))):
+                             ("aquarium", (4, 5)), ("binairo", (4, 6))):
             with self.subTest(genre=genre):
                 g = pp.generate(genre, shape, difficulty="easy", seed=42)
                 self.assertEqual(g.rating.level, pp.Difficulty.EASY)
@@ -29,7 +29,7 @@ class PackageTests(unittest.TestCase):
     def test_standard_sizes_and_random_seeds(self):
         for genre, shape in (("sudoku", (9, 9)), ("nurikabe", (10, 10)), ("kakurasu", (7, 7)),
                              ("fillomino", (10, 10)), ("hashi", (10, 10)), ("hitori", (8, 8)),
-                             ("kakuro", (10, 10)), ("aquarium", (8, 8))):
+                             ("kakuro", (10, 10)), ("aquarium", (8, 8)), ("binairo", (10, 10))):
             with self.subTest(genre=genre):
                 self.assertEqual(pp.generate(genre, difficulty="easy").puzzle.shape, shape)
         first = pp.generate("sudoku", (4, 4))
@@ -41,7 +41,7 @@ class PackageTests(unittest.TestCase):
         self.assertEqual(str(puzzle), "1 . | . 4\n. 4 | . .\n----+----\n. . | 4 .\n4 . | . 1")
         for genre, shape in (("nurikabe", (3, 3)), ("kakurasu", (3, 4)), ("fillomino", (3, 4)),
                              ("hashi", (5, 5)), ("hitori", (4, 5)), ("kakuro", (5, 6)),
-                             ("aquarium", (4, 5))):
+                             ("aquarium", (4, 5)), ("binairo", (4, 6))):
             with self.subTest(genre=genre):
                 text = str(pp.generate(genre, shape, difficulty="easy", seed=42).puzzle)
                 self.assertTrue(text.strip())
@@ -117,6 +117,21 @@ class PackageTests(unittest.TestCase):
         many = pp.Puzzle.from_text("genre: aquarium\nrows: 1 1\ncols: 1 1\nregions:\nab\ncd")
         with self.assertRaises(pp.MultipleSolutionsError):
             pp.solve(many)
+
+    def test_binairo_givens_and_digits(self):
+        puzzle = pp.Puzzle.from_text("genre: binairo\ngrid:\n1.\n..")
+        self.assertIsInstance(puzzle, pp.BinairoPuzzle)
+        self.assertEqual(puzzle.clues, ((1, None), (None, None)))
+        self.assertEqual(puzzle.id, "binairo:2x2:1c")
+        self.assertEqual(pp.Puzzle.from_id("takuzu:2x2:1c"), puzzle)
+        self.assertEqual(pp.solve(puzzle).cells, ((1, 0), (0, 1)))
+        same = pp.Solution("binairo", ((1, 0), (1, 0)))
+        self.assertEqual({v.rule for v in pp.check(puzzle, same)}, {2, 3})
+        self.assertEqual(pp.check(puzzle, pp.Solution("binairo", ((1, None), (None, 1))), finished=True), [])
+        with self.assertRaises(pp.ParseError):
+            pp.check(puzzle, pp.Solution("binairo", ((1, 2), (0, 1))))
+        with self.assertRaises(pp.MultipleSolutionsError):
+            pp.solve(pp.Puzzle.from_text("genre: binairo\ngrid:\n..\n.."))
 
     def test_kakuro_blocks_sums_and_digits(self):
         puzzle = pp.Puzzle.from_text("genre: kakuro\ngrid:\n# 4/ 6/\n/3 . .\n/7 . .")
