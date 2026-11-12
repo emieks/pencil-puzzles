@@ -166,8 +166,6 @@ regions' first cells appear. R2 is reported at the first cell, reading row
 by row, of a group of shaded cells whose rectangle holds a cell marked
 unshaded.
 
-In the web app, each region's number is drawn in its first cell.
-
 ## Performance
 
 Measured with `cargo run --release -p pencil-puzzles --example benchmark -- chocona 20`,
