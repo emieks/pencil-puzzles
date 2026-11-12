@@ -1,9 +1,10 @@
 # pencil-puzzles-cli
 
 The `pencil-puzzles` command: generate, solve, rate, check and give hints
-for pencil puzzles (aquarium, binairo, fillomino, hashi, hitori, kakurasu,
-kakuro, nurikabe and sudoku). Every generated puzzle has exactly one solution and a
-difficulty from easy to expert, set by the hardest human technique it needs.
+for pencil puzzles (aquarium, binairo, chocona, fillomino, hashi, hitori,
+kakurasu, kakuro, nurikabe and sudoku). Every generated puzzle has exactly
+one solution and a difficulty from easy to expert, set by the hardest human
+technique it needs.
 
 ```sh
 cargo install pencil-puzzles-cli

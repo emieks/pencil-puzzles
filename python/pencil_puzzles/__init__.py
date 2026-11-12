@@ -19,6 +19,7 @@ from . import _native
 __version__ = "0.4.0"
 __all__ = [
     "AquariumClues", "AquariumPuzzle", "AttemptsExhaustedError", "BinairoPuzzle", "BudgetExceededError", "CancellationToken", "CancelledError",
+    "ChoconaClues", "ChoconaPuzzle",
     "Difficulty", "FillominoPuzzle", "Generated", "HashiPuzzle", "HitoriPuzzle", "KakurasuClues", "KakurasuPuzzle", "KakuroPuzzle", "Limits", "Mark",
     "MultipleSolutionsError", "NoSolutionError", "NurikabePuzzle", "ParseError",
     "PencilPuzzlesError", "Puzzle", "Rating",
@@ -38,8 +39,8 @@ class Difficulty(str, Enum):
 
 
 class Mark(str, Enum):
-    """A cell in a nurikabe, kakurasu, hitori or aquarium answer. In aquarium,
-    shaded cells are water."""
+    """A cell in a nurikabe, kakurasu, hitori, aquarium or chocona answer. In
+    aquarium, shaded cells are water."""
     SHADED = "#"
     UNSHADED = "-"
     UNMARKED = "."
@@ -334,6 +335,19 @@ class BinairoPuzzle(Puzzle):
     """The given digits, 0 or 1, and None for empty cells."""
 
 
+class ChoconaClues(NamedTuple):
+    """Chocona clues: each cell's region, and each region's number (``None``
+    for a region without one). Regions are numbered from 0 in the order their
+    first cells appear, reading row by row."""
+    regions: tuple[tuple[int, ...], ...]
+    numbers: tuple[int | None, ...]
+
+
+@dataclass(frozen=True)
+class ChoconaPuzzle(Puzzle):
+    clues: ChoconaClues
+
+
 def _tokens(rows: list[str], row: str) -> list[str]:
     """A grid row's cells: space-separated when any row of the grid has a space."""
     return row.split(" ") if any(" " in r for r in rows) else list(row)
@@ -375,6 +389,12 @@ def _puzzle(handle: Any) -> Puzzle:
         tanks = tuple(tuple(letters.index(t) if t in letters else int(t) - 1 for t in _tokens(rows, row))
                       for row in rows)
         return AquariumPuzzle(*common, AquariumClues(tuple(clues["row_clues"]), tuple(clues["col_clues"]), tanks))
+    if genre == "chocona":
+        rows = clues["regions"]
+        letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        regions = tuple(tuple(letters.index(t) if t in letters else int(t) - 1 for t in _tokens(rows, row))
+                        for row in rows)
+        return ChoconaPuzzle(*common, ChoconaClues(regions, tuple(clues["clues"])))
     return KakurasuPuzzle(*common, KakurasuClues(tuple(clues["row_clues"]), tuple(clues["col_clues"])))
 
 

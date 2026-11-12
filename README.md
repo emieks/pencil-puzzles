@@ -107,6 +107,7 @@ Save a puzzle with `puzzle.to_text()` or share it as `puzzle.id`. The
 | --- | --- | --- | --- |
 | [Aquarium](https://pencil-puzzles.org/docs/genres/aquarium/) | Fill tanks with water to match the row and column clues; the water in a tank is level. | 8×8 | 15×15 |
 | [Binairo](https://pencil-puzzles.org/docs/genres/binairo/) | Fill the grid with 0s and 1s: no three alike in a row, as many 0s as 1s in each line, no two lines the same. | 10×10 | 16×16 |
+| [Chocona](https://pencil-puzzles.org/docs/genres/chocona/) | Shade rectangles so each region has as many shaded cells as its number. | 10×10 | 15×15 |
 | [Fillomino](https://pencil-puzzles.org/docs/genres/fillomino/) | Divide the grid into regions whose cells hold the region's size; same-size regions never share a side. | 10×10 | 10×10 |
 | [Hashi](https://pencil-puzzles.org/docs/genres/hashi/) | Connect all islands with straight bridges that never cross, giving each island as many bridges as its number. | 10×10 | 15×15 |
 | [Hitori](https://pencil-puzzles.org/docs/genres/hitori/) | Shade cells so no unshaded number repeats in a row or column; shaded cells never share a side and unshaded cells stay connected. | 8×8 | 12×12 |

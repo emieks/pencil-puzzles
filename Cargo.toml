@@ -21,6 +21,7 @@ pencil-puzzles = { path = "crates/pencil-puzzles", version = "0.4.0", default-fe
 pencil-puzzles-core = { path = "crates/core", version = "0.4.0" }
 pencil-puzzles-aquarium = { path = "crates/genres/aquarium", version = "0.4.0" }
 pencil-puzzles-binairo = { path = "crates/genres/binairo", version = "0.4.0" }
+pencil-puzzles-chocona = { path = "crates/genres/chocona", version = "0.4.0" }
 pencil-puzzles-fillomino = { path = "crates/genres/fillomino", version = "0.4.0" }
 pencil-puzzles-hashi = { path = "crates/genres/hashi", version = "0.4.0" }
 pencil-puzzles-hitori = { path = "crates/genres/hitori", version = "0.4.0" }

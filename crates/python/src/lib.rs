@@ -2,7 +2,7 @@
 //! `python/pencil_puzzles/__init__.py`.
 #![forbid(unsafe_code)]
 use pencil_puzzles::{
-    aquarium, binairo, fillomino, hashi, hitori, kakurasu, kakuro, nurikabe, sudoku,
+    aquarium, binairo, chocona, fillomino, hashi, hitori, kakurasu, kakuro, nurikabe, sudoku,
 };
 use pencil_puzzles_core::{Budget, Difficulty, Genre, RateError, Record, Solutions};
 use pyo3::prelude::*;
@@ -103,6 +103,11 @@ fn error(error: &(dyn Error + 'static)) -> Failure {
         binairo::GenerateError,
         binairo::GenerateError::AttemptsExhausted,
         binairo::GenerateError::BudgetExceeded
+    );
+    generation!(
+        chocona::GenerateError,
+        chocona::GenerateError::AttemptsExhausted,
+        chocona::GenerateError::BudgetExceeded
     );
     generation!(
         hitori::GenerateError,
@@ -224,6 +229,7 @@ enum PuzzleData {
     Kakuro(kakuro::Puzzle),
     Aquarium(aquarium::Puzzle),
     Binairo(binairo::Puzzle),
+    Chocona(chocona::Puzzle),
 }
 #[pyclass(frozen, module = "pencil_puzzles._native")]
 #[derive(Clone)]
@@ -241,6 +247,7 @@ macro_rules! dispatch {
         PuzzleData::Kakuro(p) => $fun::<kakuro::Kakuro>(p $(, $arg)*),
         PuzzleData::Aquarium(p) => $fun::<aquarium::Aquarium>(p $(, $arg)*),
         PuzzleData::Binairo(p) => $fun::<binairo::Binairo>(p $(, $arg)*),
+        PuzzleData::Chocona(p) => $fun::<chocona::Chocona>(p $(, $arg)*),
     } };
 }
 fn puzzle_value<G: Genre>(p: &G::Puzzle) -> Value
@@ -382,6 +389,9 @@ fn from_id(id: &str) -> PyResult<NativePuzzle> {
         "binairo" => {
             PuzzleData::Binairo(binairo::Puzzle::from_id(&canonical).map_err(|e| error(&e).py())?)
         }
+        "chocona" => {
+            PuzzleData::Chocona(chocona::Puzzle::from_id(&canonical).map_err(|e| error(&e).py())?)
+        }
         _ => unreachable!(),
     };
     Ok(NativePuzzle { data })
@@ -415,6 +425,9 @@ fn from_json(genre: &str, puzzle: &str) -> PyResult<NativePuzzle> {
             serde_json::from_str(puzzle).map_err(|e| Failure::new("parse", e).py())?,
         ),
         "binairo" => PuzzleData::Binairo(
+            serde_json::from_str(puzzle).map_err(|e| Failure::new("parse", e).py())?,
+        ),
+        "chocona" => PuzzleData::Chocona(
             serde_json::from_str(puzzle).map_err(|e| Failure::new("parse", e).py())?,
         ),
         _ => return Err(Failure::new("unsupported", "unknown genre").py()),
@@ -497,6 +510,7 @@ fn generate(
             "kakuro" => go!(kakuro::Kakuro, PuzzleData::Kakuro),
             "aquarium" => go!(aquarium::Aquarium, PuzzleData::Aquarium),
             "binairo" => go!(binairo::Binairo, PuzzleData::Binairo),
+            "chocona" => go!(chocona::Chocona, PuzzleData::Chocona),
             _ => unreachable!(),
         }
     })?;
