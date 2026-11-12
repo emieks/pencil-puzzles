@@ -9,6 +9,8 @@ ratings **(new ratings)**.
 
 ### Added
 
+- Rust: `Genre::supports` and `DynGenre::supports` tell whether a genre
+  generates a level at a size.
 - `llms.txt` at https://pencil-puzzles.org/llms.txt, describing the package
   and linking to the documentation.
 - CLI: `completions <shell>` prints a completion script for bash, zsh, fish,

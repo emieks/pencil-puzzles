@@ -35,6 +35,9 @@ pub trait DynGenre: Sync {
     fn read_id(&self, id: &str) -> Result<String, RegistryError>;
     /// Encode the puzzle's stable ID.
     fn id(&self, text: &str) -> Result<String, RegistryError>;
+    /// Whether `generate` accepts these parameters and level.
+    fn supports(&self, params: &str, difficulty: Option<Difficulty>)
+    -> Result<bool, RegistryError>;
     /// Generate a unique puzzle; limits decide success, never which puzzle.
     fn generate(
         &self,
@@ -271,6 +274,13 @@ mod typed {
         }
         fn id(&self, text: &str) -> Result<String, RegistryError> {
             Ok(G::id(&one::<G>(text)?.puzzle))
+        }
+        fn supports(
+            &self,
+            params: &str,
+            difficulty: Option<Difficulty>,
+        ) -> Result<bool, RegistryError> {
+            Ok(G::supports(&params.parse()?, difficulty))
         }
         fn generate(
             &self,
