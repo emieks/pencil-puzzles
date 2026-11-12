@@ -16,7 +16,7 @@ import warnings
 
 from . import _native
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"
 __all__ = [
     "AquariumClues", "AquariumPuzzle", "AttemptsExhaustedError", "BinairoPuzzle", "BudgetExceededError", "CancellationToken", "CancelledError",
     "ChoconaClues", "ChoconaPuzzle",

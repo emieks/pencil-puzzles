@@ -5,63 +5,35 @@ and versions follow [Semantic Versioning](https://semver.org/). Changes that
 alter generated puzzles are marked **(new puzzles)**, and changes that alter
 ratings **(new ratings)**.
 
-## [Unreleased]
+## [0.5.0] - 2026-11-13
 
 ### Added
 
-- Aquarium (up to 15x15): generation, solving, checking, rating and hints,
-  in the Python package (`AquariumPuzzle`, `AquariumClues`), the command-line
-  tool and the web app. Expert needs a grid of at least 64 cells, such as 8x8.
-- Binairo, also called Takuzu (up to 16x16): generation, solving, checking,
-  rating and hints, in the Python package (`BinairoPuzzle`), the command-line
-  tool and the web app. 2x2 grids are easy and 4x4 grids at most medium.
-- Chocona (up to 15x15): generation, solving, checking, rating and hints, in
-  the Python package (`ChoconaPuzzle`, `ChoconaClues`), the command-line tool
-  and the web app. Expert needs at least 3 rows, 3 columns and 15 cells.
-- Rust: `Genre::supports` and `DynGenre::supports` tell whether a genre
-  generates a level at a size.
-- Rust: `MarkOption::tone` names the colour of a mark, such as `water`.
-- `llms.txt` at https://pencil-puzzles.org/llms.txt, describing the package
-  and linking to the documentation.
-- CLI: `completions <shell>` prints a completion script for bash, zsh, fish,
-  PowerShell or elvish.
+- Aquarium, binairo (also called takuzu) and chocona.
+- CLI: `completions <shell>` prints a shell completion script.
+- `llms.txt` at https://pencil-puzzles.org/llms.txt.
+- Rust: `Genre::supports` and `MarkOption::tone`.
 
 ### Changed
 
-- Web app: new layout. The list of genres shows an example board for each
-  genre. Puzzle pages keep the title, board and controls in the same place
-  on every genre and in both modes, and the rules, keyboard shortcuts and
-  loading a puzzle are in the side column.
-- Web app: pages change without reloading.
-- Web app: New puzzle asks for a second press once a game has moves.
-- Web app: sudoku offers 4x4 and 9x9 with no custom size.
-- Web app and documentation: new site icon, page titles and descriptions,
-  link previews and sitemaps.
-- Web app: sizes and levels that cannot be generated together are grayed out
-  in the menus, with a tooltip.
-- Web app: larger clue numbers to the right of and below the board.
-- Web app: on the list of genres, aquarium's grid is centred in its picture
-  and sudoku's boxes have thicker lines.
+- Web app: new layout, and pages change without reloading. New puzzle asks
+  for a second press once a game has moves.
+- Web app: sizes and levels that cannot be generated together are grayed out,
+  and sudoku offers only 4x4 and 9x9.
+- Web app: larger clue numbers, and clearer example boards on the list of
+  genres.
+- Web app and documentation: new site icon, page titles, descriptions, link
+  previews and sitemaps.
 
 ### Removed
 
-- Per-genre generator and rater version numbers. Text records and JSON no
-  longer contain `generator_version` or `rater_version`. Records that have
-  them still load, and the values are dropped. The package version identifies
-  the generator and rater, and the changelog marks releases that change them.
-- Python: `Generated.generator_version` and `Rating.rater_version`.
-- Rust: `Metadata::generator_version`, `Metadata::rater_version`,
-  `Generated::generator_version`, `Rating::rater_version`,
-  `Metrics::profile_version`, `Profile::version`, the `GENERATOR_VERSION` and
-  `RATER_VERSION` constants of each genre, `RateError::UnsupportedVersion`,
-  and sudoku's `GenerateOptions::version`, `GenerateError::UnsupportedVersion`
-  and `rate_version`. `Rating::new` takes only the level.
-- Command line: the rater version after a rating.
+- Generator and rater version numbers: `generator_version` and
+  `rater_version` in records and Python, and their Rust fields, constants and
+  errors. Records that have them still load.
 
 ### Fixed
 
-- Web app: pressing a key after clicking an empty part of a page no longer
-  outlines the page.
+- Web app: a key press no longer outlines the page.
 
 ## [0.4.0] - 2026-11-09
 
