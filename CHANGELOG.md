@@ -32,6 +32,8 @@ ratings **(new ratings)**.
 - Web app: sudoku offers 4x4 and 9x9 with no custom size.
 - Web app and documentation: new site icon, page titles and descriptions,
   link previews and sitemaps.
+- Web app: sizes and levels that cannot be generated together are grayed out
+  in the menus, with a tooltip.
 
 ### Removed
 

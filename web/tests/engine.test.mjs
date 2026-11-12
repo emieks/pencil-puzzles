@@ -17,6 +17,12 @@ test('compiled browser engine solves and checks every registered game',()=>{
     assert.equal(call({operation:'check',genre,puzzle,marks:[],finished:true}).ok,false);
   }
 });
+test('compiled engine lists the levels each size can generate',()=>{
+  assert.deepEqual(call({operation:'levels',genre:'aquarium',params:'6x6'}).value,['easy','medium','hard']);
+  assert.deepEqual(call({operation:'levels',genre:'aquarium',params:'8x8'}).value,['easy','medium','hard','expert']);
+  assert.deepEqual(call({operation:'levels',genre:'sudoku',params:'9x9'}).value,['easy','medium','hard','expert']);
+  assert.equal(call({operation:'levels',genre:'aquarium',params:'bad'}).ok,false);
+});
 test('compiled engine reports invalid, impossible and ambiguous inputs',()=>{
   const solve=puzzle=>call({operation:'solve',genre:'kakurasu',puzzle});
   assert.equal(solve('bad').ok,false);

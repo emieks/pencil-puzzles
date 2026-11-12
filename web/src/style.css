@@ -94,6 +94,8 @@ svg.filled { fill: currentColor; stroke: none; }
 .menu-item { display: flex; align-items: center; gap: 16px; padding: 6px 10px; border-radius: 5px; white-space: nowrap; cursor: pointer; }
 .menu-item:hover, .menu-item:focus-visible { background: var(--subtle); outline: none; }
 .menu-item[aria-selected="true"] { font-weight: 600; }
+.menu-item[aria-disabled="true"] { opacity: .4; cursor: default; }
+.menu-item[aria-disabled="true"]:hover { background: none; }
 .menu-tag { margin-left: auto; font-size: 12px; font-weight: 400; color: var(--muted); }
 
 /* Header */

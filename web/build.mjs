@@ -70,6 +70,8 @@ for (const game of catalogue) {
   const fixed = fixedSizes(id);
   game.sizes = fixed || await sizes(id, game.params);
   game.custom = !fixed;
+  // The levels the generator accepts at each size, for graying out the rest in the menus.
+  game.levels = Object.fromEntries(game.sizes.map((s) => [s, call({ operation: 'levels', genre: id, params: s })]));
   for (const mode of ['player', 'solver']) {
     const directory = path.join(dist, id, mode);
     await mkdir(directory, { recursive: true });

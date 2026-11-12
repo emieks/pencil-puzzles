@@ -221,7 +221,15 @@ function player(game){
 <p id="status" class="status" role="status" aria-live="polite">Loading…</p>
 <div class="side-more"><details id="rules-box"><summary>Rules</summary><ul id="rules" class="rules"></ul></details><details class="keys-box"><summary>Keyboard shortcuts</summary><dl id="keys" class="keys"></dl></details><details><summary>Load puzzle</summary><label for="load-input">ID, text, or JSON</label><textarea id="load-input" maxlength="1000000" spellcheck="false" placeholder="${escape(game.example)}"></textarea><button id="load" type="button">Load</button></details></div>
 </div></fieldset></section>`);
-  customMenu($('#size'));customMenu($('#difficulty'));
+  const redrawSizes=customMenu($('#size')),redrawLevels=customMenu($('#difficulty'));
+  // Levels the generator cannot make at the chosen size are grayed out, and so are the sizes it cannot make at the chosen level. A custom size is checked when generating.
+  function availability(){
+    const size=$('#params').value,difficulty=$('#difficulty'),levels=game.levels?.[size];
+    if(levels?.length&&!levels.includes(difficulty.value))difficulty.value=levels.at(-1);
+    for(const o of difficulty.options){o.disabled=!!levels&&!levels.includes(o.value);o.title=`Not available at ${size}`;}
+    for(const o of $('#size').options){const ok=game.levels?.[o.value];o.disabled=!!ok&&!ok.includes(difficulty.value);o.title=`Not available at ${capitalize(difficulty.value)}`;}
+    redrawSizes();redrawLevels();
+  }
   const key='pencil-game:'+id,saveKey=puzzle=>`pencil-save:${id}:${puzzle}`,listKey='pencil-saves:'+id,stepsKey='pencil-history:'+id;
   let current=null,history=null,busy=false,entry=false,mode='none',selected=-1,selection=new Set(),notesMode=false,drag=null,linkDrag=null,solvedTime=null,checkTimer=0,checkSeq=0,ends=new Map();
   let tool=null,paused=false,revealed=false,rating=null,solution=null,showMistakes=readSaved('pencil-mistakes')===true;
@@ -262,7 +270,7 @@ function player(game){
     save(stepsKey,{id:current.id,...history.steps(100)});
     const {list,dropped}=remember(readSaved(listKey),current.id,30);save(listKey,list);for(const d of dropped)forget(saveKey(d));
   }
-  function showSize(value){const preset=[...$('#size').options].some(o=>o.value&&o.value===value);$('#params').value=value;$('#size').value=preset?value:'';$('#params').hidden=preset;}
+  function showSize(value){const preset=[...$('#size').options].some(o=>o.value&&o.value===value);$('#params').value=value;$('#size').value=preset?value:'';$('#params').hidden=preset;availability();}
   /** Cells whose marks contradict the solution; blanks are never mistakes. */
   function mistakes(values){
     const wrong=new Set();if(!showMistakes||!solution?.unique||solution.id!==current.id)return wrong;
@@ -435,8 +443,10 @@ function player(game){
   let armed=0;const newButton=$('#new-game'),disarm=()=>{clearTimeout(armed);armed=0;newButton.textContent='New puzzle';newButton.classList.remove('confirm');};
   newButton.onclick=()=>{const started=solvedTime===null&&history&&(history.past.length||history.future.length);if(started&&!armed){newButton.textContent='Press again';newButton.classList.add('confirm');armed=setTimeout(disarm,3000);return;}disarm();newGame();};
   newButton.onblur=disarm;onLeave(()=>clearTimeout(armed));
-  $('#size').onchange=()=>{const size=$('#size').value;$('#params').hidden=!!size;if(size)$('#params').value=size;else{$('#params').focus();$('#params').select();}};
+  $('#size').onchange=()=>{const size=$('#size').value;$('#params').hidden=!!size;if(size)$('#params').value=size;else{$('#params').focus();$('#params').select();}availability();};
+  $('#difficulty').onchange=availability;
   $('#params').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();newGame();}});
+  $('#params').addEventListener('input',availability);
   $('#undo').onclick=undo;$('#redo').onclick=redo;
   $('#pause').onclick=()=>setPaused(!paused);$('#resume').onclick=()=>setPaused(false);
   $('#clear').onclick=()=>{const items=[...current.view.cells,...(current.view.links||[])];commit(items.map(c=>c.value),items.map(()=>''));status('Cleared. Undo restores it.');};
@@ -454,7 +464,7 @@ function player(game){
   let shareTimer=0;
   $('#share').onclick=async()=>{const button=$('#share');try{await navigator.clipboard.writeText(location.href);button.textContent='Copied';clearTimeout(shareTimer);shareTimer=setTimeout(()=>{button.textContent='Copy link';},1500);}catch{status('Copy the URL from the address bar.');}};
   const rulesBox=$('#rules-box'),rulesKey='pencil-rules:'+id,rulesOpen=readSaved(rulesKey);rulesBox.open=!!rulesOpen;rulesBox.ontoggle=()=>save(rulesKey,rulesBox.open);
-  const saved=readSaved(key);showSize(saved?.params||game.params);if(saved?.difficulty&&[...$('#difficulty').options].some(o=>o.value===saved.difficulty))$('#difficulty').value=saved.difficulty;
+  const saved=readSaved(key);showSize(saved?.params||game.params);if(saved?.difficulty&&[...$('#difficulty').options].some(o=>o.value===saved.difficulty))$('#difficulty').value=saved.difficulty;availability();
   const supplied=new URLSearchParams(location.search).get('puzzle')||saved?.id;
   if(supplied)load(supplied,false);else newGame();
   sync();
@@ -523,7 +533,7 @@ function solver(game){
   open(new URLSearchParams(location.search).get('puzzle'));
 }
 
-/** Replaces a select with a button and a list drawn by the page. The select stays in the document, hidden, and still holds the value and fires `change`. */
+/** Replaces a select with a button and a list drawn by the page. The select stays in the document, hidden, and still holds the value and fires `change`. Disabled options are grayed out, show their title on hover and cannot be chosen. Returns a function that redraws the list after options change. */
 function customMenu(select){
   const wrap=element('div',undefined,'menu'),button=element('button',undefined,'menu-button'),list=element('div',undefined,'menu-list');
   const name=document.querySelector(`label[for="${select.id}"]`)?.textContent||'',native=Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value');
@@ -535,11 +545,11 @@ function customMenu(select){
     list.append(item);
   }
   const items=[...list.children];
-  const sync=()=>{const value=native.get.call(select),text=select.selectedOptions[0]?.textContent||'';button.textContent=text;button.setAttribute('aria-label',name?`${name}: ${text}`:text);for(const item of items)item.setAttribute('aria-selected',String(item.dataset.value===value));};
+  const sync=()=>{const value=native.get.call(select),text=select.selectedOptions[0]?.textContent||'';button.textContent=text;button.setAttribute('aria-label',name?`${name}: ${text}`:text);items.forEach((item,i)=>{const option=select.options[i];item.setAttribute('aria-selected',String(item.dataset.value===value));item.setAttribute('aria-disabled',String(option.disabled));item.title=option.disabled?option.title:'';});};
   // The page sets the select's value in code, which fires no event, so the setter updates the button.
   Object.defineProperty(select,'value',{configurable:true,get(){return native.get.call(select);},set(value){native.set.call(select,value);sync();}});
   const open=on=>{list.hidden=!on;button.setAttribute('aria-expanded',String(on));if(on)(list.querySelector('[aria-selected="true"]')||items[0]).focus();};
-  const choose=item=>{select.value=item.dataset.value;open(false);button.focus();select.dispatchEvent(new Event('change',{bubbles:true}));};
+  const choose=item=>{if(item.getAttribute('aria-disabled')==='true')return;select.value=item.dataset.value;open(false);button.focus();select.dispatchEvent(new Event('change',{bubbles:true}));};
   button.onclick=()=>open(list.hidden);
   list.onclick=e=>{const item=e.target.closest('.menu-item');if(item)choose(item);};
   wrap.addEventListener('keydown',e=>{
@@ -553,6 +563,7 @@ function customMenu(select){
   });
   wrap.addEventListener('focusout',e=>{if(!wrap.contains(e.relatedTarget))open(false);});
   select.hidden=true;wrap.append(button,list);select.after(wrap);sync();
+  return sync;
 }
 /** A button's shortcut key, shown dim in its bottom right corner. */
 function keyHint(text){const hint=element('span',text,'key-hint');hint.setAttribute('aria-hidden','true');return hint;}
