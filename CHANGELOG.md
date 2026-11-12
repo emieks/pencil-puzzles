@@ -35,6 +35,8 @@ ratings **(new ratings)**.
 - Web app: sizes and levels that cannot be generated together are grayed out
   in the menus, with a tooltip.
 - Web app: larger clue numbers to the right of and below the board.
+- Web app: on the list of genres, aquarium's grid is centred in its picture
+  and sudoku's boxes have thicker lines.
 
 ### Removed
 
