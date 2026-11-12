@@ -1,0 +1,9 @@
+# params difficulty seed id
+1x1 easy 0 aquarium:1x1:0/0/
+3x3 easy 0 aquarium:3x3:023/122/YX
+5x8 medium 0 aquarium:5x8:33345/21122343/abrzckr2DTvA
+10x10 easy 0 aquarium:10x10:243136287a/4345575454/au7v_1-xJYqa4owUwqESAe2j43abnZ
+10x10 medium 0 aquarium:10x10:0331362875/4345453343/au7v_1-xJYqa5owUwqESAe2j43aZnZ
+10x10 hard 0 aquarium:10x10:243136257a/4334475454/au7v_1-xJYqa4owUwqESAe2j43abnZ
+10x10 expert 0 aquarium:10x10:243536267a/5335575564/au7v_1-pJYqq5oEUwqESAe2D43aRn5
+15x15 hard 0 aquarium:15x15:792b646455956cf/955689986787775/KJqYaYs-TWpcpWRUDK6LyZsTPzbGe_nZFkQZYAvzUJMT0JsRObPXfSUXIZdOaGlAwBZQkB

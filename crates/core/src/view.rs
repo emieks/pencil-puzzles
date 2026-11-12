@@ -15,6 +15,10 @@ pub struct MarkOption {
     pub symbol: String,
     /// For a link mark, how many parallel lines to draw (0 for none).
     pub lines: u32,
+    /// For a shaded mark, the name of its colour, such as `water`; empty
+    /// for the usual shading.
+    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "String::is_empty"))]
+    pub tone: String,
 }
 impl MarkOption {
     /// A shaded cell mark.
@@ -32,6 +36,7 @@ impl MarkOption {
             name: name.into(),
             symbol: symbol.into(),
             lines: 0,
+            tone: String::new(),
         }
     }
 

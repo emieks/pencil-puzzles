@@ -57,11 +57,13 @@ function page(meta, route) {
     .replace('<title>pencil-puzzles</title>', `<title>${attribute(meta.title)}</title>${tags}`)
     .replace(/<meta name="description" content="[^"]*">/, `<meta name="description" content="${attribute(meta.description)}">`);
 }
+// The seed of each game's example puzzle, where seed 0 does not make a good picture.
+const exampleSeeds = { aquarium: '10' };
 const routes = [''];
 for (const game of catalogue) {
   const id = game.metadata.id;
   if (!/^[a-z][a-z0-9-]*$/.test(id)) throw new Error('Invalid genre route');
-  const example = call({ operation: 'generate', genre: id, params: game.params, difficulty: 'easy', seed: '0' });
+  const example = call({ operation: 'generate', genre: id, params: game.params, difficulty: 'easy', seed: exampleSeeds[id] ?? '0' });
   game.example = example.id;
   // The home page shows each game as its solved example board.
   game.picture = call({ operation: 'solve', genre: id, puzzle: example.id }).views[0];

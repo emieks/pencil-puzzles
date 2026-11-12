@@ -40,13 +40,15 @@ class Engine {
 const engine=new Engine();
 function errorMessage(error){return /budget/i.test(error.message)?'This puzzle needs more work than the site allows. Try a smaller size, a lower difficulty or another puzzle.':error.message;}
 
-/** How selecting a cell highlights others, read from the view: boards with blocks (Kakuro) use runs, boards with regions (Sudoku) use rows, columns and regions, labelled boards (Hitori) use rows and columns, other number boards (Fillomino) use the connected group of equal numbers. */
+/** How selecting a cell highlights others, read from the view: boards with blocks (Kakuro) use runs, digit boards with regions (Sudoku) use rows, columns and regions, labelled boards (Hitori) use rows and columns, other number boards (Fillomino) use the connected group of equal numbers. */
 function highlightMode(view){
   if(view.cells.some(c=>c.block))return 'runs';
-  if(view.cells.some(c=>c.region!==null&&c.region!==undefined))return 'regions';
+  if(view.marks.length>3&&view.cells.some(c=>c.region!==null&&c.region!==undefined))return 'regions';
   if(view.cells.some(c=>c.label))return 'lines';
   return view.marks.length>3?'group':'none';
 }
+/** Whether the board has walls between regions, as Aquarium has. Such a board has no selected cell: a ring would lie on the walls. */
+const hasWalls=view=>{const region=i=>view.cells[i].region??null;return highlightMode(view)!=='regions'&&view.cells.some((c,i)=>(i%view.cols>0&&region(i)!==region(i-1))||(i>=view.cols&&region(i)!==region(i-view.cols)));};
 /** The cells of the run through `index` in direction (dr, dc), up to the nearest blocks. */
 function run(view,index,dr,dc){
   const cells=[index],r0=Math.floor(index/view.cols),c0=index%view.cols;
@@ -74,10 +76,11 @@ function groupCells(view,index){
 /** A mark's symbol as an element: dots and crosses are drawn shapes, other symbols are text. */
 function swatch(mark){
   const shape=mark.symbol==='·'?' dot':mark.symbol==='×'?' cross':'';
-  const s=element('span',shape||mark.shaded?'':mark.symbol,'swatch'+(mark.shaded?' shaded':'')+shape);s.setAttribute('aria-hidden','true');return s;
+  const s=element('span',shape||mark.shaded?'':mark.symbol,'swatch'+(mark.shaded?' shaded':'')+(mark.tone?' tone-'+mark.tone:'')+shape);s.setAttribute('aria-hidden','true');return s;
 }
 function board(view,{interactive=false,notes,selected=-1,selection,wrong}={}){
   const table=element('table',undefined,'board');table.setAttribute('aria-label',interactive?'Puzzle board':'Puzzle solution');
+  const walled=hasWalls(view);
   const left=view.left.length>0, right=view.right.length>0, blank=view.marks[0]?.value, ends=linkEnds(view), mode=highlightMode(view);
   const first=view.cells.findIndex(cell=>cell.editable), focus=selected>=0?selected:first>=0||!ends.size?first:Math.min(...ends.keys());
   table.style.setProperty('--cols',String(view.cols+(left?1:0)+(right?1:0)));
@@ -106,6 +109,8 @@ function board(view,{interactive=false,notes,selected=-1,selection,wrong}={}){
       const i=r*view.cols+c,cell=view.cells[i],choice=view.marks.find(m=>m.value===cell.value),noted=!!notes?.[i]&&cell.value===blank;
       const td=document.createElement('td');td.dataset.cellRow=String(r);td.dataset.cellCol=String(c);if(cell.region!==null&&cell.region!==undefined)td.dataset.region=String(cell.region);
       if(view.row_separators?.includes(r))td.classList.add('box-top');if(view.col_separators?.includes(c))td.classList.add('box-left');
+      // Neighbouring cells of different regions, such as Aquarium tanks, get a wall between them, unless a separator is already there.
+      const region=j=>view.cells[j].region??null;if(r>0&&region(i)!==region(i-view.cols)&&!td.classList.contains('box-top'))td.classList.add('wall-top');if(c>0&&region(i)!==region(i-1)&&!td.classList.contains('box-left'))td.classList.add('wall-left');
       if(r===0)td.classList.add('edge-top');if(r===view.rows-1)td.classList.add('edge-bottom');if(c===0)td.classList.add('edge-left');if(c===view.cols-1)td.classList.add('edge-right');
       if(cell.block){
         // A block: shaded, and split by a diagonal when it holds labels.
@@ -114,19 +119,20 @@ function board(view,{interactive=false,notes,selected=-1,selection,wrong}={}){
         td.append(block);row.append(td);continue;
       }
       const label=cell.label||'',symbol=choice?.symbol??cell.value,dot=!!choice&&symbol==='·',cross=!!choice&&symbol==='×';
-      let className='cell'+(choice?.shaded?' shaded':'')+(dot?(label?' circled':' dot'):'')+(cross?' cross':'')+(label?' labelled':'')+(!cell.editable?' given':'')+(chosen.has(i)?' selected':'')+(same.has(i)?' same':'')+(peers.has(i)?' peer':'')+(ends.has(i)?' end':'')+(wrong?.has(i)?' wrong':'');
+      let className='cell'+(choice?.shaded?' shaded':'')+(choice?.tone?' tone-'+choice.tone:'')+(dot?(label?' circled':' dot'):'')+(cross?' cross':'')+(label?' labelled':'')+(!cell.editable?' given':'')+(chosen.has(i)?' selected':'')+(same.has(i)?' same':'')+(peers.has(i)?' peer':'')+(ends.has(i)?' end':'')+(wrong?.has(i)?' wrong':'');
       if(cell.circled&&interactive&&/^\d+$/.test(cell.value)&&ends.size){const n=bridges.get(i)||0,want=Number(cell.value);className+=n===want?' complete':n>want?' over':'';}
       const button=element(interactive?'button':'span',cell.circled?undefined:label||(dot||cross?'':symbol),className);button.dataset.index=String(i);
       if(cell.circled)button.append(element('span',cell.value,'circle'));
       if(noted){const set=new Set(notes[i].split(',')),grid=element('span',undefined,'notes');grid.style.setProperty('--note-cols',String(Math.ceil(Math.sqrt(view.marks.length-1))));for(const m of view.marks.slice(1))grid.append(element('span',set.has(m.value)?m.symbol:''));button.replaceChildren(grid);}
       const state=noted?'notes '+notes[i]:choice?.name??cell.value;
       button.setAttribute('aria-label',`Row ${r+1}, column ${c+1}: ${label?`${label}, ${state.toLowerCase()}`:state}`);
-      if(interactive){button.type='button';button.tabIndex=i===focus?0:-1;}
+      if(interactive){button.type='button';button.tabIndex=i===focus&&!walled?0:-1;}
       td.append(button);row.append(td);
     }
     if(right){const clue=header(view.right[r]||'',r===sr,'clue');clue.dataset.row=String(r);row.append(clue);}table.append(row);
   }
   if(view.bottom.length){const row=document.createElement('tr');if(left)row.append(element('th',''));for(let c=0;c<view.cols;c++){const clue=header(view.bottom[c]||'',c===sc,'clue');clue.dataset.col=String(c);row.append(clue);}if(right)row.append(element('th',''));table.append(row);}
+  if(table.querySelector('.wall-top,.wall-left'))table.classList.add('walled');
   return view.links?.length?linked(table,view,interactive,wrong):table;
 }
 // Links between cell centres (I4), drawn as lines over the table once it has a size.
@@ -229,7 +235,7 @@ function player(game){
   function linkToward(i,move,step){const out=ends.get(i)?.find(({other})=>ahead(i,other,move));if(out)cycleLink(out.k,step);}
   // On boards with links, only cells at the ends of links can be selected.
   const selectable=i=>!ends.size||ends.has(i);
-  function select(i,add=false){if(!add){selected=i;selection=new Set([i]);return;}if(selection.has(i)&&selection.size>1){selection.delete(i);if(selected===i)selected=[...selection].at(-1);}else{selection.add(i);selected=i;}}
+  function select(i,add=false){if(hasWalls(current.view)){selected=-1;selection=new Set();return;}if(!add){selected=i;selection=new Set([i]);return;}if(selection.has(i)&&selection.size>1){selection.delete(i);if(selected===i)selected=[...selection].at(-1);}else{selection.add(i);selected=i;}}
   // Shading genres have one shaded mark and one dot mark; marking a cell with the mark it already has clears it.
   const shadeMark=()=>current.view.marks.find(m=>m.shaded)?.value,dotMark=()=>current.view.marks.find((m,i)=>i>0&&!m.shaded)?.value;
   // A click places the chosen mark (shaded until another is picked in the legend); a right-click places the other one.
@@ -397,6 +403,9 @@ function player(game){
       ?[['Click','next mark'],['Right-click','previous mark'],['Drag','from an island toward another'],['Arrows / WASD','move'],['Shift+Arrows / WASD','next mark that way'],['Ctrl+Z / Ctrl+Y','undo / redo']]
       :entry
       ?[[`${marks[1].symbol}–${marks.at(-1).symbol}`,'enter or erase'],['Shift+digit','note'],['N','notes mode'],['Del','erase'],['Arrows / WASD','move'],['Drag / Shift+click','select several'],['Esc','select one'],['Ctrl+Z / Ctrl+Y','undo / redo']]
+      :hasWalls(value.view)
+      // Boards with walls have no selected cell, so they are played with the pointer only.
+      ?[['Click','chosen mark'],['Right-click','other mark'],['Drag','mark several'],['Ctrl+Z / Ctrl+Y','undo / redo']]
       :[['Click','chosen mark'],['Right-click','other mark'],['Q',shadeName],['E',dotName],['R / Del','clear'],['Drag','mark several'],['Arrows / WASD','move'],['Ctrl+Z / Ctrl+Y','undo / redo']]));
     const legendButton=(text,label,click)=>{const button=element('button',text);button.type='button';button.setAttribute('aria-label',label);button.onclick=click;button.onmousedown=e=>e.preventDefault();return button;};
     $('#legend').className='legend'+(entry?' digits':linking?'':' tools');
@@ -409,7 +418,7 @@ function player(game){
     }
     else{
       const group=element('div',undefined,'mark-tools');group.setAttribute('role','group');group.setAttribute('aria-label','Mark placed by a click');
-      group.append(...marks.map(m=>{const b=legendButton('',m.name,()=>{tool=m.value;draw();});b.dataset.tool=m.value;b.append(swatch(m),document.createTextNode(m.name));const key=m.shaded?'Q':m===marks[0]?'R':m===marks.find((x,i)=>i>0&&!x.shaded)?'E':'';if(key){const hint=element('kbd',key);hint.setAttribute('aria-hidden','true');b.append(hint);}return b;}));
+      group.append(...marks.map(m=>{const b=legendButton('',m.name,()=>{tool=m.value;draw();});b.dataset.tool=m.value;b.append(swatch(m),document.createTextNode(m.name));const key=hasWalls(value.view)?'':m.shaded?'Q':m===marks[0]?'R':m===marks.find((x,i)=>i>0&&!x.shaded)?'E':'';if(key){const hint=element('kbd',key);hint.setAttribute('aria-hidden','true');b.append(hint);}return b;}));
       $('#legend').replaceChildren(group);
     }
     setNotes(false);

@@ -105,6 +105,7 @@ Save a puzzle with `puzzle.to_text()` or share it as `puzzle.id`. The
 
 | Genre | Goal | Standard size | Largest |
 | --- | --- | --- | --- |
+| [Aquarium](https://pencil-puzzles.org/docs/genres/aquarium/) | Fill tanks with water to match the row and column clues; the water in a tank is level. | 8×8 | 15×15 |
 | [Fillomino](https://pencil-puzzles.org/docs/genres/fillomino/) | Divide the grid into regions whose cells hold the region's size; same-size regions never share a side. | 10×10 | 10×10 |
 | [Hashi](https://pencil-puzzles.org/docs/genres/hashi/) | Connect all islands with straight bridges that never cross, giving each island as many bridges as its number. | 10×10 | 15×15 |
 | [Hitori](https://pencil-puzzles.org/docs/genres/hitori/) | Shade cells so no unshaded number repeats in a row or column; shaded cells never share a side and unshaded cells stay connected. | 8×8 | 12×12 |

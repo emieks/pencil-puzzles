@@ -11,6 +11,7 @@ on every machine.
 | fillomino, hashi, hitori, kakurasu | pencil-puzzles 0.2.0 | 2026-11-06 |
 | kakuro, nurikabe | pencil-puzzles 0.3.0 | 2026-11-08 |
 | sudoku | pencil-puzzles after 0.3.1 | 2026-11-09 |
+| aquarium | pencil-puzzles after 0.4.0 | 2026-11-11 |
 
 All runs used the same setup:
 

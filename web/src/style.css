@@ -6,6 +6,7 @@
   --line: #d4d4d4;
   --subtle: #f3f3f3;
   --shaded: #2b2b2b;
+  --water: #6f9bd1;
   --cell: #fff;
   --error: #a00000;
   --accent: #1f5aa6;
@@ -34,6 +35,7 @@
   --line: #424242;
   --subtle: #222;
   --shaded: #cfcfcf;
+  --water: #3b639c;
   --cell: #161616;
   --error: #ff8f8f;
   --accent: #8fb8ee;
@@ -225,6 +227,7 @@ fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
 .legend > span { display: inline-flex; align-items: center; }
 .swatch { display: inline-flex; align-items: center; justify-content: center; width: 13px; height: 13px; border: 1px solid var(--muted); margin-right: 6px; font-size: 11px; line-height: 1; }
 .swatch.shaded { background: var(--shaded); border-color: var(--shaded); }
+.swatch.shaded.tone-water { background: var(--water); border-color: var(--water); }
 .swatch.dot::after { content: ''; width: 3px; height: 3px; border-radius: 50%; background: currentColor; }
 .swatch.cross { position: relative; }
 .swatch.cross::before, .swatch.cross::after { content: ''; position: absolute; width: 9px; height: 1.5px; background: currentColor; transform: rotate(45deg); }
@@ -262,10 +265,21 @@ kbd { display: inline-block; padding: 3px 5px; border: 1px solid var(--line); bo
 .board.paint, .board.entry { touch-action: none; }
 .board th { font-size: 13px; font-weight: normal; min-width: calc(var(--size) * .75); height: calc(var(--size) * .75); padding: 2px 6px; text-align: center; color: var(--muted); font-variant-numeric: tabular-nums; }
 .board .clue { color: var(--text); }
+.board.walled .clue { font-size: 15px; }
 .board th.hl { color: var(--text); font-weight: 600; background: var(--peer); }
 .board td { padding: 0; border: 1px solid var(--line); background: var(--cell); min-width: var(--size); width: var(--size); height: var(--size); }
 .board td.box-top { border-top: 2px solid var(--text); }
 .board td.box-left { border-left: 2px solid var(--text); }
+/* Walls between regions lie over the grid lines, so every cell keeps the same size. */
+.board td.wall-top, .board td.wall-left { position: relative; }
+.board td.wall-top::before, .board td.wall-left::after { content: ''; position: absolute; z-index: 1; background: var(--text); pointer-events: none; }
+.board td.wall-top::before { top: -2.5px; left: -2.5px; right: -2.5px; height: 4px; }
+.board td.wall-left::after { left: -2.5px; top: -2.5px; bottom: -2.5px; width: 4px; }
+/* A board with walls has an edge as thick as its walls. */
+.board.walled td.edge-top { border-top-width: 4px; }
+.board.walled td.edge-bottom { border-bottom-width: 4px; }
+.board.walled td.edge-left { border-left-width: 4px; }
+.board.walled td.edge-right { border-right-width: 4px; }
 .board td.edge-top { border-top: 2px solid var(--text); }
 .board td.edge-bottom { border-bottom: 2px solid var(--text); }
 .board td.edge-left { border-left: 2px solid var(--text); }
@@ -287,6 +301,7 @@ button.cell:hover:not(:disabled) { background: var(--subtle); border: 0; }
 .cell.circled { position: relative; }
 .cell.circled::after { content: ''; position: absolute; width: calc(var(--size) * .7); height: calc(var(--size) * .7); border: 2px solid currentColor; border-radius: 50%; box-sizing: border-box; }
 .cell.shaded, button.cell.shaded:hover:not(:disabled) { background: var(--shaded); color: var(--bg); }
+.cell.shaded.tone-water, button.cell.shaded.tone-water:hover:not(:disabled) { background: var(--water); }
 .board.paint .cell.same:not(.shaded) { background: var(--same); }
 /* The selected cell has one ring, drawn on the cell's edge. */
 .board .cell:focus-visible, .board .cell.selected { outline: 2px solid var(--accent); outline-offset: -2px; position: relative; }
@@ -332,7 +347,9 @@ button.cell:hover:not(:disabled) { background: var(--subtle); border: 0; }
 /* Home page tiles */
 .game-picture .board { --size: calc(100cqw / (var(--cols, 9) + 1)); }
 .game-picture .board th { min-width: 0; padding: 0 2px; font-size: calc(var(--size) * .5); }
-.game-picture .board td { border-width: 1px; }
+.game-picture .board td, .game-picture .board.walled td.edge-top, .game-picture .board.walled td.edge-bottom, .game-picture .board.walled td.edge-left, .game-picture .board.walled td.edge-right { border-width: 1px; }
+.game-picture .board td.wall-top::before { top: -1px; left: -1px; right: -1px; height: 2px; }
+.game-picture .board td.wall-left::after { left: -1px; top: -1px; bottom: -1px; width: 2px; }
 .game-picture .cell .circle, .game-picture .cell.circled::after { border-width: 1px; }
 .game-picture .cell.cross::before, .game-picture .cell.cross::after { height: 1px; }
 .game-picture .links .bridge { stroke: var(--accent); stroke-width: 1.25; }

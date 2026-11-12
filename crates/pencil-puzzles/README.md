@@ -1,6 +1,6 @@
 # pencil-puzzles
 
-Generate, solve, rate and check pencil puzzles: fillomino, hashi, hitori,
+Generate, solve, rate and check pencil puzzles: aquarium, fillomino, hashi, hitori,
 kakurasu, kakuro, nurikabe and sudoku. Every generated puzzle has exactly one
 solution and a difficulty from easy to expert, set by the hardest human
 technique it needs.

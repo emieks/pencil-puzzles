@@ -9,8 +9,13 @@ ratings **(new ratings)**.
 
 ### Added
 
+- Aquarium (up to 15x15): generation, solving, checking, rating and hints,
+  in the Python package (`AquariumPuzzle`, `AquariumClues`), the command-line
+  tool and the web app. Expert needs a grid of at least 64 cells, such as 8x8.
 - Rust: `Genre::supports` and `DynGenre::supports` tell whether a genre
   generates a level at a size.
+- Rust: `MarkOption::tone` names the colour of a shaded mark, such as
+  `water`.
 - `llms.txt` at https://pencil-puzzles.org/llms.txt, describing the package
   and linking to the documentation.
 - CLI: `completions <shell>` prints a completion script for bash, zsh, fish,

@@ -28,6 +28,10 @@
 
 pub use pencil_puzzles_core::*;
 
+/// Aquarium: tanks filled with water to match the row and column counts.
+#[cfg(feature = "aquarium")]
+pub use pencil_puzzles_aquarium as aquarium;
+
 /// Fillomino: regions numbered with their sizes, same sizes never touching.
 #[cfg(feature = "fillomino")]
 pub use pencil_puzzles_fillomino as fillomino;

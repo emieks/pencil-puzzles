@@ -17,7 +17,7 @@ solution and its rating.
 
 ```pycon
 >>> pp.genres()
-('fillomino', 'hashi', 'hitori', 'kakurasu', 'kakuro', 'nurikabe', 'sudoku')
+('aquarium', 'fillomino', 'hashi', 'hitori', 'kakurasu', 'kakuro', 'nurikabe', 'sudoku')
 ```
 
 An unknown name raises `UnsupportedRequestError`.

@@ -93,3 +93,21 @@ test('rating a loaded puzzle matches the rating it was generated with',()=>{
   assert.equal(rated.ok,true);assert.equal(rated.value.level,generated.rating.level);
   assert.equal(call({operation:'rate',genre:'kakurasu',puzzle:'kakurasu:4x4:5.5.5.5/5.5.5.5'}).ok,false);
 });
+
+test('Aquarium tanks are view regions and are entered as letters',()=>{
+  const genre='aquarium';
+  const editor=call({operation:'editor',genre,shape:'2x2',puzzle:null}).value;
+  assert.equal(editor.fields.length,8);
+  assert.equal(editor.fields[0].max,2);
+  assert.equal(typeof editor.fields[4].pattern,'string');
+  const puzzle=call({operation:'compose',genre,shape:editor.shape,values:['1','2','2','1','a','b','a','a']}).value;
+  assert.equal(puzzle.id,'aquarium:2x2:12/21/k');
+  assert.deepEqual(puzzle.view.cells.map(c=>c.region),[0,1,0,0]);
+  assert.deepEqual([puzzle.view.right,puzzle.view.bottom],[['1','2'],['2','1']]);
+  const solved=call({operation:'solve',genre,puzzle:puzzle.id});
+  assert.equal(solved.value.status,'unique');
+  assert.deepEqual(solved.value.views[0].cells.map(c=>c.value),['#','-','#','#']);
+  const floating=call({operation:'check',genre,puzzle:puzzle.id,marks:['#','.','-','.'],finished:false}).value;
+  assert.ok(floating.violations.some(v=>v.rule===3&&v.place.region===0));
+  assert.equal(call({operation:'compose',genre,shape:'2x2',values:['1','2','2','1','b','a','a','b']}).ok,false);
+});

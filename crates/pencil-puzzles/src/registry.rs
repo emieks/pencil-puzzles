@@ -119,6 +119,7 @@ pub struct Input {
 // The typed adapter is only needed when a genre is compiled in. Add future
 // genre features here as they join the registry.
 #[cfg(any(
+    feature = "aquarium",
     feature = "fillomino",
     feature = "hashi",
     feature = "hitori",
@@ -410,6 +411,8 @@ mod typed {
             })
         }
     }
+    #[cfg(feature = "aquarium")]
+    pub(super) static AQUARIUM: Adapter<crate::aquarium::Aquarium> = Adapter(PhantomData);
     #[cfg(feature = "fillomino")]
     pub(super) static FILLOMINO: Adapter<crate::fillomino::Fillomino> = Adapter(PhantomData);
     #[cfg(feature = "hashi")]
@@ -427,6 +430,8 @@ mod typed {
 }
 /// Every compiled-in genre, in canonical id order (I1, K4).
 static GENRES: &[&dyn DynGenre] = &[
+    #[cfg(feature = "aquarium")]
+    &typed::AQUARIUM,
     #[cfg(feature = "fillomino")]
     &typed::FILLOMINO,
     #[cfg(feature = "hashi")]

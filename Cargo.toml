@@ -19,6 +19,7 @@ repository = "https://github.com/emieks/pencil-puzzles"
 [workspace.dependencies]
 pencil-puzzles = { path = "crates/pencil-puzzles", version = "0.4.0", default-features = false }
 pencil-puzzles-core = { path = "crates/core", version = "0.4.0" }
+pencil-puzzles-aquarium = { path = "crates/genres/aquarium", version = "0.4.0" }
 pencil-puzzles-fillomino = { path = "crates/genres/fillomino", version = "0.4.0" }
 pencil-puzzles-hashi = { path = "crates/genres/hashi", version = "0.4.0" }
 pencil-puzzles-hitori = { path = "crates/genres/hitori", version = "0.4.0" }
