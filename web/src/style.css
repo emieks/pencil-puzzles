@@ -266,8 +266,7 @@ kbd { display: inline-block; padding: 3px 5px; border: 1px solid var(--line); bo
 .board { --size: clamp(24px, min(calc(var(--avail, 100vw - 290px) / var(--cols, 9)), calc((100vh - 250px) / var(--cols, 9))), 52px); border-collapse: collapse; table-layout: fixed; user-select: none; -webkit-user-select: none; }
 .board.paint, .board.entry { touch-action: none; }
 .board th { font-size: 13px; font-weight: normal; min-width: calc(var(--size) * .75); height: calc(var(--size) * .75); padding: 2px 6px; text-align: center; color: var(--muted); font-variant-numeric: tabular-nums; }
-.board .clue { color: var(--text); }
-.board.walled .clue { font-size: 15px; }
+.board .clue { font-size: 15px; color: var(--text); }
 .board th.hl { color: var(--text); font-weight: 600; background: var(--peer); }
 .board td { padding: 0; border: 1px solid var(--line); background: var(--cell); min-width: var(--size); width: var(--size); height: var(--size); }
 .board td.box-top { border-top: 2px solid var(--text); }

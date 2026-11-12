@@ -34,6 +34,7 @@ ratings **(new ratings)**.
   link previews and sitemaps.
 - Web app: sizes and levels that cannot be generated together are grayed out
   in the menus, with a tooltip.
+- Web app: larger clue numbers to the right of and below the board.
 
 ### Removed
 
