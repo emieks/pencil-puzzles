@@ -11,7 +11,8 @@ import pencil_puzzles as pp
 class PackageTests(unittest.TestCase):
     def test_all_genres_generate_solve_rate_check_and_round_trip(self):
         for genre, shape in (("sudoku", (4, 4)), ("nurikabe", (3, 3)), ("kakurasu", (3, 4)),
-                             ("fillomino", (3, 4)), ("hashi", (5, 5)), ("hitori", (4, 5)), ("kakuro", (5, 6))):
+                             ("fillomino", (3, 4)), ("hashi", (5, 5)), ("hitori", (4, 5)), ("kakuro", (5, 6)),
+                             ("aquarium", (4, 5))):
             with self.subTest(genre=genre):
                 g = pp.generate(genre, shape, difficulty="easy", seed=42)
                 self.assertEqual(g.rating.level, pp.Difficulty.EASY)
@@ -28,7 +29,7 @@ class PackageTests(unittest.TestCase):
     def test_standard_sizes_and_random_seeds(self):
         for genre, shape in (("sudoku", (9, 9)), ("nurikabe", (10, 10)), ("kakurasu", (7, 7)),
                              ("fillomino", (10, 10)), ("hashi", (10, 10)), ("hitori", (8, 8)),
-                             ("kakuro", (10, 10))):
+                             ("kakuro", (10, 10)), ("aquarium", (8, 8))):
             with self.subTest(genre=genre):
                 self.assertEqual(pp.generate(genre, difficulty="easy").puzzle.shape, shape)
         first = pp.generate("sudoku", (4, 4))
@@ -39,7 +40,8 @@ class PackageTests(unittest.TestCase):
         puzzle = pp.Puzzle.from_text("genre: sudoku\ngrid:\n1..4\n.4..\n..4.\n4..1")
         self.assertEqual(str(puzzle), "1 . | . 4\n. 4 | . .\n----+----\n. . | 4 .\n4 . | . 1")
         for genre, shape in (("nurikabe", (3, 3)), ("kakurasu", (3, 4)), ("fillomino", (3, 4)),
-                             ("hashi", (5, 5)), ("hitori", (4, 5)), ("kakuro", (5, 6))):
+                             ("hashi", (5, 5)), ("hitori", (4, 5)), ("kakuro", (5, 6)),
+                             ("aquarium", (4, 5))):
             with self.subTest(genre=genre):
                 text = str(pp.generate(genre, shape, difficulty="easy", seed=42).puzzle)
                 self.assertTrue(text.strip())
@@ -102,6 +104,19 @@ class PackageTests(unittest.TestCase):
         self.assertEqual({v.rule for v in pp.check(puzzle, wrong)}, {3})
         wide = pp.Puzzle.from_id("hitori:1x11:123456789ab")
         self.assertEqual(wide.clues, (tuple(range(1, 12)),))
+
+    def test_aquarium_tanks_clues_and_marks(self):
+        puzzle = pp.Puzzle.from_text("genre: aquarium\nrows: 1 2\ncols: 2 1\nregions:\nab\naa")
+        self.assertIsInstance(puzzle, pp.AquariumPuzzle)
+        self.assertEqual(puzzle.clues, pp.AquariumClues((1, 2), (2, 1), ((0, 1), (0, 0))))
+        self.assertEqual(puzzle.id, "aquarium:2x2:12/21/k")
+        S, U = pp.Mark.SHADED, pp.Mark.UNSHADED
+        self.assertEqual(pp.solve(puzzle).cells, ((S, U), (S, S)))
+        floating = pp.Solution("aquarium", ((S, U), (U, S)))
+        self.assertEqual({v.rule for v in pp.check(puzzle, floating)}, {1, 2, 3})
+        many = pp.Puzzle.from_text("genre: aquarium\nrows: 1 1\ncols: 1 1\nregions:\nab\ncd")
+        with self.assertRaises(pp.MultipleSolutionsError):
+            pp.solve(many)
 
     def test_kakuro_blocks_sums_and_digits(self):
         puzzle = pp.Puzzle.from_text("genre: kakuro\ngrid:\n# 4/ 6/\n/3 . .\n/7 . .")

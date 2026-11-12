@@ -49,6 +49,13 @@ guide](quickstart.md) shows how they fit together.
    :members: clues
    :undoc-members:
 
+.. autoclass:: AquariumPuzzle
+   :members: clues
+   :undoc-members:
+
+.. autoclass:: AquariumClues
+   :members: rows, cols, tanks
+
 .. autoclass:: KakurasuPuzzle
    :members: clues
    :undoc-members:

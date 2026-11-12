@@ -324,8 +324,8 @@ pub fn check(
             ));
         }
     }
-    for i in 0..p.shape().cells() {
-        if let [Some(h), Some(v)] = layout.through[i]
+    for (i, through) in layout.through.iter().enumerate() {
+        if let [Some(h), Some(v)] = *through
             && counts[h] > 0
             && counts[v] > 0
         {

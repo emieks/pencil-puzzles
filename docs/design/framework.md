@@ -64,11 +64,11 @@ generated puzzles (V3).
 Apart from the level, the only constraint on generated puzzles so far is
 symmetric clues in sudoku below expert.
 
-| | Sudoku | Kakurasu | Nurikabe | Fillomino | Hashi | Hitori | Kakuro |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| Variables / values | cells / digits | cells / shaded or not | cells / land or sea | cells / sizes 1-15 and 16+ | pairs of islands that see each other / 0, 1 or 2 bridges | cells / shaded or not | white cells / digits |
-| Bookkeeping | a placed digit is removed from its peers | a line already at its total | wall off a completed island; the rest is sea once every island is complete | wall off a complete region | a complete island gets no more bridges; a bridge blocks the slots it crosses | shaded cells unshade their neighbours, unshaded cells shade their repeats | a written-in digit leaves its runs |
-| Build / edit | full grid / remove or restore a clue | shaded grid / flip a cell | islands grown in a sea / move a clue, add land, join or grow an island | random partition with every clue / remove or restore a clue | random network of bridges / add, remove or change bridges, or put an island on a bridge | shaded Latin square / change a copied number, shade or unshade a cell | symmetric layout and digits / change or swap a digit |
+| | Sudoku | Kakurasu | Nurikabe | Fillomino | Hashi | Hitori | Kakuro | Aquarium |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Variables / values | cells / digits | cells / shaded or not | cells / land or sea | cells / sizes 1-15 and 16+ | pairs of islands that see each other / 0, 1 or 2 bridges | cells / shaded or not | white cells / digits | cells / water or air |
+| Bookkeeping | a placed digit is removed from its peers | a line already at its total | wall off a completed island; the rest is sea once every island is complete | wall off a complete region | a complete island gets no more bridges; a bridge blocks the slots it crosses | shaded cells unshade their neighbours, unshaded cells shade their repeats | a written-in digit leaves its runs | water and air spread through their tank; a line at its clue, or one that needs all its open cells |
+| Build / edit | full grid / remove or restore a clue | shaded grid / flip a cell | islands grown in a sea / move a clue, add land, join or grow an island | random partition with every clue / remove or restore a clue | random network of bridges / add, remove or change bridges, or put an island on a bridge | shaded Latin square / change a copied number, shade or unshade a cell | symmetric layout and digits / change or swap a digit | random tanks and water levels / move a water level or a tank border |
 
 ## Interfaces
 

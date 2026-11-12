@@ -57,17 +57,21 @@ function page(meta, route) {
     .replace('<title>pencil-puzzles</title>', `<title>${attribute(meta.title)}</title>${tags}`)
     .replace(/<meta name="description" content="[^"]*">/, `<meta name="description" content="${attribute(meta.description)}">`);
 }
+// The seed of each game's example puzzle, where seed 0 does not make a good picture.
+const exampleSeeds = { aquarium: '10' };
 const routes = [''];
 for (const game of catalogue) {
   const id = game.metadata.id;
   if (!/^[a-z][a-z0-9-]*$/.test(id)) throw new Error('Invalid genre route');
-  const example = call({ operation: 'generate', genre: id, params: game.params, difficulty: 'easy', seed: '0' });
+  const example = call({ operation: 'generate', genre: id, params: game.params, difficulty: 'easy', seed: exampleSeeds[id] ?? '0' });
   game.example = example.id;
   // The home page shows each game as its solved example board.
   game.picture = call({ operation: 'solve', genre: id, puzzle: example.id }).views[0];
   const fixed = fixedSizes(id);
   game.sizes = fixed || await sizes(id, game.params);
   game.custom = !fixed;
+  // The levels the generator accepts at each size, for graying out the rest in the menus.
+  game.levels = Object.fromEntries(game.sizes.map((s) => [s, call({ operation: 'levels', genre: id, params: s })]));
   for (const mode of ['player', 'solver']) {
     const directory = path.join(dist, id, mode);
     await mkdir(directory, { recursive: true });

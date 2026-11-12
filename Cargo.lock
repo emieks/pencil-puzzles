@@ -231,6 +231,7 @@ checksum = "384b8ab6d37215f3c5301a95a4accb5d64aa607f1fcb26a11b5303878451b4fe"
 name = "pencil-puzzles"
 version = "0.4.0"
 dependencies = [
+ "pencil-puzzles-aquarium",
  "pencil-puzzles-core",
  "pencil-puzzles-fillomino",
  "pencil-puzzles-hashi",
@@ -241,6 +242,16 @@ dependencies = [
  "pencil-puzzles-sudoku",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "pencil-puzzles-aquarium"
+version = "0.4.0"
+dependencies = [
+ "pencil-puzzles-core",
+ "serde",
+ "serde_json",
+ "wasm-bindgen-test",
 ]
 
 [[package]]

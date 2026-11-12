@@ -1,7 +1,8 @@
 //! Generation benchmark for every genre (guideline B1-B3):
 //! `cargo run --release -p pencil-puzzles --example benchmark -- <genre> [seeds]`.
 //!
-//! For each size and requested level (Easy to Expert, and "any"), generates
+//! For each size and requested level (Easy to Expert, and "any") that the
+//! genre supports, generates
 //! seeds 0 to `seeds - 1` (default 30) with the command-line tool's defaults:
 //! 10,000 attempts and 100,000,000 operations. Failures count as infinite
 //! time in the percentiles. Then times rating every corpus puzzle.
@@ -22,6 +23,7 @@ fn main() {
         "fillomino" => &["5x5", "6x6", "7x7", "8x8", "10x10"],
         "hashi" => &["5x5", "7x7", "10x10", "12x12", "15x15"],
         "hitori" => &["5x5", "6x6", "8x8", "10x10", "12x12"],
+        "aquarium" => &["6x6", "8x8", "10x10", "12x12", "15x15"],
         "kakuro" => &["6x6", "8x8", "10x10", "12x12", "16x16"],
         _ => &["6x6", "8x8", "10x10", "12x12"],
     };
@@ -34,6 +36,9 @@ fn main() {
             .into_iter()
             .chain(Difficulty::ALL[..4].iter().copied().map(Some));
         for level in levels {
+            if !genre.supports(&params, level).expect("valid params") {
+                continue;
+            }
             let mut times = Vec::new();
             let mut attempts = 0u64;
             let mut operations = 0u64;

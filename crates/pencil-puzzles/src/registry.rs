@@ -35,6 +35,9 @@ pub trait DynGenre: Sync {
     fn read_id(&self, id: &str) -> Result<String, RegistryError>;
     /// Encode the puzzle's stable ID.
     fn id(&self, text: &str) -> Result<String, RegistryError>;
+    /// Whether `generate` accepts these parameters and level.
+    fn supports(&self, params: &str, difficulty: Option<Difficulty>)
+    -> Result<bool, RegistryError>;
     /// Generate a unique puzzle; limits decide success, never which puzzle.
     fn generate(
         &self,
@@ -116,6 +119,7 @@ pub struct Input {
 // The typed adapter is only needed when a genre is compiled in. Add future
 // genre features here as they join the registry.
 #[cfg(any(
+    feature = "aquarium",
     feature = "fillomino",
     feature = "hashi",
     feature = "hitori",
@@ -272,6 +276,13 @@ mod typed {
         fn id(&self, text: &str) -> Result<String, RegistryError> {
             Ok(G::id(&one::<G>(text)?.puzzle))
         }
+        fn supports(
+            &self,
+            params: &str,
+            difficulty: Option<Difficulty>,
+        ) -> Result<bool, RegistryError> {
+            Ok(G::supports(&params.parse()?, difficulty))
+        }
         fn generate(
             &self,
             params: &str,
@@ -400,6 +411,8 @@ mod typed {
             })
         }
     }
+    #[cfg(feature = "aquarium")]
+    pub(super) static AQUARIUM: Adapter<crate::aquarium::Aquarium> = Adapter(PhantomData);
     #[cfg(feature = "fillomino")]
     pub(super) static FILLOMINO: Adapter<crate::fillomino::Fillomino> = Adapter(PhantomData);
     #[cfg(feature = "hashi")]
@@ -417,6 +430,8 @@ mod typed {
 }
 /// Every compiled-in genre, in canonical id order (I1, K4).
 static GENRES: &[&dyn DynGenre] = &[
+    #[cfg(feature = "aquarium")]
+    &typed::AQUARIUM,
     #[cfg(feature = "fillomino")]
     &typed::FILLOMINO,
     #[cfg(feature = "hashi")]

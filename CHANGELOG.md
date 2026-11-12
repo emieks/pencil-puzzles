@@ -9,6 +9,13 @@ ratings **(new ratings)**.
 
 ### Added
 
+- Aquarium (up to 15x15): generation, solving, checking, rating and hints,
+  in the Python package (`AquariumPuzzle`, `AquariumClues`), the command-line
+  tool and the web app. Expert needs a grid of at least 64 cells, such as 8x8.
+- Rust: `Genre::supports` and `DynGenre::supports` tell whether a genre
+  generates a level at a size.
+- Rust: `MarkOption::tone` names the colour of a shaded mark, such as
+  `water`.
 - `llms.txt` at https://pencil-puzzles.org/llms.txt, describing the package
   and linking to the documentation.
 - CLI: `completions <shell>` prints a completion script for bash, zsh, fish,
@@ -25,6 +32,11 @@ ratings **(new ratings)**.
 - Web app: sudoku offers 4x4 and 9x9 with no custom size.
 - Web app and documentation: new site icon, page titles and descriptions,
   link previews and sitemaps.
+- Web app: sizes and levels that cannot be generated together are grayed out
+  in the menus, with a tooltip.
+- Web app: larger clue numbers to the right of and below the board.
+- Web app: on the list of genres, aquarium's grid is centred in its picture
+  and sudoku's boxes have thicker lines.
 
 ### Removed
 
@@ -40,6 +52,11 @@ ratings **(new ratings)**.
   and sudoku's `GenerateOptions::version`, `GenerateError::UnsupportedVersion`
   and `rate_version`. `Rating::new` takes only the level.
 - Command line: the rater version after a rating.
+
+### Fixed
+
+- Web app: pressing a key after clicking an empty part of a page no longer
+  outlines the page.
 
 ## [0.4.0] - 2026-11-09
 

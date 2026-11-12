@@ -18,7 +18,7 @@ from . import _native
 
 __version__ = "0.4.0"
 __all__ = [
-    "AttemptsExhaustedError", "BudgetExceededError", "CancellationToken", "CancelledError",
+    "AquariumClues", "AquariumPuzzle", "AttemptsExhaustedError", "BudgetExceededError", "CancellationToken", "CancelledError",
     "Difficulty", "FillominoPuzzle", "Generated", "HashiPuzzle", "HitoriPuzzle", "KakurasuClues", "KakurasuPuzzle", "KakuroPuzzle", "Limits", "Mark",
     "MultipleSolutionsError", "NoSolutionError", "NurikabePuzzle", "ParseError",
     "PencilPuzzlesError", "Puzzle", "Rating",
@@ -38,7 +38,8 @@ class Difficulty(str, Enum):
 
 
 class Mark(str, Enum):
-    """A cell in a nurikabe, kakurasu or hitori answer."""
+    """A cell in a nurikabe, kakurasu, hitori or aquarium answer. In aquarium,
+    shaded cells are water."""
     SHADED = "#"
     UNSHADED = "-"
     UNMARKED = "."
@@ -307,6 +308,20 @@ class KakurasuPuzzle(Puzzle):
     col_clues = _alias("col_clues", lambda p: p.clues.cols)
 
 
+class AquariumClues(NamedTuple):
+    """Aquarium clues: a water count per row and per column, and each cell's
+    tank. Tanks are numbered from 0 in the order their first cells appear,
+    reading row by row."""
+    rows: tuple[int, ...]
+    cols: tuple[int, ...]
+    tanks: tuple[tuple[int, ...], ...]
+
+
+@dataclass(frozen=True)
+class AquariumPuzzle(Puzzle):
+    clues: AquariumClues
+
+
 def _tokens(rows: list[str], row: str) -> list[str]:
     """A grid row's cells: space-separated when any row of the grid has a space."""
     return row.split(" ") if any(" " in r for r in rows) else list(row)
@@ -339,6 +354,12 @@ def _puzzle(handle: Any) -> Puzzle:
             down, _, across = token.partition("/")
             return (int(down or 0), int(across or 0))
         return KakuroPuzzle(*common, tuple(tuple(cell(t) for t in _tokens(rows, row)) for row in rows))
+    if genre == "aquarium":
+        rows = clues["regions"]
+        letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        tanks = tuple(tuple(letters.index(t) if t in letters else int(t) - 1 for t in _tokens(rows, row))
+                      for row in rows)
+        return AquariumPuzzle(*common, AquariumClues(tuple(clues["row_clues"]), tuple(clues["col_clues"]), tanks))
     return KakurasuPuzzle(*common, KakurasuClues(tuple(clues["row_clues"]), tuple(clues["col_clues"])))
 
 

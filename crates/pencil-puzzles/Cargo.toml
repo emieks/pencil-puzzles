@@ -13,7 +13,8 @@ categories = ["games", "algorithms"]
 [features]
 default = ["all-genres"]
 # Every genre. Turn off default features and pick genres to build less.
-all-genres = ["fillomino", "hashi", "hitori", "kakurasu", "kakuro", "nurikabe", "sudoku"]
+all-genres = ["aquarium", "fillomino", "hashi", "hitori", "kakurasu", "kakuro", "nurikabe", "sudoku"]
+aquarium = ["dep:pencil-puzzles-aquarium"]
 fillomino = ["dep:pencil-puzzles-fillomino"]
 hashi = ["dep:pencil-puzzles-hashi"]
 hitori = ["dep:pencil-puzzles-hitori"]
@@ -22,10 +23,11 @@ kakuro = ["dep:pencil-puzzles-kakuro"]
 nurikabe = ["dep:pencil-puzzles-nurikabe"]
 sudoku = ["dep:pencil-puzzles-sudoku"]
 # Serialize and deserialize puzzles, solutions and ratings with serde.
-serde = ["dep:serde", "dep:serde_json", "pencil-puzzles-core/serde", "pencil-puzzles-fillomino?/serde", "pencil-puzzles-hashi?/serde", "pencil-puzzles-hitori?/serde", "pencil-puzzles-kakurasu?/serde", "pencil-puzzles-kakuro?/serde", "pencil-puzzles-sudoku?/serde", "pencil-puzzles-nurikabe?/serde"]
+serde = ["dep:serde", "dep:serde_json", "pencil-puzzles-core/serde", "pencil-puzzles-aquarium?/serde", "pencil-puzzles-fillomino?/serde", "pencil-puzzles-hashi?/serde", "pencil-puzzles-hitori?/serde", "pencil-puzzles-kakurasu?/serde", "pencil-puzzles-kakuro?/serde", "pencil-puzzles-sudoku?/serde", "pencil-puzzles-nurikabe?/serde"]
 
 [dependencies]
 pencil-puzzles-core.workspace = true
+pencil-puzzles-aquarium = { workspace = true, optional = true }
 pencil-puzzles-fillomino = { workspace = true, optional = true }
 pencil-puzzles-hashi = { workspace = true, optional = true }
 pencil-puzzles-hitori = { workspace = true, optional = true }

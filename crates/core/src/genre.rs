@@ -126,6 +126,13 @@ pub trait Genre: 'static {
         puzzle: &Self::Puzzle,
         budget: &Budget,
     ) -> Result<(Rating, Vec<crate::Step>), RateError>;
+    /// Whether `generate` accepts these parameters and level. When false,
+    /// `generate` reports an unsupported request. Every level but Extreme by
+    /// default.
+    fn supports(params: &Self::Params, difficulty: Option<Difficulty>) -> bool {
+        let _ = params;
+        difficulty != Some(Difficulty::Extreme)
+    }
     /// Generate a unique, truly rated puzzle; limits affect success only (P7, G5).
     fn generate(
         params: &Self::Params,

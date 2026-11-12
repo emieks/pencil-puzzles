@@ -10,6 +10,10 @@ use wasm_bindgen::prelude::*;
 #[serde(tag = "operation", rename_all = "snake_case", deny_unknown_fields)]
 enum Request {
     List,
+    Levels {
+        genre: String,
+        params: String,
+    },
     Generate {
         genre: String,
         params: String,
@@ -78,6 +82,21 @@ fn execute(request: Request) -> Result<Value, RegistryError> {
                 .map(|g| json!({"metadata":g.metadata(),"params":g.default_params()}))
                 .collect::<Vec<_>>()
         )),
+        Request::Levels { genre, params } => {
+            let genre = find(&genre).ok_or("unknown puzzle type")?;
+            let mut levels = Vec::new();
+            for level in [
+                Difficulty::Easy,
+                Difficulty::Medium,
+                Difficulty::Hard,
+                Difficulty::Expert,
+            ] {
+                if genre.supports(&params, Some(level))? {
+                    levels.push(level);
+                }
+            }
+            Ok(json!(levels))
+        }
         Request::Generate {
             genre,
             params,

@@ -27,6 +27,7 @@ Each genre has its own puzzle class:
 | `HitoriPuzzle` | Rows of numbers |
 | `KakuroPuzzle` | Rows of cells: `None` for a white cell, `(down, across)` for a block, 0 for a missing sum |
 | `KakurasuPuzzle` | A `KakurasuClues` with `rows` and `cols` |
+| `AquariumPuzzle` | An `AquariumClues` with `rows`, `cols` and `tanks`, which holds each cell's tank number |
 
 ```pycon
 >>> g = pp.generate("kakuro", (6, 6), difficulty="easy", seed=4)
