@@ -51,6 +51,11 @@ ratings **(new ratings)**.
   and `rate_version`. `Rating::new` takes only the level.
 - Command line: the rater version after a rating.
 
+### Fixed
+
+- Web app: pressing a key after clicking an empty part of a page no longer
+  outlines the page.
+
 ## [0.4.0] - 2026-11-09
 
 ### Added

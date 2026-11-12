@@ -74,6 +74,7 @@ input:hover:not(:disabled) { border-color: var(--muted); }
 input[type="checkbox"] { width: auto; height: auto; margin: 0; padding: 0; accent-color: var(--text); }
 textarea { display: block; width: 100%; min-height: 96px; margin: 6px 0 10px; padding: 7px 9px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg); resize: vertical; font: 13px/1.5 var(--mono); }
 :focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+#main:focus { outline: none; }
 .group { display: inline-flex; }
 .group > button { border-radius: 0; }
 .group > button:first-child { border-radius: var(--radius) 0 0 var(--radius); }
