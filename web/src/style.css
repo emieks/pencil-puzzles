@@ -304,6 +304,8 @@ button.cell:hover:not(:disabled) { background: var(--subtle); border: 0; }
 .cell.circled::after { content: ''; position: absolute; width: calc(var(--size) * .7); height: calc(var(--size) * .7); border: 2px solid currentColor; border-radius: 50%; box-sizing: border-box; }
 .cell.shaded, button.cell.shaded:hover:not(:disabled) { background: var(--shaded); color: var(--bg); }
 .cell.shaded.tone-water, button.cell.shaded.tone-water:hover:not(:disabled) { background: var(--water); }
+/* Marks in the text colour, such as aquarium's crosses. */
+.cell.tone-text:not(.wrong) { color: var(--text); }
 .board.paint .cell.same:not(.shaded) { background: var(--same); }
 /* The selected cell has one ring, drawn on the cell's edge. */
 .board .cell:focus-visible, .board .cell.selected { outline: 2px solid var(--accent); outline-offset: -2px; position: relative; }
@@ -364,6 +366,7 @@ button.cell:hover:not(:disabled) { background: var(--subtle); border: 0; }
 .game-picture .links .bridge { stroke: var(--accent); stroke-width: 1.25; }
 .game-picture .cell:not(.given):not(.block):not(.shaded):not(.labelled), .game-picture .cell.dot, .game-picture .cell.cross { color: var(--accent); }
 .game-picture .cell.circled::after { border-color: var(--accent); }
+.game-picture .cell.tone-text:not(.given):not(.block):not(.shaded):not(.labelled) { color: var(--text); }
 
 /* Solver: the editor is in the board's column, at the player's board size, with its buttons, status and import box under it at its own width.
    From 1400px the result sits beside the editor, where the player's controls are. */

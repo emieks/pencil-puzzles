@@ -119,11 +119,9 @@ impl Genre for Aquarium {
         v.bottom = p.col_clues().iter().map(u32::to_string).collect();
         let mut water = MarkOption::shaded("#", "Water");
         water.tone = "water".into();
-        v.marks = vec![
-            MarkOption::new(".", "Unmarked", ""),
-            water,
-            MarkOption::new("-", "Air", "\u{00d7}"),
-        ];
+        let mut air = MarkOption::new("-", "Air", "\u{00d7}");
+        air.tone = "text".into();
+        v.marks = vec![MarkOption::new(".", "Unmarked", ""), water, air];
         v.cells = p
             .tanks()
             .iter()
