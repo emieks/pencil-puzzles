@@ -15,6 +15,9 @@ ratings **(new ratings)**.
 - Binairo, also called Takuzu (up to 16x16): generation, solving, checking,
   rating and hints, in the Python package (`BinairoPuzzle`), the command-line
   tool and the web app. 2x2 grids are easy and 4x4 grids at most medium.
+- Chocona (up to 15x15): generation, solving, checking, rating and hints, in
+  the Python package (`ChoconaPuzzle`, `ChoconaClues`), the command-line tool
+  and the web app. Expert needs at least 3 rows, 3 columns and 15 cells.
 - Rust: `Genre::supports` and `DynGenre::supports` tell whether a genre
   generates a level at a size.
 - Rust: `MarkOption::tone` names the colour of a mark, such as `water`.

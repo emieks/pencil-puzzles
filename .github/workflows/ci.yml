@@ -60,6 +60,7 @@ jobs:
       - run: cargo install wasm-bindgen-cli --version 0.2.105 --locked
       - run: cargo test -p pencil-puzzles-aquarium --target wasm32-unknown-unknown --test wasm --all-features --locked
       - run: cargo test -p pencil-puzzles-binairo --target wasm32-unknown-unknown --test wasm --all-features --locked
+      - run: cargo test -p pencil-puzzles-chocona --target wasm32-unknown-unknown --test wasm --all-features --locked
       - run: cargo test -p pencil-puzzles-fillomino --target wasm32-unknown-unknown --test wasm --all-features --locked
       - run: cargo test -p pencil-puzzles-hashi --target wasm32-unknown-unknown --test wasm --all-features --locked
       - run: cargo test -p pencil-puzzles-hitori --target wasm32-unknown-unknown --test wasm --all-features --locked

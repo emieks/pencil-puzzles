@@ -60,6 +60,13 @@ guide](quickstart.md) shows how they fit together.
    :members: clues
    :undoc-members:
 
+.. autoclass:: ChoconaPuzzle
+   :members: clues
+   :undoc-members:
+
+.. autoclass:: ChoconaClues
+   :members: regions, numbers
+
 .. autoclass:: KakurasuPuzzle
    :members: clues
    :undoc-members:

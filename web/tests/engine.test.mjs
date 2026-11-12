@@ -131,3 +131,21 @@ test('Binairo givens are fixed cells and digits are entered as marks',()=>{
   assert.ok(same.violations.some(v=>v.rule===3&&v.place.row===1));
   assert.equal(call({operation:'check',genre,puzzle:puzzle.id,marks:['1','.','.','1'],finished:true}).value.solved,true);
 });
+
+test('Chocona regions and numbers are entered per cell',()=>{
+  const genre='chocona';
+  const editor=call({operation:'editor',genre,shape:'2x3',puzzle:null}).value;
+  assert.equal(editor.fields.length,6);
+  assert.equal(typeof editor.fields[0].pattern,'string');
+  const puzzle=call({operation:'compose',genre,shape:editor.shape,values:['a3','a','b','a','c1','c']}).value;
+  assert.equal(puzzle.id,'chocona:2x3:Zg/3.1');
+  assert.deepEqual(puzzle.view.cells.map(c=>c.region),[0,0,1,0,2,2]);
+  assert.deepEqual(puzzle.view.cells.map(c=>c.label),['3','','','','1','']);
+  const solved=call({operation:'solve',genre,puzzle:puzzle.id});
+  assert.equal(solved.value.status,'unique');
+  assert.deepEqual(solved.value.views[0].cells.map(c=>c.value),['#','#','-','#','#','-']);
+  const bent=call({operation:'check',genre,puzzle:puzzle.id,marks:['#','#','.','#','-','.'],finished:false}).value;
+  assert.ok(bent.violations.some(v=>v.rule===2));
+  assert.deepEqual(call({operation:'levels',genre,params:'3x3'}).value,['easy','medium','hard']);
+  assert.equal(call({operation:'compose',genre,shape:'2x3',values:['a3','a','b','b','c1','c']}).ok,false);
+});

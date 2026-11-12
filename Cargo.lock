@@ -233,6 +233,7 @@ version = "0.4.0"
 dependencies = [
  "pencil-puzzles-aquarium",
  "pencil-puzzles-binairo",
+ "pencil-puzzles-chocona",
  "pencil-puzzles-core",
  "pencil-puzzles-fillomino",
  "pencil-puzzles-hashi",
@@ -257,6 +258,16 @@ dependencies = [
 
 [[package]]
 name = "pencil-puzzles-binairo"
+version = "0.4.0"
+dependencies = [
+ "pencil-puzzles-core",
+ "serde",
+ "serde_json",
+ "wasm-bindgen-test",
+]
+
+[[package]]
+name = "pencil-puzzles-chocona"
 version = "0.4.0"
 dependencies = [
  "pencil-puzzles-core",

@@ -1,0 +1,22 @@
+[package]
+name = "pencil-puzzles-chocona"
+description = "Chocona solver, generator, checker and difficulty rater"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+readme = "README.md"
+
+[features]
+serde = ["dep:serde", "pencil-puzzles-core/serde"]
+
+[dependencies]
+pencil-puzzles-core.workspace = true
+serde = { version = "1", features = ["derive"], optional = true }
+
+[dev-dependencies]
+serde_json = "1"
+
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+wasm-bindgen-test = "=0.3.55"

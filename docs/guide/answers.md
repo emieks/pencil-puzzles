@@ -14,7 +14,7 @@ tuple of rows. The values depend on the genre:
 | Sudoku, fillomino | Numbers, 0 for unmarked |
 | Kakuro | Digits, 0 for unmarked, `None` for a block |
 | Binairo | 0 or 1, `None` for unmarked |
-| Nurikabe, hitori, kakurasu, aquarium | `pp.Mark.SHADED`, `pp.Mark.UNSHADED` or `pp.Mark.UNMARKED`; in aquarium, shaded cells are water |
+| Nurikabe, hitori, kakurasu, aquarium, chocona | `pp.Mark.SHADED`, `pp.Mark.UNSHADED` or `pp.Mark.UNMARKED`; in aquarium, shaded cells are water |
 | Hashi | Text: `"."` for water, the island number, `"-"` or `"="` for one or two horizontal bridges, `"\|"` or `"H"` for one or two vertical bridges |
 
 The answer must have the puzzle's genre and shape. Solutions from `solve` and

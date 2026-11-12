@@ -29,6 +29,7 @@ Each genre has its own puzzle class:
 | `KakurasuPuzzle` | A `KakurasuClues` with `rows` and `cols` |
 | `AquariumPuzzle` | An `AquariumClues` with `rows`, `cols` and `tanks`, which holds each cell's tank number |
 | `BinairoPuzzle` | Rows of given digits, 0 or 1, and `None` for an empty cell |
+| `ChoconaPuzzle` | A `ChoconaClues` with `regions`, which holds each cell's region number, and `numbers`, which holds each region's number or `None` |
 
 ```pycon
 >>> g = pp.generate("kakuro", (6, 6), difficulty="easy", seed=4)

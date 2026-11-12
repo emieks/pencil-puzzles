@@ -12,7 +12,7 @@ on every machine.
 | kakuro, nurikabe | pencil-puzzles 0.3.0 | 2026-11-08 |
 | sudoku | pencil-puzzles after 0.3.1 | 2026-11-09 |
 | aquarium | pencil-puzzles after 0.4.0 | 2026-11-11 |
-| binairo | pencil-puzzles after 0.4.0 | 2026-11-12 |
+| binairo, chocona | pencil-puzzles after 0.4.0 | 2026-11-12 |
 
 All runs used the same setup:
 

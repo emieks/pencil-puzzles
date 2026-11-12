@@ -35,6 +35,9 @@ pub use pencil_puzzles_aquarium as aquarium;
 /// Binairo: 0s and 1s with balanced, different lines and no three in a row.
 #[cfg(feature = "binairo")]
 pub use pencil_puzzles_binairo as binairo;
+/// Chocona: shaded rectangles counted region by region.
+#[cfg(feature = "chocona")]
+pub use pencil_puzzles_chocona as chocona;
 
 /// Fillomino: regions numbered with their sizes, same sizes never touching.
 #[cfg(feature = "fillomino")]
