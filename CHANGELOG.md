@@ -5,6 +5,14 @@ and versions follow [Semantic Versioning](https://semver.org/). Changes that
 alter generated puzzles are marked **(new puzzles)**, and changes that alter
 ratings **(new ratings)**.
 
+## [Unreleased]
+
+### Fixed
+
+- Web app: Check no longer marks unmarked cells, and its marks stay while
+  editing.
+- Web app: visual glitches on boards.
+
 ## [0.5.0] - 2026-11-13
 
 ### Added
