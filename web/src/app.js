@@ -121,8 +121,10 @@ function board(view,{interactive=false,notes,selected=-1,selection,wrong}={}){
       const label=cell.label||'',symbol=choice?.symbol??cell.value,dot=!!choice&&symbol==='·',cross=!!choice&&symbol==='×';
       let className='cell'+(choice?.shaded?' shaded':'')+(choice?.tone?' tone-'+choice.tone:'')+(dot?(label?' circled':' dot'):'')+(cross?' cross':'')+(label?' labelled':'')+(!cell.editable?' given':'')+(chosen.has(i)?' selected':'')+(same.has(i)?' same':'')+(peers.has(i)?' peer':'')+(ends.has(i)?' end':'')+(wrong?.has(i)?' wrong':'');
       if(cell.circled&&interactive&&/^\d+$/.test(cell.value)&&ends.size){const n=bridges.get(i)||0,want=Number(cell.value);className+=n===want?' complete':n>want?' over':'';}
-      const button=element(interactive?'button':'span',cell.circled?undefined:label||(dot||cross?'':symbol),className);button.dataset.index=String(i);
-      if(cell.circled)button.append(element('span',cell.value,'circle'));
+      // Text sits in a glyph box, which CSS trims to the digits' height so they are centred in the cell and in rings.
+      const text=cell.circled?'':label||(dot||cross?'':symbol),glyph=t=>element('span',t,'glyph');
+      const button=element(interactive?'button':'span',undefined,className);button.dataset.index=String(i);if(text)button.append(glyph(text));
+      if(cell.circled){const circle=element('span',undefined,'circle');circle.append(glyph(cell.value));button.append(circle);}
       if(noted){const set=new Set(notes[i].split(',')),grid=element('span',undefined,'notes');grid.style.setProperty('--note-cols',String(Math.ceil(Math.sqrt(view.marks.length-1))));for(const m of view.marks.slice(1))grid.append(element('span',set.has(m.value)?m.symbol:''));button.replaceChildren(grid);}
       const state=noted?'notes '+notes[i]:choice?.name??cell.value;
       button.setAttribute('aria-label',`Row ${r+1}, column ${c+1}: ${label?`${label}, ${state.toLowerCase()}`:state}`);
@@ -233,6 +235,8 @@ function player(game){
   const key='pencil-game:'+id,saveKey=puzzle=>`pencil-save:${id}:${puzzle}`,listKey='pencil-saves:'+id,stepsKey='pencil-history:'+id;
   let current=null,history=null,busy=false,entry=false,mode='none',selected=-1,selection=new Set(),notesMode=false,drag=null,linkDrag=null,solvedTime=null,checkTimer=0,checkSeq=0,ends=new Map();
   let tool=null,paused=false,revealed=false,rating=null,solution=null,showMistakes=readSaved('pencil-mistakes')===true;
+  /** The rules Check found broken, kept on the board until no rule is broken; null when Check is not showing any. */
+  let broken=null;
   const clock={elapsed:0,since:null};const boardBox=$('#board');
   const blank=()=>current.view.marks[0].value;
   // Values are the cells in row-major order, then the links (I4).
@@ -298,9 +302,20 @@ function player(game){
     // With regions (Sudoku), a digit placed once in every row is complete.
     if(mode==='regions'){const counts=new Map();for(let i=0;i<n;i++)counts.set(values[i],(counts.get(values[i])||0)+1);for(const b of $('#legend').querySelectorAll('[data-value]'))b.classList.toggle('done',(counts.get(b.dataset.value)||0)>=view.rows);}
     for(const b of $('#legend').querySelectorAll('[data-tool]'))b.setAttribute('aria-pressed',String(b.dataset.tool===primary()));
-    showCombos(values);sync();
+    markBroken(values);showCombos(values);sync();
   }
-  function changed(){draw();persist();status('');scheduleCheck();}
+  function changed(){draw();persist();if(!broken)status('');scheduleCheck();}
+  const partialCheck=()=>engine.call({operation:'check',genre:id,puzzle:current.id,marks:history.values,finished:false});
+  /** Marks the cells, clues and links in the rules Check found broken, leaving out cells without a mark. */
+  function markBroken(values){
+    if(!broken)return;
+    const unmarked=e=>{const i=Number((e.dataset.index?e:e.querySelector('[data-index]'))?.dataset.index);return i>=0&&i<cellCount()&&editable(i)&&values[i]===blank();};
+    for(const v of broken){
+      const p=v.place;let selector=p==='board'?'td':'';
+      if(p&&typeof p==='object'){if('row'in p)selector=`[data-row="${p.row}"],[data-cell-row="${p.row}"]`;else if('col'in p)selector=`[data-col="${p.col}"],[data-cell-col="${p.col}"]`;else if('region'in p)selector=`[data-region="${p.region}"]`;else if('cell'in p)selector=`[data-index="${p.cell.row*current.view.cols+p.cell.col}"]`;else if('link'in p)selector=`[data-link-place="${linkKey(p.link)}"]`;}
+      if(selector)boardBox.querySelectorAll(selector).forEach(c=>{if(!unmarked(c))c.classList.add('invalid');});
+    }
+  }
   function commit(values,notes=history.notes){if(!paused&&history.set(values,notes))changed();}
   function apply(i,value){if(!editable(i))return;const values=[...history.values];values[i]=value;commit(values);}
   // Number entry goes to every selected cell. A digit every selected cell already has erases it, and placing a digit removes it from the notes of cells that can't hold it.
@@ -315,7 +330,10 @@ function player(game){
   function undo(){if(!paused&&history.undo())changed();}
   function redo(){if(!paused&&history.redo())changed();}
   function solved(){if(solvedTime===null){pauseClock();solvedTime=elapsed();tick();persist();}status(revealed?'Solution shown.':`Solved in ${formatTime(solvedTime)}.`,'success');sync();}
-  function scheduleCheck(){clearTimeout(checkTimer);checkTimer=setTimeout(async()=>{const seq=++checkSeq,marks=history.values;if(entry&&marks.some((v,i)=>editable(i)&&v===blank()))return;try{const result=await engine.call({operation:'check',genre:id,puzzle:current.id,marks,finished:true});if(seq===checkSeq&&result.solved)solved();}catch{/* The Check button reports errors. */}},200);}
+  function scheduleCheck(){clearTimeout(checkTimer);checkTimer=setTimeout(async()=>{const seq=++checkSeq,marks=history.values;
+    // While Check's marks are shown, each change checks again, so fixed cells lose their marks and the rest keep them.
+    if(broken){try{const result=await partialCheck();if(seq!==checkSeq)return;broken=result.violations.length?result.violations:null;if(!drag)draw();if(!broken&&$('#status').classList.contains('error'))status('');}catch{/* The Check button reports errors. */}}
+    if(entry&&marks.some((v,i)=>editable(i)&&v===blank()))return;try{const result=await engine.call({operation:'check',genre:id,puzzle:current.id,marks,finished:true});if(seq===checkSeq&&result.solved)solved();}catch{/* The Check button reports errors. */}},200);}
   function setNotes(on){notesMode=on;$('#notes')?.setAttribute('aria-pressed',String(on));}
   function setPaused(on){
     if(on===paused||!current||(on&&solvedTime!==null))return;
@@ -389,7 +407,7 @@ function player(game){
   function accept(value,{push=false}={}){
     const active=document.activeElement,focus=!active||active===document.body||active.matches('#new-game,#load,#board *');
     pauseClock();if(current)persist();
-    checkSeq++;current=value;entry=value.view.marks.length>3;mode=highlightMode(value.view);drag=null;linkDrag=null;ends=linkEnds(value.view);solution=null;tool=null;paused=false;
+    checkSeq++;broken=null;current=value;entry=value.view.marks.length>3;mode=highlightMode(value.view);drag=null;linkDrag=null;ends=linkEnds(value.view);solution=null;tool=null;paused=false;
     boardBox.classList.remove('paused');$('#resume').hidden=true;
     const items=[...value.view.cells,...(value.view.links||[])],cells=value.view.cells.length;
     const initial=items.map(c=>c.value);const allowed=new Set(value.view.marks.map(m=>m.value)),allowedLinks=new Set((value.view.link_marks||[]).map(m=>m.value));
@@ -450,7 +468,13 @@ function player(game){
   $('#undo').onclick=undo;$('#redo').onclick=redo;
   $('#pause').onclick=()=>setPaused(!paused);$('#resume').onclick=()=>setPaused(false);
   $('#clear').onclick=()=>{const items=[...current.view.cells,...(current.view.links||[])];commit(items.map(c=>c.value),items.map(()=>''));status('Cleared. Undo restores it.');};
-  $('#check').onclick=()=>action('Checking…',async()=>{const result=await engine.call({operation:'check',genre:id,puzzle:current.id,marks:history.values,finished:true});$('#board').querySelectorAll('.invalid').forEach(c=>c.classList.remove('invalid'));for(const v of result.violations){const p=v.place;let selector=p==='board'?'td':'';if(p&&typeof p==='object'){if('row'in p)selector=`[data-row="${p.row}"],[data-cell-row="${p.row}"]`;else if('col'in p)selector=`[data-col="${p.col}"],[data-cell-col="${p.col}"]`;else if('region'in p)selector=`[data-region="${p.region}"]`;else if('cell'in p)selector=`[data-index="${p.cell.row*current.view.cols+p.cell.col}"]`;else if('link'in p)selector=`[data-link-place="${linkKey(p.link)}"]`;}if(selector)$('#board').querySelectorAll(selector).forEach(c=>c.classList.add('invalid'));}if(result.solved)solved();else status('Not solved. Check the marked cells or clues.','error');});
+  // Check marks only rules the player's marks already break, and within a broken row, column or region only the cells that have a mark. The finished check decides whether the puzzle is solved.
+  $('#check').onclick=()=>action('Checking…',async()=>{
+    const result=await partialCheck();broken=result.violations.length?result.violations:null;draw();
+    if(broken)status('Some marks break the rules. Check the marked cells or clues.','error');
+    else if(result.solved||(await engine.call({operation:'check',genre:id,puzzle:current.id,marks:history.values,finished:true})).solved)solved();
+    else status('No broken rules so far. The puzzle is not solved yet.');
+  });
   $('#mistakes').checked=showMistakes;
   $('#mistakes').onchange=()=>{showMistakes=$('#mistakes').checked;save('pencil-mistakes',showMistakes);if(showMistakes)loadSolution();else draw();};
   $('#reveal').onclick=()=>action('Solving…',async()=>{
