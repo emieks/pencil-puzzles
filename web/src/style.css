@@ -268,6 +268,10 @@ kbd { display: inline-block; padding: 3px 5px; border: 1px solid var(--line); bo
 
 /* Board: cells grow with the space left, up to 52px, and stay within the window's height. */
 .board { --size: clamp(24px, min(calc(var(--avail, 100vw - 290px) / var(--cols, 9)), calc((100vh - 250px) / var(--cols, 9))), 52px); border-collapse: collapse; table-layout: fixed; user-select: none; -webkit-user-select: none; }
+/* Whole-pixel cells keep 1px grid lines at the same thickness across the board. */
+@supports (width: round(down, 1.5px, 1px)) {
+  .board { --size: round(down, clamp(24px, min(calc(var(--avail, 100vw - 290px) / var(--cols, 9)), calc((100vh - 250px) / var(--cols, 9))), 52px), 1px); }
+}
 .board.paint, .board.entry { touch-action: none; }
 .board th { font-size: 13px; font-weight: normal; min-width: calc(var(--size) * .75); height: calc(var(--size) * .75); padding: 2px 6px; text-align: center; color: var(--muted); font-variant-numeric: tabular-nums; }
 .board .clue { font-size: 15px; color: var(--text); }
@@ -369,7 +373,17 @@ button.cell:hover:not(:disabled) { background: var(--subtle); border: 0; }
 .game-picture .board:has(th.clue[data-row]):not(:has(th[scope="row"])) { --size: calc(100cqw / (var(--cols, 9) + 2)); margin-left: calc(var(--size) * .75); }
 .game-picture .board:has(th.clue[data-row]):not(:has(th[scope="row"])) th.clue[data-row] { width: calc(var(--size) * .75); padding: 0; }
 .game-picture .board:has(th.clue[data-col]):not(:has(th[scope="col"])) { --size: calc(100cqw / (var(--cols, 9) + 2)); margin-top: calc(var(--size) * .75); }
+/* Whole-pixel cells, as on the puzzle pages. */
+@supports (width: round(down, 1.5px, 1px)) {
+  .game-picture .board { --size: round(down, 100cqw / (var(--cols, 9) + 1), 1px); }
+  .game-picture .board:has(th.clue[data-row]):not(:has(th[scope="row"])), .game-picture .board:has(th.clue[data-col]):not(:has(th[scope="col"])) { --size: round(down, 100cqw / (var(--cols, 9) + 2), 1px); }
+}
 .game-picture .cell { height: calc(var(--size) - 1px); }
+/* A filled cell's table cell has the same colour, so no dark strip shows where the cell's edge is rounded to the screen's pixels. */
+.game-picture td:has(> .cell.shaded) { background: var(--shaded); }
+.game-picture td:has(> .cell.shaded.tone-water) { background: var(--water); }
+.game-picture td:has(> .cell.shaded.tone-gray) { background: var(--gray); }
+.game-picture td:has(> .cell.block) { background: var(--block); }
 .game-picture .board th { min-width: 0; padding: 0 2px; font-size: calc(var(--size) * .5); }
 .game-picture .board td, .game-picture .board.walled td.edge-top, .game-picture .board.walled td.edge-bottom, .game-picture .board.walled td.edge-left, .game-picture .board.walled td.edge-right { border-width: 1px; }
 .game-picture .board td.box-top { border-top-width: 2px; }
