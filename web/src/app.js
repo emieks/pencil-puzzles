@@ -121,8 +121,10 @@ function board(view,{interactive=false,notes,selected=-1,selection,wrong}={}){
       const label=cell.label||'',symbol=choice?.symbol??cell.value,dot=!!choice&&symbol==='·',cross=!!choice&&symbol==='×';
       let className='cell'+(choice?.shaded?' shaded':'')+(choice?.tone?' tone-'+choice.tone:'')+(dot?(label?' circled':' dot'):'')+(cross?' cross':'')+(label?' labelled':'')+(!cell.editable?' given':'')+(chosen.has(i)?' selected':'')+(same.has(i)?' same':'')+(peers.has(i)?' peer':'')+(ends.has(i)?' end':'')+(wrong?.has(i)?' wrong':'');
       if(cell.circled&&interactive&&/^\d+$/.test(cell.value)&&ends.size){const n=bridges.get(i)||0,want=Number(cell.value);className+=n===want?' complete':n>want?' over':'';}
-      const button=element(interactive?'button':'span',cell.circled?undefined:label||(dot||cross?'':symbol),className);button.dataset.index=String(i);
-      if(cell.circled)button.append(element('span',cell.value,'circle'));
+      // Text sits in a glyph box, which CSS trims to the digits' height so they are centred in the cell and in rings.
+      const text=cell.circled?'':label||(dot||cross?'':symbol),glyph=t=>element('span',t,'glyph');
+      const button=element(interactive?'button':'span',undefined,className);button.dataset.index=String(i);if(text)button.append(glyph(text));
+      if(cell.circled){const circle=element('span',undefined,'circle');circle.append(glyph(cell.value));button.append(circle);}
       if(noted){const set=new Set(notes[i].split(',')),grid=element('span',undefined,'notes');grid.style.setProperty('--note-cols',String(Math.ceil(Math.sqrt(view.marks.length-1))));for(const m of view.marks.slice(1))grid.append(element('span',set.has(m.value)?m.symbol:''));button.replaceChildren(grid);}
       const state=noted?'notes '+notes[i]:choice?.name??cell.value;
       button.setAttribute('aria-label',`Row ${r+1}, column ${c+1}: ${label?`${label}, ${state.toLowerCase()}`:state}`);

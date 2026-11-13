@@ -298,6 +298,8 @@ kbd { display: inline-block; padding: 3px 5px; border: 1px solid var(--line); bo
 @media (prefers-reduced-motion: no-preference) {
   .cell { transition: background-color .08s; }
 }
+/* A digit's box is trimmed to the digit itself, so it sits in the middle of its cell or ring. */
+.glyph { display: block; text-box: trim-both cap alphabetic; }
 button.cell:hover:not(:disabled) { background: var(--subtle); border: 0; }
 .cell.given { font-weight: 600; color: var(--text); }
 /* The digits a player enters are blue. */
