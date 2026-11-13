@@ -333,7 +333,7 @@ button.cell:hover:not(:disabled) { background: var(--subtle); border: 0; }
 .board.entry .cell.peer { background: var(--peer); }
 .board.entry .cell.same { background: var(--same); }
 .board.entry .cell.selected, .board.entry button.cell.selected:hover:not(:disabled) { background: var(--select); }
-.board .invalid { color: var(--error); text-decoration: underline; font-weight: 600; }
+.board th.invalid { color: var(--error); text-decoration: underline; font-weight: 600; }
 /* Blocks, split from the top-left to the bottom-right corner when they hold labels. */
 .cell.block { position: relative; background: var(--block); color: var(--block-text); font-size: calc(var(--size) * .3); font-weight: 600; font-variant-numeric: tabular-nums; }
 .cell.block.split { background: linear-gradient(to bottom left, var(--block) calc(50% - 1px), var(--bg) 50%, var(--block) calc(50% + 1px)); }
@@ -342,16 +342,17 @@ button.cell:hover:not(:disabled) { background: var(--subtle); border: 0; }
 .cell.block .hl { margin: -1px -3px; padding: 1px 3px; border-radius: 2px; background: var(--block-text); color: var(--block); }
 .board .cell.block.invalid { color: var(--block-text); text-decoration: none; box-shadow: inset 0 0 0 3px var(--error); }
 .board.entry .cell.block.selected { box-shadow: inset 0 0 0 3px var(--select); }
-.board td.invalid { outline: 1px solid var(--error); outline-offset: -1px; }
+/* Cells in a broken rule are hatched with red lines, edged in the page colour so they show on any fill. The lines are fixed to the window, so they continue from cell to cell. */
+.board:not(.linked) .cell.invalid:not(.block), .board:not(.linked) td.invalid .cell:not(.block) { background-image: repeating-linear-gradient(-45deg, var(--bg) 0 1px, var(--error) 1px 3px, var(--bg) 3px 4px, transparent 4px 13px); background-attachment: fixed; }
 /* Boards with links (Hashi): no inner grid lines, circled cells, lines drawn over the table. */
 .board-wrap { position: relative; width: fit-content; }
-.board.linked td:not(.invalid) { border-color: transparent; }
+.board.linked td { border-color: transparent; }
 .board.linked .cell, .board.linked button.cell:hover:not(:disabled) { background: transparent; }
 .board.linked .cell.end { cursor: pointer; }
 .board.linked .cell:focus-visible, .board.linked .cell.selected { outline: none; }
 .board.linked .cell.selected .circle { background: var(--select); }
 .board.linked .cell:focus-visible .circle { outline: 2px solid var(--text); outline-offset: 2px; }
-.board.linked .cell.invalid { box-shadow: inset 0 0 0 2px var(--error); }
+.board.linked .cell.invalid, .board.linked td.invalid .cell { box-shadow: inset 0 0 0 2px var(--error); }
 .board.linked .cell.complete .circle { border-color: var(--line); color: var(--muted); }
 .board.linked .cell.over .circle { border-color: var(--error); color: var(--error); }
 .cell .circle { display: flex; align-items: center; justify-content: center; width: 80%; height: 80%; border: 2px solid var(--text); border-radius: 50%; background: var(--cell); font-size: calc(var(--size) * .45); }
