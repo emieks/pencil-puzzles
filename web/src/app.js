@@ -111,6 +111,9 @@ function board(view,{interactive=false,notes,selected=-1,selection,wrong}={}){
       if(view.row_separators?.includes(r))td.classList.add('box-top');if(view.col_separators?.includes(c))td.classList.add('box-left');
       // Neighbouring cells of different regions, such as Aquarium tanks, get a wall between them, unless a separator is already there.
       const region=j=>view.cells[j].region??null;if(r>0&&region(i)!==region(i-view.cols)&&!td.classList.contains('box-top'))td.classList.add('wall-top');if(c>0&&region(i)!==region(i-1)&&!td.classList.contains('box-left'))td.classList.add('wall-left');
+      // Each cell draws the wall joint at its top-left corner. Its own walls cover it, except where the walls above and to the left meet in a corner.
+      const wallAbove=r>0&&c>0&&region(i-view.cols)!==region(i-view.cols-1)&&!view.col_separators?.includes(c),wallLeft=r>0&&c>0&&region(i-1)!==region(i-1-view.cols)&&!view.row_separators?.includes(r);
+      if(wallAbove&&wallLeft&&!td.classList.contains('wall-top')&&!td.classList.contains('wall-left'))td.classList.add('wall-corner');
       if(r===0)td.classList.add('edge-top');if(r===view.rows-1)td.classList.add('edge-bottom');if(c===0)td.classList.add('edge-left');if(c===view.cols-1)td.classList.add('edge-right');
       if(cell.block){
         // A block: shaded, and split by a diagonal when it holds labels.
